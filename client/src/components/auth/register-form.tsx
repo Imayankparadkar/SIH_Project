@@ -59,7 +59,8 @@ export function RegisterForm() {
         phone: data.phone,
         medicalHistory: data.medicalHistory,
         abhaId: data.abhaId,
-        language: data.language
+        language: data.language,
+        country: 'IN' // Default to India
       });
       toast({
         title: "Registration successful",
