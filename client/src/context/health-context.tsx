@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { collection, addDoc, query, where, orderBy, limit, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuth } from './auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { VitalSigns, HealthAnalysis, InsertVitalSigns, InsertHealthAnalysis } from '@shared/schema';
 // Health analysis will be handled server-side
 
@@ -172,10 +172,3 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
   return <HealthContext.Provider value={value}>{children}</HealthContext.Provider>;
 }
 
-export function useHealth() {
-  const context = useContext(HealthContext);
-  if (context === undefined) {
-    throw new Error('useHealth must be used within a HealthProvider');
-  }
-  return context;
-}
