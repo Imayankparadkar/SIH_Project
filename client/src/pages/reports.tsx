@@ -1,0 +1,420 @@
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  FileText, 
+  Download, 
+  Calendar,
+  TrendingUp,
+  Brain,
+  Send,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  User
+} from 'lucide-react';
+import { Sidebar } from '@/components/layout/sidebar';
+import { useHealthData } from '@/hooks/use-health-data';
+import { useAuth } from '@/hooks/use-auth';
+
+interface HealthReport {
+  id: string;
+  type: 'weekly' | 'monthly' | 'custom' | 'ai-prediction';
+  title: string;
+  generatedDate: Date;
+  content: string;
+  summary: string;
+  recommendations: string[];
+  riskFactors: string[];
+  status: 'generated' | 'sent_to_doctor' | 'reviewed';
+}
+
+export function ReportsPage() {
+  const { t } = useTranslation();
+  const { historicalData } = useHealthData();
+  const { user } = useAuth();
+  const [reports, setReports] = useState<HealthReport[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<'1week' | '2week' | '1month'>('1week');
+  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [doctors, setDoctors] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchDoctors();
+    generateSampleReports();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      const response = await fetch('/api/doctors', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDoctors(data.doctors || []);
+      }
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+    }
+  };
+
+  const generateSampleReports = () => {
+    const sampleReports: HealthReport[] = [
+      {
+        id: '1',
+        type: 'weekly',
+        title: 'Weekly Health Summary',
+        generatedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        content: 'Comprehensive analysis of your health data over the past week...',
+        summary: 'Overall health status is good with minor areas for improvement',
+        recommendations: [
+          'Increase daily water intake to 8 glasses',
+          'Aim for 30 minutes of moderate exercise daily',
+          'Monitor blood pressure weekly'
+        ],
+        riskFactors: ['Slightly elevated stress levels'],
+        status: 'generated'
+      },
+      {
+        id: '2',
+        type: 'ai-prediction',
+        title: 'AI Health Prediction Report',
+        generatedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        content: 'Based on your health trends, predictive analysis shows...',
+        summary: 'AI analysis indicates potential cardiovascular attention needed',
+        recommendations: [
+          'Schedule cardiology consultation within 2 weeks',
+          'Reduce sodium intake to under 2300mg daily',
+          'Start stress management techniques'
+        ],
+        riskFactors: [
+          'Blood pressure trending upward',
+          'Heart rate variability decreased'
+        ],
+        status: 'sent_to_doctor'
+      }
+    ];
+    setReports(sampleReports);
+  };
+
+  const generateNewReport = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/health/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          period: selectedPeriod,
+          historicalData: historicalData.slice(-30), // Last 30 readings
+          userProfile: {
+            age: 30,
+            gender: 'male',
+            medicalHistory: 'No significant medical history'
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newReport: HealthReport = {
+          id: Date.now().toString(),
+          type: 'ai-prediction',
+          title: `${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} Health Prediction`,
+          generatedDate: new Date(),
+          content: data.prediction.analysis,
+          summary: data.prediction.analysis.substring(0, 100) + '...',
+          recommendations: data.prediction.recommendedActions,
+          riskFactors: data.prediction.riskFactors,
+          status: 'generated'
+        };
+        setReports(prev => [newReport, ...prev]);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const sendReportToDoctor = async (reportId: string) => {
+    if (!selectedDoctor) return;
+
+    const report = reports.find(r => r.id === reportId);
+    if (!report) return;
+
+    try {
+      const response = await fetch('/api/doctors/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          doctorId: selectedDoctor,
+          report: report.content,
+          patientData: {
+            name: user?.displayName || 'User',
+            age: 30,
+            gender: 'male'
+          }
+        })
+      });
+
+      if (response.ok) {
+        setReports(prev => prev.map(r => 
+          r.id === reportId 
+            ? { ...r, status: 'sent_to_doctor' as const }
+            : r
+        ));
+      }
+    } catch (error) {
+      console.error('Error sending report:', error);
+    }
+  };
+
+  const downloadReport = (report: HealthReport) => {
+    const reportContent = `
+# ${report.title}
+Generated: ${report.generatedDate.toLocaleDateString()}
+
+## Summary
+${report.summary}
+
+## Detailed Analysis
+${report.content}
+
+## Recommendations
+${report.recommendations.map(rec => `- ${rec}`).join('\n')}
+
+## Risk Factors
+${report.riskFactors.map(risk => `- ${risk}`).join('\n')}
+    `;
+    
+    const blob = new Blob([reportContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${report.title.replace(/\s+/g, '_')}_${report.generatedDate.toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'generated':
+        return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Generated</Badge>;
+      case 'sent_to_doctor':
+        return <Badge className="bg-blue-100 text-blue-800"><Send className="w-3 h-3 mr-1" />Sent to Doctor</Badge>;
+      case 'reviewed':
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Reviewed</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getRiskLevelColor = (riskFactors: string[]) => {
+    if (riskFactors.length === 0) return 'text-green-600';
+    if (riskFactors.length <= 2) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar />
+      <div className="flex-1 p-6">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Health Reports</h1>
+
+          {/* Report Generation */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                Generate AI Health Report
+              </CardTitle>
+              <CardDescription>
+                Create predictive health analysis based on your recent data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Prediction Period</label>
+                  <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1week">1 Week Prediction</SelectItem>
+                      <SelectItem value="2week">2 Week Prediction</SelectItem>
+                      <SelectItem value="1month">1 Month Prediction</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="md:col-span-2 flex items-end">
+                  <Button 
+                    onClick={generateNewReport} 
+                    disabled={isGenerating || historicalData.length < 5}
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Brain className="w-4 h-4 mr-2 animate-spin" />
+                        Generating Report...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Generate AI Report
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {historicalData.length < 5 && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    You need at least 5 health data points to generate meaningful predictions. 
+                    Please record more vitals in the Vitals section.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Reports List */}
+          <div className="grid grid-cols-1 gap-6">
+            {reports.map((report) => (
+              <Card key={report.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        {report.title}
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-4 mt-2">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {report.generatedDate.toLocaleDateString()}
+                        </span>
+                        {getStatusBadge(report.status)}
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => downloadReport(report)}>
+                        <Download className="w-4 h-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium mb-2">Summary</h4>
+                    <p className="text-sm text-muted-foreground">{report.summary}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        Recommendations ({report.recommendations.length})
+                      </h4>
+                      <ul className="text-sm space-y-1">
+                        {report.recommendations.slice(0, 3).map((rec, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-green-600">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                        {report.recommendations.length > 3 && (
+                          <li className="text-muted-foreground">
+                            +{report.recommendations.length - 3} more recommendations
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <AlertTriangle className={`w-4 h-4 ${getRiskLevelColor(report.riskFactors)}`} />
+                        Risk Factors ({report.riskFactors.length})
+                      </h4>
+                      {report.riskFactors.length > 0 ? (
+                        <ul className="text-sm space-y-1">
+                          {report.riskFactors.slice(0, 3).map((risk, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-red-600">•</span>
+                              <span>{risk}</span>
+                            </li>
+                          ))}
+                          {report.riskFactors.length > 3 && (
+                            <li className="text-muted-foreground">
+                              +{report.riskFactors.length - 3} more risk factors
+                            </li>
+                          )}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-green-600">No significant risk factors identified</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {report.status === 'generated' && (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center gap-4">
+                        <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select doctor to send report..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {doctors.map((doctor) => (
+                              <SelectItem key={doctor.id} value={doctor.id}>
+                                Dr. {doctor.name} - {doctor.specialty}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          onClick={() => sendReportToDoctor(report.id)}
+                          disabled={!selectedDoctor}
+                          variant="outline"
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Send to Doctor
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {reports.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Reports Generated Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Generate your first AI health report to get personalized health insights
+                </p>
+                <Button onClick={generateNewReport} disabled={historicalData.length < 5}>
+                  <Brain className="w-4 h-4 mr-2" />
+                  Generate Your First Report
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

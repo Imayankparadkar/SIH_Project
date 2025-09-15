@@ -14,6 +14,11 @@ import { Dashboard } from "@/pages/dashboard";
 import { ProfilePage } from "@/pages/profile";
 import { DoctorsPage } from "@/pages/doctors";
 import { DonationsPage } from "@/pages/donations";
+import { VitalsPage } from "@/pages/vitals";
+import { ReportsPage } from "@/pages/reports";
+import { MedicinesPage } from "@/pages/medicines";
+import { AIDoctorPage } from "@/pages/ai-doctor";
+import { SettingsPage } from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import i18n from "@/lib/i18n";
 
@@ -24,6 +29,11 @@ function Router() {
       <Route path="/login" component={LoginForm} />
       <Route path="/register" component={RegisterForm} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard/vitals" component={VitalsPage} />
+      <Route path="/dashboard/reports" component={ReportsPage} />
+      <Route path="/dashboard/medicines" component={MedicinesPage} />
+      <Route path="/dashboard/ai-doctor" component={AIDoctorPage} />
+      <Route path="/dashboard/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/doctors" component={DoctorsPage} />
       <Route path="/donations" component={DonationsPage} />

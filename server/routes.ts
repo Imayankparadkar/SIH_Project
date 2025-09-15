@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import cors from "cors";
-import { authMiddleware } from "./middleware/auth";
+import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
@@ -19,11 +19,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced health endpoints for wristband data
-  app.get("/api/health/vitals", authMiddleware, (req, res) => {
+  app.get("/api/health/vitals", optionalAuth, (req, res) => {
     res.json({ message: "Health vitals endpoint", data: [] });
   });
 
-  app.post("/api/health/vitals", authMiddleware, async (req, res) => {
+  app.post("/api/health/vitals", optionalAuth, async (req, res) => {
     try {
       const vitalSigns = req.body;
       // TODO: Save to database and analyze
@@ -80,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/health/wristband-status", authMiddleware, (req, res) => {
+  app.get("/api/health/wristband-status", optionalAuth, (req, res) => {
     // Mock wristband device status
     res.json({
       connected: true,
@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/doctors", authMiddleware, (req, res) => {
+  app.get("/api/doctors", optionalAuth, (req, res) => {
     // Mock doctors data
     res.json({
       doctors: [
