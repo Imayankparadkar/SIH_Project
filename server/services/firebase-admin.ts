@@ -1,70 +1,214 @@
-// Temporary stub implementation for firebase-admin (firebase-admin package not installed)
-// TODO: Install firebase-admin package and implement proper Firebase integration
+import { initializeApp, cert, getApps, App } from 'firebase-admin/app';
+import { getAuth, Auth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getStorage, Storage } from 'firebase-admin/storage';
 
-console.log('Warning: Using stub Firebase Admin implementation. Firebase features are disabled.');
+let adminApp: App;
+let adminAuth: Auth;
+let adminDb: Firestore;
+let adminStorage: Storage;
 
-export const adminAuth = null;
-export const adminDb = null;
-export const adminStorage = null;
+// Initialize Firebase Admin with service account or use development mode
+try {
+  if (!getApps().length) {
+    // In development, we can use the Firebase project ID from environment
+    // In production, you should use a service account key
+    const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+    
+    if (!projectId) {
+      throw new Error('Firebase project ID not found');
+    }
 
-// Stub implementations for firebase-admin functions
+    adminApp = initializeApp({
+      projectId: projectId,
+      // For development - in production you should use:
+      // credential: cert(serviceAccountKey)
+    });
+  } else {
+    adminApp = getApps()[0];
+  }
+
+  adminAuth = getAuth(adminApp);
+  adminDb = getFirestore(adminApp);
+  adminStorage = getStorage(adminApp);
+
+  console.log('Firebase Admin initialized successfully');
+} catch (error) {
+  console.warn('Warning: Firebase Admin initialization failed. Using stub implementation.', error);
+  // Fall back to stub implementation if initialization fails
+  adminAuth = null as any;
+  adminDb = null as any;
+  adminStorage = null as any;
+}
+
+export { adminAuth, adminDb, adminStorage };
+
+// Firebase Admin service functions
 export async function verifyIdToken(idToken: string) {
-  console.log('Stub: verifyIdToken called');
-  // Return a mock decoded token for development
-  return {
-    uid: 'stub-user-id',
-    email: 'user@example.com',
-    iss: 'stub',
-    aud: 'stub',
-    auth_time: Date.now() / 1000,
-    iat: Date.now() / 1000,
-    exp: (Date.now() / 1000) + 3600,
-    sub: 'stub-user-id'
-  };
+  if (!adminAuth) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    return decodedToken;
+  } catch (error) {
+    console.error('Error verifying ID token:', error);
+    throw new Error('Invalid ID token');
+  }
 }
 
 export async function getUserProfile(userId: string) {
-  console.log('Stub: getUserProfile called with userId:', userId);
-  return { 
-    id: userId, 
-    email: 'user@example.com',
-    name: 'Test User',
-    age: 30,
-    gender: 'other' as const
-  };
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const doc = await adminDb.collection('userProfiles').doc(userId).get();
+    if (!doc.exists) {
+      throw new Error('User profile not found');
+    }
+    return { id: doc.id, ...doc.data() };
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    throw error;
+  }
 }
 
 export async function saveUserProfile(userId: string, profileData: any) {
-  console.log('Stub: saveUserProfile called');
-  return { id: userId, ...profileData };
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const profileWithTimestamp = {
+      ...profileData,
+      updatedAt: new Date(),
+      createdAt: profileData.createdAt || new Date()
+    };
+    
+    await adminDb.collection('userProfiles').doc(userId).set(profileWithTimestamp, { merge: true });
+    return { id: userId, ...profileWithTimestamp };
+  } catch (error) {
+    console.error('Error saving user profile:', error);
+    throw error;
+  }
 }
 
 export async function saveVitalSigns(vitalSigns: any) {
-  console.log('Stub: saveVitalSigns called');
-  return { id: 'stub-vital-id', ...vitalSigns };
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const vitalWithTimestamp = {
+      ...vitalSigns,
+      timestamp: vitalSigns.timestamp || new Date(),
+      createdAt: new Date()
+    };
+    
+    const docRef = await adminDb.collection('vitalSigns').add(vitalWithTimestamp);
+    return { id: docRef.id, ...vitalWithTimestamp };
+  } catch (error) {
+    console.error('Error saving vital signs:', error);
+    throw error;
+  }
 }
 
 export async function getVitalSigns(userId: string, limit: number = 50) {
-  console.log('Stub: getVitalSigns called');
-  return [];
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const query = adminDb
+      .collection('vitalSigns')
+      .where('userId', '==', userId)
+      .orderBy('timestamp', 'desc')
+      .limit(limit);
+    
+    const snapshot = await query.get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting vital signs:', error);
+    throw error;
+  }
 }
 
 export async function saveHealthAnalysis(analysis: any) {
-  console.log('Stub: saveHealthAnalysis called');
-  return { id: 'stub-analysis-id', ...analysis };
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const analysisWithTimestamp = {
+      ...analysis,
+      createdAt: new Date()
+    };
+    
+    const docRef = await adminDb.collection('healthAnalyses').add(analysisWithTimestamp);
+    return { id: docRef.id, ...analysisWithTimestamp };
+  } catch (error) {
+    console.error('Error saving health analysis:', error);
+    throw error;
+  }
 }
 
 export async function saveEmergencyAlert(alert: any) {
-  console.log('Stub: saveEmergencyAlert called');
-  return { id: 'stub-alert-id', ...alert };
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const alertWithTimestamp = {
+      ...alert,
+      createdAt: new Date(),
+      resolved: false
+    };
+    
+    const docRef = await adminDb.collection('emergencyAlerts').add(alertWithTimestamp);
+    return { id: docRef.id, ...alertWithTimestamp };
+  } catch (error) {
+    console.error('Error saving emergency alert:', error);
+    throw error;
+  }
 }
 
 export async function saveDonation(donation: any) {
-  console.log('Stub: saveDonation called');
-  return { id: 'stub-donation-id', ...donation };
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const donationWithTimestamp = {
+      ...donation,
+      createdAt: new Date(),
+      status: 'pending'
+    };
+    
+    const docRef = await adminDb.collection('donations').add(donationWithTimestamp);
+    return { id: docRef.id, ...donationWithTimestamp };
+  } catch (error) {
+    console.error('Error saving donation:', error);
+    throw error;
+  }
 }
 
 export async function getDonations(userId: string) {
-  console.log('Stub: getDonations called');
-  return [];
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  
+  try {
+    const query = adminDb
+      .collection('donations')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc');
+    
+    const snapshot = await query.get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting donations:', error);
+    throw error;
+  }
 }
