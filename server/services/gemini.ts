@@ -68,7 +68,7 @@ Focus on:
 
     try {
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt
       });
       const text = result.text || '';
@@ -132,7 +132,7 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
 
     try {
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt
       });
       return result.text || "I apologize, but I'm having trouble processing your request right now.";
@@ -177,7 +177,7 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
 
     try {
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt
       });
       const text = result.text || '';
@@ -226,7 +226,7 @@ Important: Always emphasize that this analysis is for informational purposes onl
 
     try {
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt
       });
       const text = result.text || '';
