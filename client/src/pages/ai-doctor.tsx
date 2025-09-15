@@ -87,6 +87,13 @@ How are you feeling today? Is there anything specific about your health you'd li
     }
   }, []);
 
+  // Update speech recognition language when selectedLanguage changes
+  useEffect(() => {
+    if (speechRecognition.current) {
+      speechRecognition.current.lang = selectedLanguage === 'en' ? 'en-US' : 'hi-IN';
+    }
+  }, [selectedLanguage]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -100,6 +107,18 @@ How are you feeling today? Is there anything specific about your health you'd li
       }));
     }
   }, [currentVitals]);
+
+  // Cleanup effect for speech recognition
+  useEffect(() => {
+    return () => {
+      if (speechRecognition.current) {
+        speechRecognition.current.stop();
+      }
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -173,6 +192,12 @@ How are you feeling today? Is there anything specific about your health you'd li
   };
 
   const startListening = () => {
+    // Stop any ongoing speech synthesis to avoid conflicts
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+    
     if (speechRecognition.current && !isListening) {
       setIsListening(true);
       speechRecognition.current.start();
@@ -187,6 +212,12 @@ How are you feeling today? Is there anything specific about your health you'd li
   };
 
   const speakText = (text: string) => {
+    // Stop speech recognition to avoid conflicts
+    if (speechRecognition.current && isListening) {
+      speechRecognition.current.stop();
+      setIsListening(false);
+    }
+    
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = selectedLanguage === 'en' ? 'en-US' : 'hi-IN';
