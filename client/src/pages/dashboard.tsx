@@ -12,12 +12,12 @@ import { useHealthData } from '@/hooks/use-health-data';
 
 export function Dashboard() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { currentVitals, analysis } = useHealthData();
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isEmergencyOpen, setIsEmergencyOpen] = useState(false);
 
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+  const displayName = userProfile?.name || user?.email?.split('@')[0] || 'User';
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
