@@ -1,13 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import cors from "cors";
-import { healthRoutes } from "./routes/health";
-import { authRoutes } from "./routes/auth";
-import { doctorRoutes } from "./routes/doctors";
-import { donationRoutes } from "./routes/donations";
-import { emergencyRoutes } from "./routes/emergency";
-import { reportRoutes } from "./routes/reports";
 import { authMiddleware } from "./middleware/auth";
+import { storage } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // CORS configuration
@@ -16,15 +11,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     credentials: true
   }));
 
-  // Public routes
-  app.use("/api/auth", authRoutes);
-  app.use("/api/emergency", emergencyRoutes);
+  // Basic API routes
+  app.get("/api/auth/status", (req, res) => {
+    res.json({ authenticated: false, message: "Auth endpoints not implemented yet" });
+  });
 
-  // Protected routes (require authentication)
-  app.use("/api/health", authMiddleware, healthRoutes);
-  app.use("/api/doctors", authMiddleware, doctorRoutes);
-  app.use("/api/donations", authMiddleware, donationRoutes);
-  app.use("/api/reports", authMiddleware, reportRoutes);
+  app.get("/api/health/vitals", authMiddleware, (req, res) => {
+    res.json({ message: "Health vitals endpoint", data: [] });
+  });
+
+  app.get("/api/doctors", authMiddleware, (req, res) => {
+    res.json({ message: "Doctors endpoint", data: [] });
+  });
+
+  app.get("/api/donations", authMiddleware, (req, res) => {
+    res.json({ message: "Donations endpoint", data: [] });
+  });
+
+  app.get("/api/emergency/alert", (req, res) => {
+    res.json({ message: "Emergency alert endpoint" });
+  });
+
+  app.get("/api/reports", authMiddleware, (req, res) => {
+    res.json({ message: "Reports endpoint", data: [] });
+  });
 
   // Health check endpoint
   app.get("/api/status", (req, res) => {
