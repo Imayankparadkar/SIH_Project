@@ -16,129 +16,76 @@ interface VitalSigns {
 }
 
 export class GeminiHealthAnalyzer {
-  private apiKey: string;
-  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-
   constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-    if (!this.apiKey) {
-      console.warn('Gemini API key not found. Health analysis will use fallback responses.');
-    }
+    // No more client-side API key - all calls go through secure server endpoints
   }
 
-  async analyzeVitalSigns(vitals: VitalSigns, userAge: number, userGender: string): Promise<GeminiResponse> {
-    if (!this.apiKey) {
-      return this.getFallbackAnalysis(vitals);
-    }
-
-    const prompt = `As a medical AI assistant, analyze the following vital signs for a ${userAge}-year-old ${userGender}:
-
-Heart Rate: ${vitals.heartRate} BPM
-Blood Pressure: ${vitals.bloodPressureSystolic}/${vitals.bloodPressureDiastolic} mmHg
-Oxygen Saturation: ${vitals.oxygenSaturation}%
-Body Temperature: ${vitals.bodyTemperature}°F
-Timestamp: ${vitals.timestamp.toISOString()}
-
-Please provide:
-1. Overall health analysis
-2. Risk level (low/medium/high/critical)
-3. Specific recommendations
-4. Any anomalies detected
-5. Confidence level (0-1)
-
-Respond in JSON format with keys: analysis, riskLevel, recommendations (array), anomalies (array), confidence.`;
-
+  async analyzeVitalSigns(vitals: VitalSigns, userAge: number, userGender: string, medicalHistory?: string): Promise<GeminiResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
+      const response = await fetch('/api/health/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            topK: 1,
-            topP: 1,
-            maxOutputTokens: 1024,
+          vitals: {
+            heartRate: vitals.heartRate,
+            bloodPressureSystolic: vitals.bloodPressureSystolic,
+            bloodPressureDiastolic: vitals.bloodPressureDiastolic,
+            oxygenSaturation: vitals.oxygenSaturation,
+            bodyTemperature: vitals.bodyTemperature,
+            timestamp: vitals.timestamp
+          },
+          userProfile: {
+            age: userAge,
+            gender: userGender,
+            medicalHistory: medicalHistory || ''
           }
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        throw new Error(`Health analysis API error: ${response.status}`);
       }
 
-      const data = await response.json();
-      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!textResponse) {
-        throw new Error('No response from Gemini API');
-      }
-
-      // Parse JSON response
-      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const analysis = JSON.parse(jsonMatch[0]);
-        return {
-          analysis: analysis.analysis || 'Analysis completed',
-          riskLevel: analysis.riskLevel || 'low',
-          recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
-          anomalies: Array.isArray(analysis.anomalies) ? analysis.anomalies : [],
-          confidence: typeof analysis.confidence === 'number' ? analysis.confidence : 0.8
-        };
-      }
-
-      return this.getFallbackAnalysis(vitals);
+      const result = await response.json();
+      return {
+        analysis: result.analysis || 'Analysis completed',
+        riskLevel: result.riskLevel || 'low',
+        recommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
+        anomalies: Array.isArray(result.anomalies) ? result.anomalies : [],
+        confidence: typeof result.confidence === 'number' ? result.confidence : 0.8
+      };
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
+      console.error('Error calling health analysis API:', error);
       return this.getFallbackAnalysis(vitals);
     }
   }
 
-  async generateChatResponse(message: string, healthContext?: VitalSigns): Promise<string> {
-    if (!this.apiKey) {
-      return this.getFallbackChatResponse(message);
-    }
-
-    const systemPrompt = `You are Dr. AI, a virtual health assistant. Provide helpful, accurate health information while being empathetic and clear. Always recommend consulting healthcare professionals for serious concerns.`;
-    
-    const contextInfo = healthContext ? 
-      `\n\nUser's current health context:
-      - Heart Rate: ${healthContext.heartRate} BPM
-      - Blood Pressure: ${healthContext.bloodPressureSystolic}/${healthContext.bloodPressureDiastolic} mmHg
-      - Oxygen Saturation: ${healthContext.oxygenSaturation}%
-      - Body Temperature: ${healthContext.bodyTemperature}°F` : '';
-
-    const prompt = `${systemPrompt}\n\nUser question: ${message}${contextInfo}\n\nProvide a helpful response:`;
-
+  async generateChatResponse(message: string, healthContext?: VitalSigns, userProfile?: { age: number; gender: string; medicalHistory?: string }): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
+      const response = await fetch('/api/chat/doctor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 512,
-          }
+          message,
+          healthContext,
+          userProfile
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        throw new Error(`Chat API error: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || this.getFallbackChatResponse(message);
+      return data.response || this.getFallbackChatResponse(message);
     } catch (error) {
-      console.error('Error in chat response:', error);
+      console.error('Error calling chat API:', error);
       return this.getFallbackChatResponse(message);
     }
   }

@@ -36,9 +36,9 @@ export async function authMiddleware(
     
     // Add user info to request object
     req.user = {
+      ...decodedToken,
       uid: decodedToken.uid,
-      email: decodedToken.email,
-      ...decodedToken
+      email: decodedToken.email
     };
 
     next();
@@ -71,9 +71,9 @@ export function optionalAuth(
   verifyIdToken(idToken)
     .then(decodedToken => {
       req.user = {
+        ...decodedToken,
         uid: decodedToken.uid,
-        email: decodedToken.email,
-        ...decodedToken
+        email: decodedToken.email
       };
       next();
     })

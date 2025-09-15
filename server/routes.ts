@@ -5,6 +5,8 @@ import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
+import { HealthAnalysisRequestSchema, ChatRequestSchema } from "./validation/health";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // CORS configuration
@@ -35,7 +37,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/health/analyze", authMiddleware, async (req, res) => {
     try {
-      const { vitals, userProfile } = req.body;
+      const validation = HealthAnalysisRequestSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid request data", 
+          details: validation.error.issues 
+        });
+      }
+
+      const { vitals, userProfile } = validation.data;
       const result = await geminiHealthService.analyzeVitalSigns(
         vitals,
         userProfile.age,
@@ -236,7 +246,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Chat endpoints
   app.post("/api/chat/doctor", authMiddleware, async (req, res) => {
     try {
-      const { message, healthContext, userProfile } = req.body;
+      const validation = ChatRequestSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid request data", 
+          details: validation.error.issues 
+        });
+      }
+
+      const { message, healthContext, userProfile } = validation.data;
       const response = await geminiHealthService.generateChatResponse(
         message,
         healthContext,
