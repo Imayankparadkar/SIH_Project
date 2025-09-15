@@ -1,11 +1,23 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
 import { UserProfile, InsertUserProfile } from '@shared/schema';
 
+interface DevUser {
+  id: string;
+  email: string;
+  name: string;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  phone: string;
+  medicalHistory?: string;
+  abhaId?: string;
+  language: string;
+  country: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: DevUser | null;
   userProfile: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -16,76 +28,176 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to make API calls
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`/api/auth${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'API request failed');
+  }
+  
+  return data;
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<DevUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check for existing token on app start
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      
-      if (user) {
-        // Fetch user profile from Firestore
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setUserProfile({ id: user.uid, ...userDoc.data() } as UserProfile);
+          const response = await apiCall('/me');
+          if (response.success && response.user) {
+            setUser(response.user);
+            // Convert user to UserProfile format
+            setUserProfile({
+              id: response.user.id,
+              email: response.user.email,
+              name: response.user.name,
+              age: response.user.age,
+              gender: response.user.gender,
+              phone: response.user.phone,
+              medicalHistory: response.user.medicalHistory,
+              abhaId: response.user.abhaId,
+              language: response.user.language,
+              country: response.user.country,
+              createdAt: new Date(response.user.createdAt),
+              updatedAt: new Date(response.user.updatedAt)
+            } as UserProfile);
+          } else {
+            // Invalid token, remove it
+            localStorage.removeItem('authToken');
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('authToken');
         }
-      } else {
-        setUserProfile(null);
       }
-      
       setLoading(false);
-    });
+    };
 
-    return unsubscribe;
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const response = await apiCall('/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.success && response.user && response.token) {
+      localStorage.setItem('authToken', response.token);
+      setUser(response.user);
+      
+      // Convert user to UserProfile format
+      setUserProfile({
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        age: response.user.age,
+        gender: response.user.gender,
+        phone: response.user.phone,
+        medicalHistory: response.user.medicalHistory,
+        abhaId: response.user.abhaId,
+        language: response.user.language,
+        country: response.user.country,
+        createdAt: new Date(response.user.createdAt),
+        updatedAt: new Date(response.user.updatedAt)
+      } as UserProfile);
+    } else {
+      throw new Error('Login failed');
+    }
   };
 
   const register = async (email: string, password: string, profileData: Omit<InsertUserProfile, 'email'>) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // Update display name
-    await updateProfile(user, {
-      displayName: profileData.name
+    const response = await apiCall('/register', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        ...profileData 
+      }),
     });
 
-    // Save user profile to Firestore
-    const userProfileData: Omit<UserProfile, 'id'> = {
-      email,
-      ...profileData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    await setDoc(doc(db, 'users', user.uid), userProfileData);
-    setUserProfile({ id: user.uid, ...userProfileData });
+    if (response.success && response.user && response.token) {
+      localStorage.setItem('authToken', response.token);
+      setUser(response.user);
+      
+      // Convert user to UserProfile format
+      setUserProfile({
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        age: response.user.age,
+        gender: response.user.gender,
+        phone: response.user.phone,
+        medicalHistory: response.user.medicalHistory,
+        abhaId: response.user.abhaId,
+        language: response.user.language,
+        country: response.user.country,
+        createdAt: new Date(response.user.createdAt),
+        updatedAt: new Date(response.user.updatedAt)
+      } as UserProfile);
+    } else {
+      throw new Error('Registration failed');
+    }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await apiCall('/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    }
+    
+    // Clear local state regardless of API call success
+    localStorage.removeItem('authToken');
+    setUser(null);
+    setUserProfile(null);
   };
 
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!user) throw new Error('No user logged in');
 
-    const updatedData = {
-      ...data,
-      updatedAt: new Date()
-    };
+    const response = await apiCall('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
 
-    await setDoc(doc(db, 'users', user.uid), updatedData, { merge: true });
-    
-    if (userProfile) {
-      setUserProfile({ ...userProfile, ...updatedData });
+    if (response.success && response.user) {
+      setUser(response.user);
+      
+      // Convert user to UserProfile format
+      setUserProfile({
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        age: response.user.age,
+        gender: response.user.gender,
+        phone: response.user.phone,
+        medicalHistory: response.user.medicalHistory,
+        abhaId: response.user.abhaId,
+        language: response.user.language,
+        country: response.user.country,
+        createdAt: new Date(response.user.createdAt),
+        updatedAt: new Date(response.user.updatedAt)
+      } as UserProfile);
     }
   };
 

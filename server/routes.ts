@@ -6,6 +6,7 @@ import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
 import { authMiddleware, optionalAuth } from "./middleware/auth";
+import { authRoutes } from "./routes/auth";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
@@ -45,10 +46,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Basic API routes
-  app.get("/api/auth/status", (req, res) => {
-    res.json({ authenticated: false, message: "Auth endpoints not implemented yet" });
-  });
+  // Authentication routes
+  app.use("/api/auth", authRoutes);
 
   // Medical File Upload endpoints
   app.post("/api/uploads", authMiddleware, upload.single('file'), async (req, res) => {
