@@ -20,7 +20,7 @@ export class GeminiHealthAnalyzer {
   private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
+    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
     if (!this.apiKey) {
       console.warn('Gemini API key not found. Health analysis will use fallback responses.');
     }

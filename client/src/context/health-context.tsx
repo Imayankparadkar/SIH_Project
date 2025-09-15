@@ -15,7 +15,7 @@ interface HealthContextType {
   refreshAnalysis: () => Promise<void>;
 }
 
-const HealthContext = createContext<HealthContextType | undefined>(undefined);
+export const HealthContext = createContext<HealthContextType | undefined>(undefined);
 
 export function HealthProvider({ children }: { children: React.ReactNode }) {
   const { user, userProfile } = useAuth();
