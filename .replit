@@ -15,6 +15,7 @@ PORT = "5000"
 
 [agent]
 integrations = ["javascript_gemini:1.0.0", "firebase_barebones_javascript:1.0.0"]
+expertMode = true
 
 [workflows]
 runButton = "Project"
@@ -57,10 +58,6 @@ externalPort = 80
 [[ports]]
 localPort = 33075
 externalPort = 3000
-
-[[ports]]
-localPort = 35507
-externalPort = 3002
 
 [[ports]]
 localPort = 40779
