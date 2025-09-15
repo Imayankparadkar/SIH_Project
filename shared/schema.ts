@@ -368,6 +368,347 @@ export const insertPrescriptionSchema = prescriptionSchema.omit({
   id: true
 });
 
+// Medical Report Upload & Analysis schemas (different from health reports - these are uploaded documents)
+export const medicalReportSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  fileName: z.string(),
+  originalFileName: z.string(),
+  fileType: z.enum(['pdf', 'jpeg', 'png', 'dicom', 'doc', 'docx']),
+  mimeType: z.string(),
+  fileSize: z.number(),
+  checksum: z.string(), // SHA-256 for integrity
+  storageUrl: z.string(), // Firebase Storage URL
+  reportType: z.enum(['lab_report', 'xray', 'mri', 'ct_scan', 'prescription', 'medical_record', 'other']),
+  sourceType: z.enum(['appointment', 'lab_booking', 'user_upload']).optional(),
+  sourceId: z.string().optional(), // appointmentId or labBookingId
+  doctorId: z.string().optional(), // Doctor who uploaded (if any)
+  uploadedAt: z.coerce.date(),
+  isAnalyzed: z.boolean().default(false),
+  analysis: z.object({
+    summary: z.string(),
+    keyFindings: z.array(z.string()),
+    recommendations: z.array(z.string()),
+    followUpNeeded: z.boolean(),
+    analyzedAt: z.coerce.date(),
+    confidence: z.number().min(0).max(1),
+    aiModelUsed: z.string().optional(),
+    aiModelVersion: z.string().optional(),
+    language: z.string().default('en')
+  }).optional(),
+  sharedWith: z.array(z.string()).default([]), // Doctor IDs who have access
+  tags: z.array(z.string()).default([]),
+  isEncrypted: z.boolean().default(true),
+  isDeidentified: z.boolean().default(false)
+});
+
+// Pathology Lab schemas
+export const labSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  address: z.string(),
+  city: z.string(),
+  state: z.string(),
+  pincode: z.string(),
+  phone: z.string(),
+  email: z.string().email(),
+  rating: z.number().min(0).max(5).default(0),
+  isPartner: z.boolean().default(false),
+  homeCollectionAvailable: z.boolean().default(false),
+  homeCollectionFee: z.number().default(0),
+  coordinates: z.object({
+    latitude: z.number(),
+    longitude: z.number()
+  }),
+  operatingHours: z.array(z.object({
+    day: z.string(),
+    open: z.string(),
+    close: z.string()
+  })),
+  specializations: z.array(z.string()).default([]), // pathology, radiology, cardiology, etc.
+  accreditations: z.array(z.string()).default([]), // NABL, CAP, ISO certifications
+  reportDeliveryTime: z.object({
+    normal: z.string(), // "24 hours"
+    urgent: z.string()  // "4 hours"
+  })
+});
+
+export const labTestSchema = z.object({
+  id: z.string(),
+  labId: z.string(),
+  name: z.string(),
+  category: z.string(), // Blood Test, Urine Test, Imaging, etc.
+  description: z.string(),
+  price: z.number(),
+  discountedPrice: z.number().optional(),
+  sampleType: z.enum(['blood', 'urine', 'stool', 'saliva', 'tissue', 'imaging', 'other']),
+  fastingRequired: z.boolean().default(false),
+  fastingHours: z.number().default(0),
+  reportTime: z.string(), // "24 hours", "2 days", etc.
+  instructions: z.string().optional(),
+  normalRanges: z.record(z.string()).optional() // For reference values
+});
+
+const labBookingSchemaBase = z.object({
+  id: z.string(),
+  userId: z.string(),
+  labId: z.string(),
+  testIds: z.array(z.string()),
+  bookingType: z.enum(['home_collection', 'lab_visit']),
+  scheduledDate: z.coerce.date(),
+  scheduledTime: z.string(), // "10:00 AM"
+  patientInfo: z.object({
+    name: z.string(),
+    age: z.number(),
+    gender: z.string(),
+    phone: z.string()
+  }),
+  address: z.object({
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+    landmark: z.string().optional()
+  }).optional(),
+  totalAmount: z.number(),
+  paymentStatus: z.enum(['pending', 'paid', 'failed']).default('pending'),
+  status: z.enum(['booked', 'sample_collected', 'processing', 'completed', 'cancelled']).default('booked'),
+  phlebotomistId: z.string().optional(), // Assigned phlebotomist for home collection
+  reportFileId: z.string().optional(), // Links to medicalReportSchema
+  cancellationReason: z.string().optional(),
+  bookedAt: z.coerce.date(),
+  completedAt: z.coerce.date().optional(),
+  notes: z.string().optional()
+});
+
+export const labBookingSchema = labBookingSchemaBase.refine((data) => {
+  // Require address for home collection
+  return data.bookingType !== 'home_collection' || data.address;
+}, {
+  message: "Address is required for home collection",
+  path: ["address"]
+});
+
+// Appointment schemas (separate from doctor availability)
+const appointmentSchemaBase = z.object({
+  id: z.string(),
+  userId: z.string(),
+  doctorId: z.string(),
+  appointmentType: z.enum(['video_call', 'clinic_visit', 'home_visit']),
+  scheduledDateTime: z.coerce.date(), // ISO datetime with timezone
+  timezone: z.string().default('Asia/Kolkata'),
+  duration: z.number().default(30), // in minutes
+  consultationFee: z.number(),
+  status: z.enum(['scheduled', 'ongoing', 'completed', 'cancelled', 'no_show']).default('scheduled'),
+  paymentStatus: z.enum(['pending', 'paid', 'refunded']).default('pending'),
+  symptoms: z.string().optional(),
+  medicalReports: z.array(z.string()).default([]), // Medical report IDs shared for this appointment
+  prescription: z.string().optional(), // Prescription ID if issued
+  meetingLink: z.string().optional(), // For video calls
+  clinicId: z.string().optional(), // For clinic visits
+  doctorNotes: z.string().optional(),
+  followUpRequired: z.boolean().default(false),
+  followUpDate: z.coerce.date().optional(),
+  cancellationReason: z.string().optional(),
+  noShowReason: z.string().optional(),
+  bookedAt: z.coerce.date(),
+  completedAt: z.coerce.date().optional()
+});
+
+export const appointmentSchema = appointmentSchemaBase.refine((data) => {
+  // Require meeting link for video calls
+  return data.appointmentType !== 'video_call' || data.meetingLink;
+}, {
+  message: "Meeting link is required for video calls",
+  path: ["meetingLink"]
+});
+
+// Medicine Order schemas
+const orderSchemaBase = z.object({
+  id: z.string(),
+  userId: z.string(),
+  pharmacyId: z.string().optional(),
+  orderItems: z.array(z.object({
+    medicineId: z.string(),
+    quantity: z.number().min(1),
+    price: z.number(), // Final price per unit at time of order
+    prescriptionRequired: z.boolean()
+  })),
+  prescriptionId: z.string().optional(),
+  deliveryAddress: z.object({
+    name: z.string(),
+    phone: z.string(),
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+    landmark: z.string().optional(),
+    isDefault: z.boolean().default(false)
+  }),
+  totalAmount: z.number(),
+  deliveryFee: z.number().default(0),
+  discount: z.number().default(0),
+  finalAmount: z.number(),
+  currency: z.string().default('INR'),
+  paymentId: z.string().optional(), // Payment gateway transaction ID
+  paymentStatus: z.enum(['pending', 'paid', 'failed', 'refunded']).default('pending'),
+  orderStatus: z.enum(['placed', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled']).default('placed'),
+  estimatedDelivery: z.coerce.date().optional(),
+  deliveredAt: z.coerce.date().optional(),
+  trackingId: z.string().optional(),
+  orderedAt: z.coerce.date()
+});
+
+export const orderSchema = orderSchemaBase.refine((data) => {
+  // Require prescription if any item needs it
+  const needsPrescription = data.orderItems.some(item => item.prescriptionRequired);
+  return !needsPrescription || data.prescriptionId;
+}, {
+  message: "Prescription is required for prescription medicines",
+  path: ["prescriptionId"]
+});
+
+// Donor Profile & Hospital Rating schemas
+export const donorProfileSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+  isAvailable: z.boolean().default(true),
+  lastDonationDate: z.coerce.date().optional(),
+  totalDonations: z.number().default(0),
+  rewardCoins: z.number().default(0),
+  donorType: z.enum(['blood', 'plasma', 'platelets', 'all']).default('all'),
+  location: z.object({
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number()
+    }).optional()
+  }),
+  medicalEligibility: z.object({
+    weight: z.number().min(50), // kg
+    hemoglobin: z.number().min(12.5), // g/dL
+    lastHealthCheck: z.coerce.date().optional(),
+    isEligible: z.boolean().default(true)
+  }),
+  emergencyContact: z.object({
+    name: z.string(),
+    phone: z.string(),
+    relation: z.string()
+  }),
+  registeredAt: z.coerce.date()
+});
+
+export const hospitalRatingSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  hospitalId: z.string(),
+  rating: z.number().min(1).max(5),
+  review: z.string().optional(),
+  serviceType: z.enum(['emergency', 'consultation', 'surgery', 'diagnostic', 'general']),
+  visitDate: z.coerce.date(),
+  isVerified: z.boolean().default(false),
+  helpful: z.number().default(0), // How many found this helpful
+  createdAt: z.coerce.date()
+});
+
+export const doctorRatingSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  doctorId: z.string(),
+  rating: z.number().min(1).max(5),
+  review: z.string().optional(),
+  visitDate: z.coerce.date(),
+  isVerified: z.boolean().default(false),
+  helpful: z.number().default(0), // How many found this helpful
+  createdAt: z.coerce.date()
+});
+
+export const donationRequestSchema = z.object({
+  id: z.string(),
+  hospitalId: z.string(),
+  bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+  donationType: z.enum(['blood', 'plasma', 'platelets']),
+  urgencyLevel: z.enum(['low', 'medium', 'high', 'critical']),
+  unitsNeeded: z.number(),
+  unitsCollected: z.number().default(0),
+  location: z.object({
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number()
+    }).optional()
+  }),
+  patientInfo: z.object({
+    age: z.number().optional(),
+    condition: z.string(),
+    department: z.string().optional(),
+    ward: z.string().optional(),
+    isEmergency: z.boolean().default(false)
+  }),
+  validUntil: z.coerce.date(),
+  contactPerson: z.object({
+    name: z.string(),
+    phone: z.string(),
+    designation: z.string()
+  }),
+  isActive: z.boolean().default(true),
+  createdAt: z.coerce.date()
+});
+
+// Insert schemas for new models
+export const insertMedicalReportSchema = medicalReportSchema.omit({
+  id: true,
+  uploadedAt: true
+});
+
+export const insertLabSchema = labSchema.omit({
+  id: true
+});
+
+export const insertLabTestSchema = labTestSchema.omit({
+  id: true
+});
+
+export const insertLabBookingSchema = labBookingSchemaBase.omit({
+  id: true,
+  bookedAt: true
+});
+
+export const insertAppointmentSchema = appointmentSchemaBase.omit({
+  id: true,
+  bookedAt: true
+});
+
+export const insertOrderSchema = orderSchemaBase.omit({
+  id: true,
+  orderedAt: true
+});
+
+export const insertDonorProfileSchema = donorProfileSchema.omit({
+  id: true,
+  registeredAt: true
+});
+
+export const insertHospitalRatingSchema = hospitalRatingSchema.omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertDoctorRatingSchema = doctorRatingSchema.omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertDonationRequestSchema = donationRequestSchema.omit({
+  id: true,
+  createdAt: true
+});
+
 // Enhanced type exports
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
@@ -399,3 +740,23 @@ export type Medicine = z.infer<typeof medicineSchema>;
 export type InsertMedicine = z.infer<typeof insertMedicineSchema>;
 export type Prescription = z.infer<typeof prescriptionSchema>;
 export type InsertPrescription = z.infer<typeof insertPrescriptionSchema>;
+export type MedicalReport = z.infer<typeof medicalReportSchema>;
+export type InsertMedicalReport = z.infer<typeof insertMedicalReportSchema>;
+export type Lab = z.infer<typeof labSchema>;
+export type InsertLab = z.infer<typeof insertLabSchema>;
+export type LabTest = z.infer<typeof labTestSchema>;
+export type InsertLabTest = z.infer<typeof insertLabTestSchema>;
+export type LabBooking = z.infer<typeof labBookingSchema>;
+export type InsertLabBooking = z.infer<typeof insertLabBookingSchema>;
+export type Appointment = z.infer<typeof appointmentSchema>;
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type Order = z.infer<typeof orderSchema>;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type DonorProfile = z.infer<typeof donorProfileSchema>;
+export type InsertDonorProfile = z.infer<typeof insertDonorProfileSchema>;
+export type HospitalRating = z.infer<typeof hospitalRatingSchema>;
+export type InsertHospitalRating = z.infer<typeof insertHospitalRatingSchema>;
+export type DoctorRating = z.infer<typeof doctorRatingSchema>;
+export type InsertDoctorRating = z.infer<typeof insertDoctorRatingSchema>;
+export type DonationRequest = z.infer<typeof donationRequestSchema>;
+export type InsertDonationRequest = z.infer<typeof insertDonationRequestSchema>;
