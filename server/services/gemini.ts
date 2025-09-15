@@ -98,6 +98,9 @@ Focus on:
     healthContext?: VitalSigns,
     userProfile?: { age: number; gender: string; medicalHistory?: string }
   ): Promise<string> {
+    if (!this.genAI) {
+      return this.getFallbackChatResponse(message);
+    }
     const systemPrompt = `You are Dr. AI, a compassionate virtual health assistant developed by Sehatify. You provide helpful, accurate health information while being empathetic and clear. 
 
 Important guidelines:
@@ -149,6 +152,9 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
     riskFactors: string[];
     improvements: string[];
   }> {
+    if (!this.genAI) {
+      return this.getFallbackHealthReport(vitals, userProfile, reportType);
+    }
     const prompt = `Generate a comprehensive ${reportType} health report for ${userProfile.name}, a ${userProfile.age}-year-old ${userProfile.gender}.
 
 Vital Signs Data (${vitals.length} readings):
@@ -242,6 +248,39 @@ Important: Always emphasize that this analysis is for informational purposes onl
       throw new Error('Failed to analyze medical document');
     }
   }
+  private getFallbackChatResponse(message: string): string {
+    const responses = [
+      "I'm here to help with your health questions. As a development version, I recommend consulting with a healthcare professional for personalized medical advice.",
+      "Thank you for your question about health. While I can provide general information, please consult with your doctor for specific medical guidance.",
+      "I appreciate your health inquiry. For personalized medical advice and accurate diagnosis, I recommend speaking with a qualified healthcare provider.",
+      "I'm glad you're taking an active interest in your health. For the best care, please discuss your concerns with a medical professional."
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private getFallbackHealthReport(
+    vitals: VitalSigns[],
+    userProfile: { age: number; gender: string; name: string; medicalHistory?: string },
+    reportType: 'weekly' | 'monthly' | 'custom'
+  ) {
+    return {
+      summary: `Basic ${reportType} health report for ${userProfile.name}. Your vital signs have been monitored over this period.`,
+      recommendations: [
+        "Continue monitoring your vital signs regularly",
+        "Maintain a healthy lifestyle with proper diet and exercise",
+        "Get adequate sleep and manage stress levels",
+        "Consult with your healthcare provider for comprehensive evaluation"
+      ],
+      riskFactors: [
+        "Individual risk factors vary - consult with your doctor for personalized assessment"
+      ],
+      improvements: [
+        "Consistent monitoring shows engagement with your health",
+        "Regular check-ins demonstrate good health awareness"
+      ]
+    };
+  }
+
   private getFallbackAnalysis(vitals: VitalSigns): HealthAnalysisResult {
     const { heartRate, bloodPressureSystolic, bloodPressureDiastolic, oxygenSaturation, bodyTemperature } = vitals;
     

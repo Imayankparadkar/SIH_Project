@@ -47,9 +47,11 @@ export class PredictiveHealthService {
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
+      console.warn('Warning: GEMINI_API_KEY not set. Using development mode with stub responses.');
+      this.genAI = null as any;
+    } else {
+      this.genAI = new GoogleGenAI({ apiKey });
     }
-    this.genAI = new GoogleGenAI({ apiKey });
   }
 
   async analyzeLongTermHealthTrends(
@@ -99,6 +101,12 @@ Respond in JSON format with:
   "shouldConsultDoctor": true/false,
   "doctorSpecialty": "cardiology|internal_medicine|endocrinology|etc"
 }`;
+
+    // Return stub data if Gemini API is not available
+    if (!this.genAI) {
+      console.log('Using development stub for health prediction analysis');
+      return this.getFallbackPrediction(predictionPeriod, historicalData);
+    }
 
     try {
       const result = await this.genAI.models.generateContent({
