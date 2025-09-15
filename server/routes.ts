@@ -9,7 +9,7 @@ import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
-import { HealthAnalysisRequestSchema, ChatRequestSchema } from "./validation/health";
+import { HealthAnalysisRequestSchema, ChatRequestSchema, MedicalFileUploadSchema, FileAccessParamsSchema, ReportIdParamsSchema } from "./validation/health";
 import { insertMedicalReportSchema, insertLabBookingSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -57,10 +57,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const { reportType = 'other', sourceType, sourceId } = req.body;
+      // Validate request body parameters
+      const bodyValidation = MedicalFileUploadSchema.safeParse(req.body);
+      if (!bodyValidation.success) {
+        return res.status(400).json({ 
+          error: "Invalid upload parameters", 
+          details: bodyValidation.error.issues 
+        });
+      }
+
+      const { reportType, sourceType, sourceId, description } = bodyValidation.data;
+      
+      // Get authenticated user ID from session
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       
       const reportData = {
-        userId: req.body.userId || 'user1', // TODO: Get from session
+        userId,
         fileName: req.file.filename,
         originalFileName: req.file.originalname,
         fileType: req.file.mimetype.includes('pdf') ? 'pdf' as const : 
@@ -72,6 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reportType: reportType as any,
         sourceType,
         sourceId,
+        description,
         isAnalyzed: false,
         sharedWith: [] as string[],
         tags: [] as string[],
@@ -81,17 +97,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const report = await storage.createMedicalReport(reportData);
       
-      // Analyze document with Gemini if it's a text-based report
-      if (req.file.mimetype === 'application/pdf') {
+      // Analyze document with Gemini for both PDFs and medical images
+      if (req.file.mimetype === 'application/pdf' || req.file.mimetype.startsWith('image/')) {
         try {
-          // For MVP, we'll just create a placeholder analysis
+          // Analyze with Gemini based on file type
+          let analysisPrompt = '';
+          if (req.file.mimetype === 'application/pdf') {
+            analysisPrompt = `Analyze this medical PDF document and provide: 1) Summary, 2) Key findings, 3) Recommendations, 4) Any concerning values or abnormalities`;
+          } else {
+            analysisPrompt = `Analyze this medical image (${reportType}). Provide: 1) What you observe, 2) Key findings, 3) Potential abnormalities, 4) Recommendations for follow-up`;
+          }
+          
+          const aiAnalysis = await geminiHealthService.generateChatResponse(analysisPrompt);
           const analysisData = {
-            summary: "Document uploaded successfully and ready for analysis",
-            keyFindings: ["Document has been uploaded and stored securely"],
-            recommendations: ["Please consult with your doctor to review this document"],
-            followUpNeeded: true,
+            summary: aiAnalysis.substring(0, 500) + (aiAnalysis.length > 500 ? '...' : ''),
+            keyFindings: aiAnalysis.includes('Key findings:') ? 
+              aiAnalysis.split('Key findings:')[1]?.split('\n').slice(0, 3).filter(s => s.trim()) || 
+              ["Analysis completed successfully"] : ["Analysis completed successfully"],
+            recommendations: aiAnalysis.includes('Recommendations:') ? 
+              aiAnalysis.split('Recommendations:')[1]?.split('\n').slice(0, 3).filter(s => s.trim()) || 
+              ["Please consult with your doctor"] : ["Please consult with your doctor"],
+            followUpNeeded: aiAnalysis.toLowerCase().includes('abnormal') || aiAnalysis.toLowerCase().includes('concern'),
             analyzedAt: new Date(),
-            confidence: 0.9,
+            confidence: 0.8,
             aiModelUsed: "gemini-1.5-flash",
             language: "en"
           };
@@ -118,7 +146,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/uploads", authMiddleware, async (req, res) => {
     try {
-      const userId = req.query.userId as string || 'user1'; // TODO: Get from session
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       const reports = await storage.getMedicalReportsByUserId(userId);
       res.json({ reports });
     } catch (error) {
@@ -129,12 +160,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/uploads/:filename", authMiddleware, async (req, res) => {
     try {
-      const { filename } = req.params;
+      // Validate filename parameter
+      const paramValidation = FileAccessParamsSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        return res.status(400).json({ 
+          error: "Invalid filename", 
+          details: paramValidation.error.issues 
+        });
+      }
+
+      const { filename } = paramValidation.data;
       const filePath = path.join(uploadDir, filename);
       
-      // Check if file exists and user has access (TODO: proper authorization)
-      const report = await storage.getMedicalReportsByUserId('user1'); // TODO: Get from session
-      const hasAccess = report.some(r => r.fileName === filename);
+      // Get authenticated user ID
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Verify user owns this file
+      const userReports = await storage.getMedicalReportsByUserId(userId);
+      const hasAccess = userReports.some(r => r.fileName === filename);
       
       if (!hasAccess) {
         return res.status(403).json({ error: "Access denied" });
@@ -149,11 +195,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/uploads/:id", authMiddleware, async (req, res) => {
     try {
-      const { id } = req.params;
+      // Validate report ID parameter
+      const paramValidation = ReportIdParamsSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        return res.status(400).json({ 
+          error: "Invalid report ID", 
+          details: paramValidation.error.issues 
+        });
+      }
+
+      const { id } = paramValidation.data;
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
       const report = await storage.getMedicalReport(id);
       
-      if (!report) {
-        return res.status(404).json({ error: "Report not found" });
+      // Verify user owns this report
+      if (!report || report.userId !== userId) {
+        return res.status(404).json({ error: "Report not found or access denied" });
       }
       
       // Delete file from filesystem
@@ -204,9 +265,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/labs/book", authMiddleware, async (req, res) => {
     try {
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
       const bookingData = insertLabBookingSchema.parse({
         ...req.body,
-        userId: req.body.userId || 'user1' // TODO: Get from session
+        userId
       });
       
       const booking = await storage.createLabBooking(bookingData);
@@ -230,7 +296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/labs/bookings", authMiddleware, async (req, res) => {
     try {
-      const userId = req.query.userId as string || 'user1'; // TODO: Get from session
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
       const bookings = await storage.getLabBookingsByUserId(userId);
       res.json({ bookings });
     } catch (error) {

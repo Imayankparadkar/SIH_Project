@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   FileText, 
   Download, 
@@ -15,7 +18,13 @@ import {
   CheckCircle,
   AlertTriangle,
   Clock,
-  User
+  User,
+  Upload,
+  X,
+  Eye,
+  Trash2,
+  FileImage,
+  FilePlus
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { useHealthData } from '@/hooks/use-health-data';
@@ -33,6 +42,23 @@ interface HealthReport {
   status: 'generated' | 'sent_to_doctor' | 'reviewed';
 }
 
+interface MedicalFile {
+  id: string;
+  fileName: string;
+  originalFileName: string;
+  fileType: 'pdf' | 'jpeg' | 'png';
+  reportType: 'lab_report' | 'xray' | 'prescription' | 'medical_record' | 'other';
+  fileSize: number;
+  uploadedAt: string;
+  isAnalyzed: boolean;
+  analysis?: {
+    summary: string;
+    keyFindings: string[];
+    recommendations: string[];
+    followUpNeeded: boolean;
+  };
+}
+
 export function ReportsPage() {
   const { t } = useTranslation();
   const { historicalData } = useHealthData();
@@ -42,11 +68,110 @@ export function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<'1week' | '2week' | '1month'>('1week');
   const [selectedDoctor, setSelectedDoctor] = useState('');
   const [doctors, setDoctors] = useState<any[]>([]);
+  
+  // File upload state
+  const [medicalFiles, setMedicalFiles] = useState<MedicalFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchDoctors();
     generateSampleReports();
+    fetchMedicalFiles();
   }, []);
+
+  const fetchMedicalFiles = async () => {
+    try {
+      const response = await fetch('/api/uploads?userId=user1', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMedicalFiles(data.reports || []);
+      }
+    } catch (error) {
+      console.error('Error fetching medical files:', error);
+    }
+  };
+
+  const handleFileUpload = async (file: File, reportType: string) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('reportType', reportType);
+    formData.append('userId', 'user1'); // TODO: Get from auth
+
+    try {
+      const response = await fetch('/api/uploads', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMedicalFiles(prev => [data.report, ...prev]);
+        setUploadProgress(100);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setTimeout(() => setUploadProgress(0), 2000);
+    }
+  };
+
+  const handleFileDelete = async (fileId: string) => {
+    if (!confirm('Are you sure you want to delete this file?')) return;
+    
+    try {
+      const response = await fetch(`/api/uploads/${fileId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setMedicalFiles(prev => prev.filter(f => f.id !== fileId));
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete file. Please try again.');
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (fileType: string, reportType: string) => {
+    if (reportType === 'xray') return <FileImage className="w-5 h-5" />;
+    return <FileText className="w-5 h-5" />;
+  };
+
+  const getReportTypeBadge = (reportType: string) => {
+    const colors = {
+      lab_report: 'bg-blue-100 text-blue-800',
+      xray: 'bg-purple-100 text-purple-800', 
+      prescription: 'bg-green-100 text-green-800',
+      medical_record: 'bg-orange-100 text-orange-800',
+      other: 'bg-gray-100 text-gray-800'
+    };
+    return colors[reportType as keyof typeof colors] || colors.other;
+  };
 
   const fetchDoctors = async () => {
     try {
@@ -228,10 +353,18 @@ ${report.riskFactors.map(risk => `- ${risk}`).join('\n')}
       <Sidebar />
       <div className="flex-1 p-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Health Reports</h1>
+          <h1 className="text-3xl font-bold mb-6">Health Reports & Medical Files</h1>
 
-          {/* Report Generation */}
-          <Card className="mb-6">
+          <Tabs defaultValue="reports" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="reports">AI Reports</TabsTrigger>
+              <TabsTrigger value="uploads">Medical Files</TabsTrigger>
+              <TabsTrigger value="lab-booking">Lab Booking</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="reports" className="space-y-6">
+              {/* Report Generation */}
+              <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="w-5 h-5" />
@@ -413,6 +546,144 @@ ${report.riskFactors.map(risk => `- ${risk}`).join('\n')}
               </CardContent>
             </Card>
           )}
+          </TabsContent>
+
+          {/* Medical Files Upload Tab */}
+          <TabsContent value="uploads" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" />
+                  Upload Medical Files
+                </CardTitle>
+                <CardDescription>
+                  Upload X-rays, lab reports, prescriptions, and medical records
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['lab_report', 'xray', 'prescription', 'medical_record'].map((type) => (
+                    <div key={type}>
+                      <Label htmlFor={`file-${type}`} className="text-sm font-medium mb-2 block capitalize">
+                        {type.replace('_', ' ')}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id={`file-${type}`}
+                          type="file"
+                          ref={fileInputRef}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleFileUpload(e.target.files[0], type);
+                            }
+                          }}
+                          disabled={isUploading}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isUploading}
+                          onClick={() => document.getElementById(`file-${type}`)?.click()}
+                        >
+                          <FilePlus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {isUploading && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Uploading...</span>
+                      <span className="text-sm">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Uploaded Files List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Medical Files ({medicalFiles.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {medicalFiles.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No files uploaded yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {medicalFiles.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {getFileIcon(file.fileType, file.reportType)}
+                          <div>
+                            <p className="font-medium text-sm">{file.originalFileName}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Badge className={getReportTypeBadge(file.reportType)}>
+                                {file.reportType.replace('_', ' ')}
+                              </Badge>
+                              <span>{formatFileSize(file.fileSize)}</span>
+                              <span>{new Date(file.uploadedAt).toLocaleDateString()}</span>
+                            </div>
+                            {file.analysis && (
+                              <p className="text-xs text-green-600 mt-1">✓ AI Analysis Complete</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleFileDelete(file.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Lab Booking Tab */}
+          <TabsContent value="lab-booking" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pathology Lab Booking</CardTitle>
+                <CardDescription>
+                  Book blood tests and sample collection at your convenience
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">Lab booking functionality coming soon!</p>
+                  <p className="text-sm text-muted-foreground">
+                    You'll be able to book home collection for blood tests, urine tests, and more.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+        </Tabs>
         </div>
       </div>
     </div>

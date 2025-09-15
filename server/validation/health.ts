@@ -27,3 +27,18 @@ export const ChatRequestSchema = z.object({
   healthContext: VitalSignsSchema.optional(),
   userProfile: UserProfileSchema.optional()
 });
+
+export const MedicalFileUploadSchema = z.object({
+  reportType: z.enum(['blood_test', 'xray', 'mri', 'ct_scan', 'ecg', 'prescription', 'discharge_summary', 'other']).default('other'),
+  sourceType: z.enum(['appointment', 'lab_booking', 'user_upload']).optional(),
+  sourceId: z.string().optional(),
+  description: z.string().max(500).optional()
+});
+
+export const FileAccessParamsSchema = z.object({
+  filename: z.string().min(1).regex(/^[a-zA-Z0-9\-_\.]+$/, 'Invalid filename format')
+});
+
+export const ReportIdParamsSchema = z.object({
+  id: z.string().uuid('Invalid report ID format')
+});
