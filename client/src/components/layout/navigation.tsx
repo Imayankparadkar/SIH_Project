@@ -54,6 +54,11 @@ export function Navigation() {
             <Link href="/" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/' ? 'text-primary font-medium' : ''}`}>
               {t('nav_home')}
             </Link>
+            {user && (
+              <Link href="/dashboard" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/dashboard' ? 'text-primary font-medium' : ''}`}>
+                {t('dashboard')}
+              </Link>
+            )}
             <Link href="/doctors" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/doctors' ? 'text-primary font-medium' : ''}`}>
               {t('nav_doctors')}
             </Link>
@@ -106,9 +111,6 @@ export function Navigation() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard">{t('dashboard')}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <Link href="/profile">{t('profile')}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -148,6 +150,11 @@ export function Navigation() {
               <Link href="/" className="py-2 text-muted-foreground hover:text-primary">
                 {t('nav_home')}
               </Link>
+              {user && (
+                <Link href="/dashboard" className="py-2 text-muted-foreground hover:text-primary">
+                  {t('dashboard')}
+                </Link>
+              )}
               <Link href="/doctors" className="py-2 text-muted-foreground hover:text-primary">
                 {t('nav_doctors')}
               </Link>

@@ -5,6 +5,8 @@ import { HealthCards } from '@/components/dashboard/health-cards';
 import { VitalCharts } from '@/components/dashboard/vital-charts';
 import { AIChatbot } from '@/components/dashboard/ai-chatbot';
 import { EmergencySOS } from '@/components/dashboard/emergency-sos';
+import { WristbandStatus } from '@/components/dashboard/wristband-status';
+import { HealthNotifications } from '@/components/dashboard/health-notifications';
 import { useAuth } from '@/hooks/use-auth';
 import { useHealthData } from '@/hooks/use-health-data';
 
@@ -57,9 +59,19 @@ export function Dashboard() {
           )}
         </div>
 
+        {/* Wristband Status */}
+        <div className="mb-8">
+          <WristbandStatus />
+        </div>
+
         {/* Health Status Cards */}
         <div className="mb-8">
           <HealthCards />
+        </div>
+
+        {/* Health Notifications and Doctor Reports */}
+        <div className="mb-8">
+          <HealthNotifications />
         </div>
 
         {/* Charts and Additional Content */}

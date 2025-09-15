@@ -3,7 +3,7 @@ import { collection, addDoc, query, where, orderBy, limit, onSnapshot, getDocs }
 import { db } from '@/lib/firebase';
 import { useAuth } from './auth-context';
 import { VitalSigns, HealthAnalysis, InsertVitalSigns, InsertHealthAnalysis } from '@shared/schema';
-import { geminiAnalyzer } from '@/lib/gemini';
+// Health analysis will be handled server-side
 
 interface HealthContextType {
   currentVitals: VitalSigns | null;
@@ -73,33 +73,69 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     if (!userProfile) return;
 
     try {
-      const result = await geminiAnalyzer.analyzeVitalSigns(
-        {
-          heartRate: vitals.heartRate,
-          bloodPressureSystolic: vitals.bloodPressureSystolic,
-          bloodPressureDiastolic: vitals.bloodPressureDiastolic,
-          oxygenSaturation: vitals.oxygenSaturation,
-          bodyTemperature: vitals.bodyTemperature,
-          timestamp: vitals.timestamp
+      // Call server-side analysis API
+      const response = await fetch('/api/health/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        userProfile.age,
-        userProfile.gender
-      );
+        credentials: 'include',
+        body: JSON.stringify({
+          vitals: {
+            heartRate: vitals.heartRate,
+            pulseRate: vitals.heartRate, // Use heartRate as pulse rate for now
+            bloodPressureSystolic: vitals.bloodPressureSystolic,
+            bloodPressureDiastolic: vitals.bloodPressureDiastolic,
+            oxygenSaturation: vitals.oxygenSaturation,
+            bodyTemperature: vitals.bodyTemperature,
+            ecgRhythm: vitals.ecgData ? 'normal' : undefined,
+            steps: vitals.steps || 0,
+            sleepHours: vitals.sleepHours || 0,
+            radiationExposure: 0, // Default value for now
+            fallDetected: false, // Default value for now
+            stressLevel: 'normal', // Default value for now
+            timestamp: vitals.timestamp
+          },
+          userProfile: {
+            age: userProfile.age,
+            gender: userProfile.gender,
+            medicalHistory: userProfile.medicalHistory
+          }
+        })
+      });
 
-      const analysisData: Omit<InsertHealthAnalysis, 'id'> = {
-        userId: user!.uid,
-        vitalSignsId: vitals.id,
-        analysis: result.analysis,
-        riskLevel: result.riskLevel,
-        recommendations: result.recommendations,
-        anomalies: result.anomalies,
-        aiConfidence: result.confidence,
-        timestamp: new Date()
-      };
+      if (response.ok) {
+        const result = await response.json();
+        const analysisData: Omit<InsertHealthAnalysis, 'id'> = {
+          userId: user!.uid,
+          vitalSignsId: vitals.id,
+          analysis: result.analysis,
+          riskLevel: result.riskLevel,
+          recommendations: result.recommendations,
+          anomalies: result.anomalies,
+          aiConfidence: result.confidence,
+          timestamp: new Date()
+        };
 
-      // Save analysis to Firestore
-      const docRef = await addDoc(collection(db, 'analyses'), analysisData);
-      setAnalysis({ id: docRef.id, ...analysisData });
+        // Save analysis to Firestore
+        const docRef = await addDoc(collection(db, 'analyses'), analysisData);
+        setAnalysis({ id: docRef.id, ...analysisData });
+      } else {
+        // Fallback analysis if server fails
+        const fallbackAnalysis: Omit<InsertHealthAnalysis, 'id'> = {
+          userId: user!.uid,
+          vitalSignsId: vitals.id,
+          analysis: 'Basic vital signs recorded. Server analysis temporarily unavailable.',
+          riskLevel: vitals.heartRate > 100 || vitals.bloodPressureSystolic > 140 ? 'medium' : 'low',
+          recommendations: ['Continue monitoring your health', 'Consult healthcare provider if symptoms persist'],
+          anomalies: [],
+          aiConfidence: 0.5,
+          timestamp: new Date()
+        };
+
+        const docRef = await addDoc(collection(db, 'analyses'), fallbackAnalysis);
+        setAnalysis({ id: docRef.id, ...fallbackAnalysis });
+      }
 
     } catch (error) {
       console.error('Error analyzing vitals:', error);
