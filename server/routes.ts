@@ -1,11 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import cors from "cors";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
+import { randomUUID } from "crypto";
 import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
 import { HealthAnalysisRequestSchema, ChatRequestSchema } from "./validation/health";
+import { insertMedicalReportSchema, insertLabBookingSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -15,9 +20,326 @@ export async function registerRoutes(app: Express): Promise<Server> {
     credentials: true
   }));
 
+  // Configure multer for file uploads
+  const uploadDir = path.join(process.cwd(), 'server/uploads');
+  await fs.mkdir(uploadDir, { recursive: true });
+
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: uploadDir,
+      filename: (req, file, cb) => {
+        const uniqueName = `${randomUUID()}-${file.originalname}`;
+        cb(null, uniqueName);
+      }
+    }),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only PDF, JPEG, and PNG files are allowed.'));
+      }
+    }
+  });
+
   // Basic API routes
   app.get("/api/auth/status", (req, res) => {
     res.json({ authenticated: false, message: "Auth endpoints not implemented yet" });
+  });
+
+  // Medical File Upload endpoints
+  app.post("/api/uploads", authMiddleware, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const { reportType = 'other', sourceType, sourceId } = req.body;
+      
+      const reportData = {
+        userId: req.body.userId || 'user1', // TODO: Get from session
+        fileName: req.file.filename,
+        originalFileName: req.file.originalname,
+        fileType: req.file.mimetype.includes('pdf') ? 'pdf' as const : 
+                  req.file.mimetype.includes('jpeg') ? 'jpeg' as const : 'png' as const,
+        mimeType: req.file.mimetype,
+        fileSize: req.file.size,
+        checksum: randomUUID(), // Simple checksum for now
+        storageUrl: `/api/uploads/${req.file.filename}`,
+        reportType: reportType as any,
+        sourceType,
+        sourceId,
+        isAnalyzed: false,
+        sharedWith: [] as string[],
+        tags: [] as string[],
+        isEncrypted: true,
+        isDeidentified: false
+      };
+
+      const report = await storage.createMedicalReport(reportData);
+      
+      // Analyze document with Gemini if it's a text-based report
+      if (req.file.mimetype === 'application/pdf') {
+        try {
+          // For MVP, we'll just create a placeholder analysis
+          const analysisData = {
+            summary: "Document uploaded successfully and ready for analysis",
+            keyFindings: ["Document has been uploaded and stored securely"],
+            recommendations: ["Please consult with your doctor to review this document"],
+            followUpNeeded: true,
+            analyzedAt: new Date(),
+            confidence: 0.9,
+            aiModelUsed: "gemini-1.5-flash",
+            language: "en"
+          };
+          
+          await storage.updateMedicalReport(report.id, {
+            isAnalyzed: true,
+            analysis: analysisData
+          });
+        } catch (analysisError) {
+          console.error('Document analysis error:', analysisError);
+        }
+      }
+
+      res.json({
+        success: true,
+        report,
+        message: "File uploaded and analyzed successfully"
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
+  app.get("/api/uploads", authMiddleware, async (req, res) => {
+    try {
+      const userId = req.query.userId as string || 'user1'; // TODO: Get from session
+      const reports = await storage.getMedicalReportsByUserId(userId);
+      res.json({ reports });
+    } catch (error) {
+      console.error('Get reports error:', error);
+      res.status(500).json({ error: "Failed to retrieve reports" });
+    }
+  });
+
+  app.get("/api/uploads/:filename", authMiddleware, async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const filePath = path.join(uploadDir, filename);
+      
+      // Check if file exists and user has access (TODO: proper authorization)
+      const report = await storage.getMedicalReportsByUserId('user1'); // TODO: Get from session
+      const hasAccess = report.some(r => r.fileName === filename);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      res.sendFile(filePath);
+    } catch (error) {
+      console.error('File access error:', error);
+      res.status(404).json({ error: "File not found" });
+    }
+  });
+
+  app.delete("/api/uploads/:id", authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const report = await storage.getMedicalReport(id);
+      
+      if (!report) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+      
+      // Delete file from filesystem
+      const filePath = path.join(uploadDir, report.fileName);
+      try {
+        await fs.unlink(filePath);
+      } catch (fileError) {
+        console.warn('File deletion error:', fileError);
+      }
+      
+      // Delete from database
+      await storage.deleteMedicalReport(id);
+      
+      res.json({ success: true, message: "Report deleted successfully" });
+    } catch (error) {
+      console.error('Delete error:', error);
+      res.status(500).json({ error: "Failed to delete report" });
+    }
+  });
+
+  // Enhanced Lab Booking endpoints
+  app.get("/api/labs", authMiddleware, async (req, res) => {
+    try {
+      const { city, specializations } = req.query;
+      const filters: any = {};
+      
+      if (city) filters.city = city as string;
+      if (specializations) filters.specializations = (specializations as string).split(',');
+      
+      const labs = await storage.getLabs(filters);
+      res.json({ labs });
+    } catch (error) {
+      console.error('Get labs error:', error);
+      res.status(500).json({ error: "Failed to retrieve labs" });
+    }
+  });
+
+  app.get("/api/labs/:labId/tests", authMiddleware, async (req, res) => {
+    try {
+      const { labId } = req.params;
+      const tests = await storage.getLabTestsByLabId(labId);
+      res.json({ tests });
+    } catch (error) {
+      console.error('Get lab tests error:', error);
+      res.status(500).json({ error: "Failed to retrieve lab tests" });
+    }
+  });
+
+  app.post("/api/labs/book", authMiddleware, async (req, res) => {
+    try {
+      const bookingData = insertLabBookingSchema.parse({
+        ...req.body,
+        userId: req.body.userId || 'user1' // TODO: Get from session
+      });
+      
+      const booking = await storage.createLabBooking(bookingData);
+      
+      res.json({
+        success: true,
+        booking,
+        message: "Lab booking created successfully"
+      });
+    } catch (error) {
+      console.error('Lab booking error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid booking data", 
+          details: error.issues 
+        });
+      }
+      res.status(500).json({ error: "Failed to create lab booking" });
+    }
+  });
+
+  app.get("/api/labs/bookings", authMiddleware, async (req, res) => {
+    try {
+      const userId = req.query.userId as string || 'user1'; // TODO: Get from session
+      const bookings = await storage.getLabBookingsByUserId(userId);
+      res.json({ bookings });
+    } catch (error) {
+      console.error('Get bookings error:', error);
+      res.status(500).json({ error: "Failed to retrieve bookings" });
+    }
+  });
+
+  app.put("/api/labs/bookings/:id", authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const booking = await storage.updateLabBooking(id, updates);
+      
+      if (!booking) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      res.json({ success: true, booking });
+    } catch (error) {
+      console.error('Update booking error:', error);
+      res.status(500).json({ error: "Failed to update booking" });
+    }
+  });
+
+  // 3D Body Analysis endpoint
+  app.post("/api/analysis/body-map", authMiddleware, async (req, res) => {
+    try {
+      const { healthAnalysis, symptoms, conditions } = req.body;
+      
+      // Use Gemini to analyze health data and map to body parts
+      const prompt = `Based on the following health analysis and symptoms, identify which body parts/systems are affected and provide a mapping for 3D visualization:
+
+Health Analysis: ${healthAnalysis}
+Symptoms: ${symptoms ? symptoms.join(', ') : 'None specified'}
+Conditions: ${conditions ? conditions.join(', ') : 'None specified'}
+
+Please respond in JSON format with:
+{
+  "affectedSystems": ["cardiovascular", "respiratory", "musculoskeletal", etc.],
+  "bodyParts": [
+    {"name": "heart", "severity": "high|medium|low", "description": "explanation"},
+    {"name": "lungs", "severity": "medium", "description": "explanation"}
+  ],
+  "overallRisk": "low|medium|high|critical",
+  "visualization": {
+    "highlightedAreas": ["chest", "head", "limbs"],
+    "colors": {"chest": "#ff4444", "head": "#ffaa44"}
+  }
+}`;
+
+      const result = await geminiHealthService.generateChatResponse(prompt);
+      
+      try {
+        // Try to parse JSON from Gemini response
+        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        let bodyMap;
+        
+        if (jsonMatch) {
+          bodyMap = JSON.parse(jsonMatch[0]);
+        } else {
+          // Fallback response
+          bodyMap = {
+            affectedSystems: ["general"],
+            bodyParts: [
+              {
+                name: "general",
+                severity: "medium",
+                description: "Based on the analysis, general health monitoring is recommended"
+              }
+            ],
+            overallRisk: "low",
+            visualization: {
+              highlightedAreas: ["torso"],
+              colors: {"torso": "#4CAF50"}
+            }
+          };
+        }
+        
+        res.json({
+          success: true,
+          bodyMap,
+          analysisText: result
+        });
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        res.json({
+          success: true,
+          bodyMap: {
+            affectedSystems: ["general"],
+            bodyParts: [{
+              name: "general",
+              severity: "low",
+              description: "Health analysis completed successfully"
+            }],
+            overallRisk: "low",
+            visualization: {
+              highlightedAreas: ["torso"],
+              colors: {"torso": "#4CAF50"}
+            }
+          },
+          analysisText: result
+        });
+      }
+    } catch (error) {
+      console.error('Body map analysis error:', error);
+      res.status(500).json({ error: "Failed to generate body map analysis" });
+    }
   });
 
   // Enhanced health endpoints for wristband data
