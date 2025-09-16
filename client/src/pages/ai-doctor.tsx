@@ -269,25 +269,40 @@ How are you feeling today? Is there anything specific about your health you'd li
               <CardContent className="space-y-4">
                 {/* 3D Avatar Container */}
                 <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-200 overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ThreeScene />
+                  <div className="sketchfab-embed-wrapper h-full"> 
+                    <iframe 
+                      title="Doctor - Sketchfab Weekly - 13 Mar'23" 
+                      frameBorder="0" 
+                      allowFullScreen 
+                      allow="autoplay; fullscreen; xr-spatial-tracking" 
+                      src="https://sketchfab.com/models/9c89a438a5e940e59a0f9a07c22d6ade/embed?ui_theme=dark"
+                      className="w-full h-full"
+                    /> 
+                    <p style={{ fontSize: '13px', fontWeight: 'normal', margin: '5px', color: '#4A4A4A' }}> 
+                      <a 
+                        href="https://sketchfab.com/3d-models/doctor-sketchfab-weekly-13-mar23-9c89a438a5e940e59a0f9a07c22d6ade?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
+                        target="_blank" 
+                        rel="nofollow noopener noreferrer" 
+                        style={{ fontWeight: 'bold', color: '#1CAAD9' }}
+                      > 
+                        Doctor - Sketchfab Weekly - 13 Mar'23 
+                      </a> by <a 
+                        href="https://sketchfab.com/BrushDip?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
+                        target="_blank" 
+                        rel="nofollow noopener noreferrer" 
+                        style={{ fontWeight: 'bold', color: '#1CAAD9' }}
+                      > 
+                        BrushDip 
+                      </a> on <a 
+                        href="https://sketchfab.com?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
+                        target="_blank" 
+                        rel="nofollow noopener noreferrer" 
+                        style={{ fontWeight: 'bold', color: '#1CAAD9' }}
+                      >
+                        Sketchfab
+                      </a>
+                    </p>
                   </div>
-                  {isLoading && (
-                    <div className="absolute inset-0 bg-blue-50/80 flex items-center justify-center">
-                      <div className="text-center">
-                        <Brain className="w-8 h-8 text-blue-500 mx-auto mb-2 animate-pulse" />
-                        <p className="text-sm text-blue-600">Analyzing...</p>
-                      </div>
-                    </div>
-                  )}
-                  {isListening && (
-                    <div className="absolute top-4 left-4">
-                      <Badge className="bg-red-100 text-red-800 animate-pulse">
-                        <Mic className="w-3 h-3 mr-1" />
-                        Listening...
-                      </Badge>
-                    </div>
-                  )}
                 </div>
 
                 {/* Doctor Status */}
@@ -299,42 +314,6 @@ How are you feeling today? Is there anything specific about your health you'd li
                   <p className="text-sm text-muted-foreground mt-2">
                     Specialized in preventive care and health analysis
                   </p>
-                </div>
-
-                {/* Language & Controls */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Language:</span>
-                    <select 
-                      value={selectedLanguage}
-                      onChange={(e) => setSelectedLanguage(e.target.value)}
-                      className="text-sm border rounded px-2 py-1"
-                    >
-                      <option value="en">English</option>
-                      <option value="hi">हिंदी</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleSpeaking}
-                      className="flex-1"
-                    >
-                      {isSpeaking ? <VolumeX className="w-4 h-4 mr-1" /> : <Volume2 className="w-4 h-4 mr-1" />}
-                      {isSpeaking ? 'Mute' : 'Voice'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={isListening ? stopListening : startListening}
-                      disabled={!speechRecognition.current}
-                      className="flex-1"
-                    >
-                      {isListening ? <MicOff className="w-4 h-4 mr-1" /> : <Mic className="w-4 h-4 mr-1" />}
-                      {isListening ? 'Stop' : 'Talk'}
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
