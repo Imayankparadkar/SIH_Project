@@ -99,28 +99,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Analyze document with Gemini for both PDFs and medical images
       if (req.file.mimetype === 'application/pdf' || req.file.mimetype.startsWith('image/')) {
         try {
-          // Analyze with Gemini based on file type
-          let analysisPrompt = '';
+          let analysisResult;
+          const filePath = req.file.path;
+          const language = req.body.language || 'en';
+          
           if (req.file.mimetype === 'application/pdf') {
-            analysisPrompt = `Analyze this medical PDF document and provide: 1) Summary, 2) Key findings, 3) Recommendations, 4) Any concerning values or abnormalities`;
+            // Extract text from PDF and analyze
+            const documentText = await geminiHealthService.extractTextFromFile(filePath);
+            analysisResult = await geminiHealthService.analyzeMedicalDocument(
+              documentText,
+              reportType as 'lab_report' | 'prescription' | 'medical_record',
+              language
+            );
+          } else if (req.file.mimetype.startsWith('image/')) {
+            // For images, we'll need to implement OCR in the future
+            // For now, provide a fallback response
+            analysisResult = {
+              summary: `Medical image uploaded successfully. For detailed analysis of images, please consult with your healthcare provider who can provide professional interpretation.`,
+              keyFindings: [`${reportType} image uploaded`, "Professional interpretation recommended"],
+              recommendations: ["Consult with your healthcare provider for image interpretation", "Share with your medical team during appointments"],
+              followUpNeeded: true
+            };
           } else {
-            analysisPrompt = `Analyze this medical image (${reportType}). Provide: 1) What you observe, 2) Key findings, 3) Potential abnormalities, 4) Recommendations for follow-up`;
+            throw new Error('Unsupported file type');
           }
           
-          const aiAnalysis = await geminiHealthService.generateChatResponse(analysisPrompt);
           const analysisData = {
-            summary: aiAnalysis.substring(0, 500) + (aiAnalysis.length > 500 ? '...' : ''),
-            keyFindings: aiAnalysis.includes('Key findings:') ? 
-              aiAnalysis.split('Key findings:')[1]?.split('\n').slice(0, 3).filter(s => s.trim()) || 
-              ["Analysis completed successfully"] : ["Analysis completed successfully"],
-            recommendations: aiAnalysis.includes('Recommendations:') ? 
-              aiAnalysis.split('Recommendations:')[1]?.split('\n').slice(0, 3).filter(s => s.trim()) || 
-              ["Please consult with your doctor"] : ["Please consult with your doctor"],
-            followUpNeeded: aiAnalysis.toLowerCase().includes('abnormal') || aiAnalysis.toLowerCase().includes('concern'),
+            summary: analysisResult.summary,
+            keyFindings: analysisResult.keyFindings,
+            recommendations: analysisResult.recommendations,
+            followUpNeeded: analysisResult.followUpNeeded,
             analyzedAt: new Date(),
-            confidence: 0.8,
+            confidence: 0.9,
             aiModelUsed: "gemini-1.5-flash",
-            language: "en"
+            language: language
           };
           
           await storage.updateMedicalReport(report.id, {

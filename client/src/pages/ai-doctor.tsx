@@ -73,7 +73,14 @@ How are you feeling today? Is there anything specific about your health you'd li
       speechRecognition.current = new SpeechRecognition();
       speechRecognition.current.continuous = false;
       speechRecognition.current.interimResults = false;
-      speechRecognition.current.lang = selectedLanguage === 'en' ? 'en-US' : 'hi-IN';
+      // Set recognition language based on selected language
+      const languageMap: { [key: string]: string } = {
+        'en': 'en-US',
+        'hi': 'hi-IN',
+        'es': 'es-ES', 
+        'fr': 'fr-FR'
+      };
+      speechRecognition.current.lang = languageMap[selectedLanguage] || 'en-US';
 
       speechRecognition.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
@@ -90,7 +97,14 @@ How are you feeling today? Is there anything specific about your health you'd li
   // Update speech recognition language when selectedLanguage changes
   useEffect(() => {
     if (speechRecognition.current) {
-      speechRecognition.current.lang = selectedLanguage === 'en' ? 'en-US' : 'hi-IN';
+      // Set recognition language based on selected language
+      const languageMap: { [key: string]: string } = {
+        'en': 'en-US',
+        'hi': 'hi-IN',
+        'es': 'es-ES', 
+        'fr': 'fr-FR'
+      };
+      speechRecognition.current.lang = languageMap[selectedLanguage] || 'en-US';
     }
   }, [selectedLanguage]);
 
@@ -145,12 +159,14 @@ How are you feeling today? Is there anything specific about your health you'd li
         credentials: 'include',
         body: JSON.stringify({
           message: currentMessage,
+          language: selectedLanguage,
           healthContext: currentVitals ? {
             heartRate: currentVitals.heartRate,
             bloodPressureSystolic: currentVitals.bloodPressureSystolic,
             bloodPressureDiastolic: currentVitals.bloodPressureDiastolic,
             oxygenSaturation: currentVitals.oxygenSaturation,
-            bodyTemperature: currentVitals.bodyTemperature
+            bodyTemperature: currentVitals.bodyTemperature,
+            timestamp: new Date()
           } : undefined,
           userProfile: {
             age: userProfile?.age || 30,

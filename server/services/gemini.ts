@@ -1,4 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Import PDF parsing library
+const pdfParse = require('pdf-parse');
 
 interface VitalSigns {
   heartRate: number;
@@ -212,16 +217,54 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
     }
   }
 
+  async extractTextFromFile(filePath: string): Promise<string> {
+    try {
+      if (!fs.existsSync(filePath)) {
+        throw new Error('File not found');
+      }
+
+      const ext = path.extname(filePath).toLowerCase();
+      
+      if (ext === '.pdf') {
+        const dataBuffer = fs.readFileSync(filePath);
+        const data = await pdfParse(dataBuffer);
+        return data.text;
+      } else if (ext === '.txt') {
+        return fs.readFileSync(filePath, 'utf8');
+      } else {
+        // For other file types (images, etc.), we'll need OCR
+        // For now, return a message indicating the file type
+        throw new Error(`Text extraction from ${ext} files not supported yet. Please upload PDF or text files.`);
+      }
+    } catch (error) {
+      console.error('Error extracting text from file:', error);
+      throw new Error(`Failed to extract text from file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   async analyzeMedicalDocument(
     documentText: string,
-    documentType: 'lab_report' | 'prescription' | 'medical_record'
+    documentType: 'lab_report' | 'prescription' | 'medical_record',
+    language?: string
   ): Promise<{
     summary: string;
     keyFindings: string[];
     recommendations: string[];
     followUpNeeded: boolean;
   }> {
-    const prompt = `Analyze the following ${documentType.replace('_', ' ')} and provide a patient-friendly summary:
+    const getLanguageInstruction = (lang: string) => {
+      const languageInstructions = {
+        'hi': 'Provide the analysis in Hindi (हिंदी). Use simple, clear Hindi language.',
+        'es': 'Provide the analysis in Spanish (Español). Use clear, accessible Spanish.',
+        'fr': 'Provide the analysis in French (Français). Use clear, accessible French.',
+        'en': 'Provide the analysis in English.'
+      };
+      return languageInstructions[lang as keyof typeof languageInstructions] || languageInstructions['en'];
+    };
+
+    const prompt = `Analyze the following ${documentType.replace('_', ' ')} and provide a patient-friendly summary.
+
+${getLanguageInstruction(language || 'en')}
 
 Document Content:
 ${documentText}
