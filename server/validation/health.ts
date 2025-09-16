@@ -24,6 +24,7 @@ export const HealthAnalysisRequestSchema = z.object({
 
 export const ChatRequestSchema = z.object({
   message: z.string().min(1),
+  language: z.string().optional(),
   healthContext: VitalSignsSchema.optional(),
   userProfile: UserProfileSchema.optional()
 });

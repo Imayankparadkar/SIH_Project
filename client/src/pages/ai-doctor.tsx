@@ -173,7 +173,7 @@ How are you feeling today? Is there anything specific about your health you'd li
         
         // Speak the response if enabled
         if (isSpeaking) {
-          speakText(data.response);
+          speakResponse(data.response);
         }
       } else {
         throw new Error('Failed to get response');
@@ -212,19 +212,8 @@ How are you feeling today? Is there anything specific about your health you'd li
   };
 
   const speakText = (text: string) => {
-    // Stop speech recognition to avoid conflicts
-    if (speechRecognition.current && isListening) {
-      speechRecognition.current.stop();
-      setIsListening(false);
-    }
-    
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = selectedLanguage === 'en' ? 'en-US' : 'hi-IN';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-      window.speechSynthesis.speak(utterance);
-    }
+    // Use the enhanced speakResponse function
+    speakResponse(text);
   };
 
   const toggleSpeaking = () => {
@@ -245,6 +234,126 @@ How are you feeling today? Is there anything specific about your health you'd li
 
   const handleQuickQuestion = (question: string) => {
     setCurrentMessage(question);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Determine document type based on file name/type
+    let documentType = 'medical_record';
+    const fileName = file.name.toLowerCase();
+    if (fileName.includes('prescription') || fileName.includes('rx')) {
+      documentType = 'prescription';
+    } else if (fileName.includes('lab') || fileName.includes('test') || fileName.includes('blood')) {
+      documentType = 'lab_report';
+    }
+
+    formData.append('reportType', documentType);
+    formData.append('sourceType', 'user_upload');
+    formData.append('sourceId', user?.uid || 'anonymous');
+    formData.append('description', `User uploaded ${documentType} for analysis`);
+
+    try {
+      const response = await fetch('/api/uploads', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Add file upload message to chat
+        const fileMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: `📄 Uploaded: ${file.name}`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, fileMessage]);
+
+        // Add analysis result to chat if available
+        if (data.report?.analysis) {
+          const analysisMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'doctor',
+            content: `📋 **Document Analysis Summary:**
+
+**Key Findings:**
+${data.report.analysis.keyFindings?.map((finding: string) => `• ${finding}`).join('\n') || 'Analysis completed successfully'}
+
+**Recommendations:**
+${data.report.analysis.recommendations?.map((rec: string) => `• ${rec}`).join('\n') || 'Please consult with your healthcare provider'}
+
+**Summary:** ${data.report.analysis.summary || 'Document uploaded and analyzed successfully'}
+
+${data.report.analysis.followUpNeeded ? '⚠️ **Important:** Follow-up with your healthcare provider is recommended.' : ''}`,
+            timestamp: new Date(),
+            analyzed: true
+          };
+          setMessages(prev => [...prev, analysisMessage]);
+          
+          // Speak the analysis if voice is enabled
+          if (isSpeaking) {
+            const speakText = `Document analysis complete. ${data.report.analysis.summary}. ${data.report.analysis.followUpNeeded ? 'Follow-up with your healthcare provider is recommended.' : ''}`;
+            speakResponse(speakText);
+          }
+        }
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('File upload error:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'doctor',
+        content: '❌ Sorry, I encountered an error while uploading and analyzing your document. Please try again or contact support if the issue persists.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const speakResponse = (text: string) => {
+    if ('speechSynthesis' in window && isSpeaking) {
+      speechSynthesis.cancel(); // Cancel any ongoing speech
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = getLanguageCode(selectedLanguage);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      utterance.onend = () => {
+        // Speech finished
+      };
+      
+      speechSynthesis.speak(utterance);
+    }
+  };
+
+  const getLanguageCode = (lang: string): string => {
+    const languageMap: { [key: string]: string } = {
+      'en': 'en-US',
+      'hi': 'hi-IN', 
+      'es': 'es-ES',
+      'fr': 'fr-FR'
+    };
+    return languageMap[lang] || 'en-US';
   };
 
   return (
@@ -330,6 +439,80 @@ How are you feeling today? Is there anything specific about your health you'd li
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Language & Controls */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Language:</span>
+                      <select 
+                        value={selectedLanguage}
+                        onChange={(e) => setSelectedLanguage(e.target.value)}
+                        className="text-sm border rounded px-2 py-1"
+                      >
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleSpeaking}
+                      className="text-xs"
+                    >
+                      {isSpeaking ? <VolumeX className="w-4 h-4 mr-1" /> : <Volume2 className="w-4 h-4 mr-1" />}
+                      {isSpeaking ? 'Mute' : 'Voice'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={!speechRecognition.current}
+                      className="text-xs"
+                    >
+                      {isListening ? <MicOff className="w-4 h-4 mr-1" /> : <Mic className="w-4 h-4 mr-1" />}
+                      {isListening ? 'Stop' : 'Talk'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* File Upload Section */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Upload Medical Documents:</p>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div className="text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">
+                        Upload medical reports, prescriptions, X-rays, or lab results
+                      </p>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="medical-file-upload"
+                        disabled={isLoading}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('medical-file-upload')?.click()}
+                        disabled={isLoading}
+                        className="text-xs"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Choose File
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Supported: PDF, Images (JPG, PNG), Word documents
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Quick Questions */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Quick Questions:</p>

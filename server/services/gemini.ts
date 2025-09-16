@@ -96,11 +96,22 @@ Focus on:
   async generateChatResponse(
     message: string, 
     healthContext?: VitalSigns,
-    userProfile?: { age: number; gender: string; medicalHistory?: string }
+    userProfile?: { age: number; gender: string; medicalHistory?: string },
+    language?: string
   ): Promise<string> {
     if (!this.genAI) {
       return this.getFallbackChatResponse(message);
     }
+    const getLanguageInstruction = (lang: string) => {
+      const languageInstructions = {
+        'hi': 'Respond in Hindi (हिंदी). Use simple, clear Hindi language.',
+        'es': 'Respond in Spanish (Español). Use clear, accessible Spanish.',
+        'fr': 'Respond in French (Français). Use clear, accessible French.',
+        'en': 'Respond in English.'
+      };
+      return languageInstructions[lang as keyof typeof languageInstructions] || languageInstructions['en'];
+    };
+
     const systemPrompt = `You are Dr. AI, a compassionate virtual health assistant developed by Sehatify. You provide helpful, accurate health information while being empathetic and clear. 
 
 Important guidelines:
@@ -109,7 +120,8 @@ Important guidelines:
 - Be supportive and understanding
 - Explain medical terms in simple language
 - If discussing symptoms, always emphasize the importance of professional medical evaluation
-- Respect patient privacy and maintain confidentiality`;
+- Respect patient privacy and maintain confidentiality
+- ${getLanguageInstruction(language || 'en')}`;
 
     const contextInfo = healthContext ? 
       `Current vital signs context:

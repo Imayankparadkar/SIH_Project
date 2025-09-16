@@ -644,11 +644,12 @@ Please respond in JSON format with:
         });
       }
 
-      const { message, healthContext, userProfile } = validation.data;
+      const { message, healthContext, userProfile, language } = validation.data;
       const response = await geminiHealthService.generateChatResponse(
         message,
         healthContext,
-        userProfile
+        userProfile,
+        language
       );
       res.json({ success: true, response });
     } catch (error) {
