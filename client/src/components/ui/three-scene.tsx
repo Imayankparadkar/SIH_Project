@@ -140,7 +140,7 @@ export function ThreeScene({
     <div className={`${className} relative`}>
       {/* Sketchfab 3D Doctor Embed */}
       <div className="w-full h-full bg-gradient-to-br from-blue-50/30 to-white rounded-lg border border-blue-100 overflow-hidden">
-        <div className="sketchfab-embed-wrapper h-full">
+        <div className="sketchfab-embed-wrapper h-full"> 
           <iframe 
             title="Doctor - Sketchfab Weekly - 13 Mar'23" 
             frameBorder="0" 
@@ -149,7 +149,31 @@ export function ThreeScene({
             src="https://sketchfab.com/models/9c89a438a5e940e59a0f9a07c22d6ade/embed?ui_theme=dark"
             className="w-full h-full"
             style={{ minHeight: '400px' }}
-          />
+          /> 
+          <p style={{ fontSize: '13px', fontWeight: 'normal', margin: '5px', color: '#4A4A4A' }}> 
+            <a 
+              href="https://sketchfab.com/3d-models/doctor-sketchfab-weekly-13-mar23-9c89a438a5e940e59a0f9a07c22d6ade?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
+              target="_blank" 
+              rel="nofollow noopener noreferrer" 
+              style={{ fontWeight: 'bold', color: '#1CAAD9' }}
+            > 
+              Doctor - Sketchfab Weekly - 13 Mar'23 
+            </a> by <a 
+              href="https://sketchfab.com/BrushDip?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
+              target="_blank" 
+              rel="nofollow noopener noreferrer" 
+              style={{ fontWeight: 'bold', color: '#1CAAD9' }}
+            > 
+              BrushDip 
+            </a> on <a 
+              href="https://sketchfab.com?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
+              target="_blank" 
+              rel="nofollow noopener noreferrer" 
+              style={{ fontWeight: 'bold', color: '#1CAAD9' }}
+            >
+              Sketchfab
+            </a>
+          </p>
         </div>
       </div>
 
