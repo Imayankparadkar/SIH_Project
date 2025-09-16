@@ -264,6 +264,7 @@ How are you feeling today? Is there anything specific about your health you'd li
     setIsLoading(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('language', selectedLanguage);
     
     // Determine document type based on file name/type
     let documentType = 'medical_record';

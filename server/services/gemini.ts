@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Import PDF parsing library
-const pdfParse = require('pdf-parse');
+import pdfParse from 'pdf-parse';
 
 interface VitalSigns {
   heartRate: number;
@@ -23,17 +23,17 @@ interface HealthAnalysisResult {
 }
 
 export class GeminiHealthService {
-  private genAI: GoogleGenAI;
+  private genAI: GoogleGenAI | null;
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.warn('GEMINI_API_KEY environment variable not found. AI analysis will use fallback responses.');
-      this.genAI = null as any; // Will use fallback methods
+      this.genAI = null;
       return;
     }
     
-    this.genAI = new GoogleGenAI({ apiKey });
+    this.genAI = new GoogleGenAI(apiKey);
   }
 
   async analyzeVitalSigns(
@@ -72,11 +72,10 @@ Focus on:
 - Clear explanations that a patient can understand`;
 
     try {
-      const result = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: prompt
-      });
-      const text = result.text || '';
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
 
       // Parse JSON response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -148,11 +147,10 @@ User question: ${message}
 Provide a helpful, empathetic response as Dr. AI. Keep your response conversational but informative.`;
 
     try {
-      const result = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: prompt
-      });
-      return result.text || "I apologize, but I'm having trouble processing your request right now.";
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      return response.text() || "I apologize, but I'm having trouble processing your request right now.";
     } catch (error) {
       console.error('Error generating chat response:', error);
       return "I apologize, but I'm having trouble processing your request right now. For immediate health concerns, please contact your healthcare provider or emergency services.";
@@ -193,11 +191,10 @@ Please provide:
 Respond in JSON format with keys: summary, recommendations (array), riskFactors (array), improvements (array).`;
 
     try {
-      const result = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: prompt
-      });
-      const text = result.text || '';
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -252,6 +249,9 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
     recommendations: string[];
     followUpNeeded: boolean;
   }> {
+    if (!this.genAI) {
+      return this.getFallbackDocumentAnalysis(documentType, language || 'en');
+    }
     const getLanguageInstruction = (lang: string) => {
       const languageInstructions = {
         'hi': 'Provide the analysis in Hindi (हिंदी). Use simple, clear Hindi language.',
@@ -280,11 +280,10 @@ Respond in JSON format with keys: summary, keyFindings (array), recommendations 
 Important: Always emphasize that this analysis is for informational purposes only and should not replace professional medical advice.`;
 
     try {
-      const result = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: prompt
-      });
-      const text = result.text || '';
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -303,6 +302,45 @@ Important: Always emphasize that this analysis is for informational purposes onl
       throw new Error('Failed to analyze medical document');
     }
   }
+  private getFallbackDocumentAnalysis(
+    documentType: string,
+    language: string
+  ): {
+    summary: string;
+    keyFindings: string[];
+    recommendations: string[];
+    followUpNeeded: boolean;
+  } {
+    const languageResponses = {
+      'en': {
+        summary: `Document uploaded successfully. AI analysis is currently unavailable, but your ${documentType.replace('_', ' ')} has been securely stored.`,
+        keyFindings: ["Document successfully uploaded and stored", "AI analysis unavailable - manual review recommended"],
+        recommendations: ["Consult with your healthcare provider for document interpretation", "Share this document during your next medical appointment", "Keep a copy for your personal medical records"],
+        followUpNeeded: true
+      },
+      'hi': {
+        summary: `दस्तावेज़ सफलतापूर्वक अपलोड किया गया। AI विश्लेषण वर्तमान में उपलब्ध नहीं है, लेकिन आपका ${documentType.replace('_', ' ')} सुरक्षित रूप से संग्रहीत किया गया है।`,
+        keyFindings: ["दस्तावेज़ सफलतापूर्वक अपलोड और संग्रहीत", "AI विश्लेषण अनुपलब्ध - मैन्युअल समीक्षा की सिफारिश"],
+        recommendations: ["दस्तावेज़ की व्याख्या के लिए अपने स्वास्थ्य सेवा प्रदाता से सलाह लें", "अपनी अगली चिकित्सा नियुक्ति के दौरान इस दस्तावेज़ को साझा करें"],
+        followUpNeeded: true
+      },
+      'es': {
+        summary: `Documento subido exitosamente. El análisis de IA no está disponible actualmente, pero su ${documentType.replace('_', ' ')} ha sido almacenado de forma segura.`,
+        keyFindings: ["Documento subido y almacenado exitosamente", "Análisis de IA no disponible - se recomienda revisión manual"],
+        recommendations: ["Consulte con su proveedor de atención médica para la interpretación del documento", "Comparta este documento durante su próxima cita médica"],
+        followUpNeeded: true
+      },
+      'fr': {
+        summary: `Document téléchargé avec succès. L'analyse IA n'est actuellement pas disponible, mais votre ${documentType.replace('_', ' ')} a été stocké en sécurité.`,
+        keyFindings: ["Document téléchargé et stocké avec succès", "Analyse IA indisponible - examen manuel recommandé"],
+        recommendations: ["Consultez votre prestataire de soins de santé pour l'interprétation du document", "Partagez ce document lors de votre prochaine consultation médicale"],
+        followUpNeeded: true
+      }
+    };
+
+    return languageResponses[language as keyof typeof languageResponses] || languageResponses['en'];
+  }
+
   private getFallbackChatResponse(message: string): string {
     const responses = [
       "I'm here to help with your health questions. As a development version, I recommend consulting with a healthcare professional for personalized medical advice.",
