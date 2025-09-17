@@ -33,7 +33,7 @@ export class GeminiHealthService {
       return;
     }
     
-    this.genAI = new GoogleGenAI(apiKey);
+    this.genAI = new GoogleGenAI({ apiKey });
   }
 
   async analyzeVitalSigns(
@@ -72,10 +72,11 @@ Focus on:
 - Clear explanations that a patient can understand`;
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: prompt
+      });
+      const text = response.text;
 
       // Parse JSON response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -147,10 +148,11 @@ User question: ${message}
 Provide a helpful, empathetic response as Dr. AI. Keep your response conversational but informative.`;
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      return response.text() || "I apologize, but I'm having trouble processing your request right now.";
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: prompt
+      });
+      return response.text || "I apologize, but I'm having trouble processing your request right now.";
     } catch (error) {
       console.error('Error generating chat response:', error);
       return "I apologize, but I'm having trouble processing your request right now. For immediate health concerns, please contact your healthcare provider or emergency services.";
@@ -280,10 +282,11 @@ Respond in JSON format with keys: summary, keyFindings (array), recommendations 
 Important: Always emphasize that this analysis is for informational purposes only and should not replace professional medical advice.`;
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: prompt
+      });
+      const text = response.text;
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

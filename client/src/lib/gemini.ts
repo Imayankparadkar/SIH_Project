@@ -20,14 +20,23 @@ export class GeminiHealthAnalyzer {
     // No more client-side API key - all calls go through secure server endpoints
   }
 
+  // Get auth headers from localStorage
+  private getAuthHeaders(): Record<string, string> {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
+    return {};
+  }
+
   async analyzeVitalSigns(vitals: VitalSigns, userAge: number, userGender: string, medicalHistory?: string): Promise<GeminiResponse> {
     try {
       const response = await fetch('/api/health/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
         },
-        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           vitals: {
             heartRate: vitals.heartRate,
@@ -69,8 +78,8 @@ export class GeminiHealthAnalyzer {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
         },
-        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           message,
           healthContext,
