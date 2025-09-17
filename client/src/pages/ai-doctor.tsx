@@ -266,13 +266,23 @@ How are you feeling today? Is there anything specific about your health you'd li
     formData.append('file', file);
     formData.append('language', selectedLanguage);
     
-    // Determine document type based on file name/type
-    let documentType = 'medical_record';
+    // Determine document type based on file name/type (using valid schema values)
+    let documentType = 'other';
     const fileName = file.name.toLowerCase();
     if (fileName.includes('prescription') || fileName.includes('rx')) {
       documentType = 'prescription';
     } else if (fileName.includes('lab') || fileName.includes('test') || fileName.includes('blood')) {
-      documentType = 'lab_report';
+      documentType = 'blood_test';
+    } else if (fileName.includes('xray') || fileName.includes('x-ray') || fileName.includes('x_ray')) {
+      documentType = 'xray';
+    } else if (fileName.includes('mri')) {
+      documentType = 'mri';
+    } else if (fileName.includes('ct') || fileName.includes('scan')) {
+      documentType = 'ct_scan';
+    } else if (fileName.includes('ecg') || fileName.includes('ekg')) {
+      documentType = 'ecg';
+    } else if (fileName.includes('discharge') || fileName.includes('summary')) {
+      documentType = 'discharge_summary';
     }
 
     formData.append('reportType', documentType);
