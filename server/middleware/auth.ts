@@ -15,6 +15,16 @@ export async function authMiddleware(
   next: NextFunction
 ) {
   try {
+    // In development mode, skip auth and use demo user
+    if (process.env.NODE_ENV === 'development') {
+      req.user = {
+        uid: 'demo-user-id',
+        email: 'demo@sehatify.com',
+        name: 'Demo User'
+      };
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

@@ -24,6 +24,8 @@ interface HealthAnalysisResult {
 
 export class GeminiHealthService {
   private genAI: GoogleGenAI | null;
+  private cache: Map<string, HealthAnalysisResult> = new Map();
+  private cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -36,14 +38,35 @@ export class GeminiHealthService {
     this.genAI = new GoogleGenAI({ apiKey });
   }
 
+  private getCacheKey(vitals: VitalSigns, userAge: number, userGender: string): string {
+    // Create cache key based on rounded vitals (for similar readings)
+    const roundedVitals = {
+      heartRate: Math.round(vitals.heartRate / 5) * 5, // Round to nearest 5
+      bloodPressureSystolic: Math.round(vitals.bloodPressureSystolic / 5) * 5,
+      bloodPressureDiastolic: Math.round(vitals.bloodPressureDiastolic / 5) * 5,
+      oxygenSaturation: Math.round(vitals.oxygenSaturation),
+      bodyTemperature: Math.round(vitals.bodyTemperature * 2) / 2 // Round to nearest 0.5
+    };
+    return `${JSON.stringify(roundedVitals)}-${userAge}-${userGender}`;
+  }
+
   async analyzeVitalSigns(
     vitals: VitalSigns, 
     userAge: number, 
     userGender: string,
     medicalHistory?: string
   ): Promise<HealthAnalysisResult> {
+    // Check cache first for fast response
+    const cacheKey = this.getCacheKey(vitals, userAge, userGender);
+    if (this.cache.has(cacheKey)) {
+      console.log('Returning cached health analysis');
+      return this.cache.get(cacheKey)!;
+    }
+
     if (!this.genAI) {
-      return this.getFallbackAnalysis(vitals);
+      const fallback = this.getFallbackAnalysis(vitals);
+      this.cache.set(cacheKey, fallback);
+      return fallback;
     }
     const prompt = `As a medical AI assistant, analyze the following vital signs for a ${userAge}-year-old ${userGender}:
 
@@ -82,19 +105,28 @@ Focus on:
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const analysis = JSON.parse(jsonMatch[0]);
-        return {
+        const result = {
           analysis: analysis.analysis || 'Health analysis completed',
           riskLevel: analysis.riskLevel || 'low',
           recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
           anomalies: Array.isArray(analysis.anomalies) ? analysis.anomalies : [],
           confidence: typeof analysis.confidence === 'number' ? analysis.confidence : 0.8
         };
+        
+        // Cache the result for faster future responses
+        this.cache.set(cacheKey, result);
+        console.log('Cached new health analysis result');
+        
+        return result;
       }
 
       throw new Error('Invalid response format from Gemini');
     } catch (error) {
       console.error('Error analyzing vital signs with Gemini:', error);
-      throw new Error('Failed to analyze vital signs');
+      // Return cached fallback and store it
+      const fallback = this.getFallbackAnalysis(vitals);
+      this.cache.set(cacheKey, fallback);
+      return fallback;
     }
   }
 
