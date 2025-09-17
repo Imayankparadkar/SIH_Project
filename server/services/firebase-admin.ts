@@ -11,22 +11,23 @@ let adminStorage: Storage;
 // Initialize Firebase Admin with service account credentials
 try {
   if (!getApps().length) {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    // Parse the service account JSON from environment variable
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
     
-    if (!projectId || !privateKey || !clientEmail) {
-      console.warn('Firebase credentials not found. Falling back to development mode.');
+    if (!serviceAccount) {
+      console.warn('Firebase service account not found. Falling back to development mode.');
       throw new Error('Firebase credentials not found');
     }
 
+    const credentials = JSON.parse(serviceAccount);
+
     adminApp = initializeApp({
       credential: cert({
-        projectId: projectId,
-        privateKey: privateKey.replace(/\\n/g, '\n'),
-        clientEmail: clientEmail,
+        projectId: credentials.project_id,
+        privateKey: credentials.private_key,
+        clientEmail: credentials.client_email,
       }),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
     });
     
     adminAuth = getAuth(adminApp);
