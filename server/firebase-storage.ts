@@ -131,8 +131,9 @@ export class FirebaseStorage implements IStorage {
   async getLabs(filters?: { city?: string; specializations?: string[] }): Promise<Lab[]> {
     let query = adminDb.collection('labs') as any;
     
-    if (filters?.city) {
-      query = query.where('city', '>=', filters.city.toLowerCase()).where('city', '<=', filters.city.toLowerCase() + '\uf8ff');
+    if (filters?.city && typeof filters.city === 'string') {
+      const cityLower = filters.city.toLowerCase();
+      query = query.where('city', '>=', cityLower).where('city', '<=', cityLower + '\uf8ff');
     }
     
     const snapshot = await query.get();
@@ -210,9 +211,10 @@ export class FirebaseStorage implements IStorage {
   async getDoctors(filters?: { specialization?: string; city?: string }): Promise<Doctor[]> {
     let query = adminDb.collection('doctors') as any;
     
-    if (filters?.specialization) {
-      query = query.where('specialization', '>=', filters.specialization.toLowerCase())
-                  .where('specialization', '<=', filters.specialization.toLowerCase() + '\uf8ff');
+    if (filters?.specialization && typeof filters.specialization === 'string') {
+      const specializationLower = filters.specialization.toLowerCase();
+      query = query.where('specialization', '>=', specializationLower)
+                  .where('specialization', '<=', specializationLower + '\uf8ff');
     }
     
     const snapshot = await query.get();
@@ -270,9 +272,10 @@ export class FirebaseStorage implements IStorage {
   async getMedicines(filters?: { name?: string; prescriptionRequired?: boolean }): Promise<Medicine[]> {
     let query = adminDb.collection('medicines') as any;
     
-    if (filters?.name) {
-      query = query.where('name', '>=', filters.name.toLowerCase())
-                  .where('name', '<=', filters.name.toLowerCase() + '\uf8ff');
+    if (filters?.name && typeof filters.name === 'string') {
+      const nameLower = filters.name.toLowerCase();
+      query = query.where('name', '>=', nameLower)
+                  .where('name', '<=', nameLower + '\uf8ff');
     }
     
     if (filters?.prescriptionRequired !== undefined) {
@@ -349,9 +352,10 @@ export class FirebaseStorage implements IStorage {
   async getHospitals(filters?: { city?: string; specialties?: string[] }): Promise<Hospital[]> {
     let query = adminDb.collection('hospitals') as any;
     
-    if (filters?.city) {
-      query = query.where('city', '>=', filters.city.toLowerCase())
-                  .where('city', '<=', filters.city.toLowerCase() + '\uf8ff');
+    if (filters?.city && typeof filters.city === 'string') {
+      const cityLower = filters.city.toLowerCase();
+      query = query.where('city', '>=', cityLower)
+                  .where('city', '<=', cityLower + '\uf8ff');
     }
     
     const snapshot = await query.get();
@@ -381,9 +385,10 @@ export class FirebaseStorage implements IStorage {
   async getPharmacies(filters?: { city?: string; deliveryAvailable?: boolean }): Promise<Pharmacy[]> {
     let query = adminDb.collection('pharmacies') as any;
     
-    if (filters?.city) {
-      query = query.where('city', '>=', filters.city.toLowerCase())
-                  .where('city', '<=', filters.city.toLowerCase() + '\uf8ff');
+    if (filters?.city && typeof filters.city === 'string') {
+      const cityLower = filters.city.toLowerCase();
+      query = query.where('city', '>=', cityLower)
+                  .where('city', '<=', cityLower + '\uf8ff');
     }
     
     if (filters?.deliveryAvailable !== undefined) {
@@ -412,9 +417,10 @@ export class FirebaseStorage implements IStorage {
       query = query.where('bloodGroup', '==', filters.bloodGroup);
     }
     
-    if (filters?.city) {
-      query = query.where('city', '>=', filters.city.toLowerCase())
-                  .where('city', '<=', filters.city.toLowerCase() + '\uf8ff');
+    if (filters?.city && typeof filters.city === 'string') {
+      const cityLower = filters.city.toLowerCase();
+      query = query.where('city', '>=', cityLower)
+                  .where('city', '<=', cityLower + '\uf8ff');
     }
     
     if (filters?.isAvailable !== undefined) {
@@ -490,9 +496,10 @@ export class FirebaseStorage implements IStorage {
       query = query.where('urgencyLevel', '==', filters.urgencyLevel);
     }
     
-    if (filters?.city) {
-      query = query.where('city', '>=', filters.city.toLowerCase())
-                  .where('city', '<=', filters.city.toLowerCase() + '\uf8ff');
+    if (filters?.city && typeof filters.city === 'string') {
+      const cityLower = filters.city.toLowerCase();
+      query = query.where('city', '>=', cityLower)
+                  .where('city', '<=', cityLower + '\uf8ff');
     }
     
     const snapshot = await query.get();
