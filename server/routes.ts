@@ -41,8 +41,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.use("/api/auth", authRoutes);
 
-  // Medical File Upload endpoints
-  app.post("/api/uploads", authMiddleware, upload.single('file'), async (req, res) => {
+  // Medical File Upload endpoints - Use optional auth in development mode
+  const uploadAuthMiddleware = process.env.NODE_ENV === 'development' ? optionalAuth : authMiddleware;
+  app.post("/api/uploads", uploadAuthMiddleware, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -59,10 +60,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { reportType, sourceType, sourceId, description } = bodyValidation.data;
       
-      // Get authenticated user ID from session
-      const userId = (req as any).user?.uid;
+      // Get authenticated user ID from session, or use demo user in development
+      let userId = (req as any).user?.uid;
       if (!userId) {
-        return res.status(401).json({ error: "User not authenticated" });
+        if (process.env.NODE_ENV === 'development') {
+          // Use demo user ID for development mode
+          userId = 'demo-user-id-for-testing';
+          console.log('Using demo user ID for development mode upload');
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
       }
       
       // Upload file to Firebase Storage (using buffer from memory storage)
@@ -211,11 +218,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/uploads", authMiddleware, async (req, res) => {
+  app.get("/api/uploads", uploadAuthMiddleware, async (req, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      let userId = (req as any).user?.uid;
       if (!userId) {
-        return res.status(401).json({ error: "User not authenticated" });
+        if (process.env.NODE_ENV === 'development') {
+          userId = 'demo-user-id-for-testing';
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
       }
       const reports = await storage.getMedicalReportsByUserId(userId);
       res.json({ reports });
@@ -225,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/uploads/:filename", authMiddleware, async (req, res) => {
+  app.get("/api/uploads/:filename", uploadAuthMiddleware, async (req, res) => {
     try {
       // Validate filename parameter
       const paramValidation = FileAccessParamsSchema.safeParse(req.params);
@@ -239,9 +250,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { filename } = paramValidation.data;
       
       // Get authenticated user ID
-      const userId = (req as any).user?.uid;
+      let userId = (req as any).user?.uid;
       if (!userId) {
-        return res.status(401).json({ error: "User not authenticated" });
+        if (process.env.NODE_ENV === 'development') {
+          userId = 'demo-user-id-for-testing';
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
       }
       
       // Verify user owns this file
@@ -263,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/uploads/:id", authMiddleware, async (req, res) => {
+  app.delete("/api/uploads/:id", uploadAuthMiddleware, async (req, res) => {
     try {
       // Validate report ID parameter
       const paramValidation = ReportIdParamsSchema.safeParse(req.params);
@@ -275,9 +290,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { id } = paramValidation.data;
-      const userId = (req as any).user?.uid;
+      let userId = (req as any).user?.uid;
       if (!userId) {
-        return res.status(401).json({ error: "User not authenticated" });
+        if (process.env.NODE_ENV === 'development') {
+          userId = 'demo-user-id-for-testing';
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
       }
 
       const report = await storage.getMedicalReport(id);
