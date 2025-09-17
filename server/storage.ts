@@ -1067,7 +1067,11 @@ import { adminStorage } from './services/firebase-admin';
 let storageInstance: IStorage;
 
 try {
-  if (adminStorage) {
+  // In development mode, always use in-memory storage
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Development mode: using in-memory storage');
+    storageInstance = new MemStorage();
+  } else if (adminStorage) {
     storageInstance = new FirebaseStorage();
     console.log('Using Firebase Storage');
   } else {

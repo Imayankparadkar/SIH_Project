@@ -48,33 +48,31 @@ router.post('/verify', async (req, res) => {
 
 // Get current user profile
 router.get('/me', async (req, res) => {
+  // In development mode, always return demo user and bypass Firebase
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Development mode: returning demo user');
+    return res.json({
+      success: true,
+      user: {
+        id: 'demo-user-id',
+        uid: 'demo-user-id',
+        email: 'demo@sehatify.com',
+        name: 'Demo User',
+        age: 30,
+        gender: 'other',
+        phone: '+1234567890',
+        language: 'en',
+        country: 'IN',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        profile: null
+      }
+    });
+  }
+
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
-    // In development mode, provide demo user if no token or Firebase fails
-    if (process.env.NODE_ENV === 'development') {
-      if (!token) {
-        // Return demo user for development
-        return res.json({
-          success: true,
-          user: {
-            id: 'demo-user-id',
-            uid: 'demo-user-id',
-            email: 'demo@sehatify.com',
-            name: 'Demo User',
-            age: 30,
-            gender: 'other',
-            phone: '+1234567890',
-            language: 'en',
-            country: 'IN',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            profile: null
-          }
-        });
-      }
-    }
-
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -82,44 +80,19 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    try {
-      const decodedToken = await verifyIdToken(token);
-      const userProfile = await getUserProfile(decodedToken.uid);
+    const decodedToken = await verifyIdToken(token);
+    const userProfile = await getUserProfile(decodedToken.uid);
 
-      res.json({
-        success: true,
-        user: {
-          id: decodedToken.uid,
-          uid: decodedToken.uid,
-          email: decodedToken.email,
-          name: decodedToken.name || (userProfile as any)?.name,
-          profile: userProfile
-        }
-      });
-    } catch (firebaseError) {
-      // If Firebase fails in development, return demo user
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Firebase auth failed, using demo user for development');
-        return res.json({
-          success: true,
-          user: {
-            id: 'demo-user-id',
-            uid: 'demo-user-id',
-            email: 'demo@sehatify.com',
-            name: 'Demo User',
-            age: 30,
-            gender: 'other',
-            phone: '+1234567890',
-            language: 'en',
-            country: 'IN',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            profile: null
-          }
-        });
+    res.json({
+      success: true,
+      user: {
+        id: decodedToken.uid,
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        name: decodedToken.name || (userProfile as any)?.name,
+        profile: userProfile
       }
-      throw firebaseError;
-    }
+    });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(401).json({

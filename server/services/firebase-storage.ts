@@ -25,8 +25,26 @@ export class FirebaseStorageService {
    * Upload a file to Firebase Storage or local storage (fallback for development)
    */
   async uploadFile(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
-    // Try Firebase Storage first
-    if (adminStorage && process.env.NODE_ENV === 'production') {
+    // Use local storage in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Using local storage for file upload (development mode)');
+      try {
+        const uploadDir = await this.ensureLocalUploadDir();
+        const uniqueFileName = `${randomUUID()}-${fileName}`;
+        const filePath = path.join(uploadDir, uniqueFileName);
+        
+        await fs.writeFile(filePath, fileBuffer);
+        
+        // Return a local URL that can be served by Express
+        return `/uploads/${uniqueFileName}`;
+      } catch (error) {
+        console.error('Local storage upload error:', error);
+        throw new Error('Failed to upload file to local storage');
+      }
+    }
+
+    // Use Firebase Storage in production
+    if (adminStorage) {
       try {
         // Create a unique filename to avoid collisions
         const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;
@@ -48,25 +66,11 @@ export class FirebaseStorageService {
         return `https://storage.googleapis.com/${this.bucket.name}/${uniqueFileName}`;
       } catch (error) {
         console.error('Firebase Storage upload error:', error);
-        // Fall through to local storage
+        throw new Error('Failed to upload file to cloud storage');
       }
     }
 
-    // Fallback to local storage for development
-    console.log('Using local storage for file upload (development mode)');
-    try {
-      const uploadDir = await this.ensureLocalUploadDir();
-      const uniqueFileName = `${randomUUID()}-${fileName}`;
-      const filePath = path.join(uploadDir, uniqueFileName);
-      
-      await fs.writeFile(filePath, fileBuffer);
-      
-      // Return a local URL that can be served by Express
-      return `/uploads/${uniqueFileName}`;
-    } catch (error) {
-      console.error('Local storage upload error:', error);
-      throw new Error('Failed to upload file to storage');
-    }
+    throw new Error('No storage service available');
   }
 
   /**
