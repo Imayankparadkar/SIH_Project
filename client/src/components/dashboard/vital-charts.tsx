@@ -13,15 +13,22 @@ export function VitalCharts() {
   // Generate sample data for demonstration
   const chartData = useMemo(() => {
     if (historicalData && historicalData.length > 0) {
-      return historicalData.map(vital => ({
-        date: format(vital.timestamp, 'MMM dd'),
-        time: format(vital.timestamp, 'HH:mm'),
-        heartRate: vital.heartRate,
-        systolic: vital.bloodPressureSystolic,
-        diastolic: vital.bloodPressureDiastolic,
-        oxygenSaturation: vital.oxygenSaturation,
-        temperature: vital.bodyTemperature
-      }));
+      return historicalData.map(vital => {
+        // Ensure timestamp is a valid Date object
+        const timestamp = vital.timestamp instanceof Date 
+          ? vital.timestamp 
+          : new Date(vital.timestamp);
+        
+        return {
+          date: format(timestamp, 'MMM dd'),
+          time: format(timestamp, 'HH:mm'),
+          heartRate: vital.heartRate,
+          systolic: vital.bloodPressureSystolic,
+          diastolic: vital.bloodPressureDiastolic,
+          oxygenSaturation: vital.oxygenSaturation,
+          temperature: vital.bodyTemperature
+        };
+      });
     }
 
     // Fallback sample data for last 7 days
