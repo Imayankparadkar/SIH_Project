@@ -84,16 +84,32 @@ export function HealthOverview() {
   const [mockVitals, setMockVitals] = useState<MockVitalSigns | null>(null);
   const [realTimeEnabled, setRealTimeEnabled] = useState(false);
 
-  // Set up mock data service and real-time updates
+  // Set up enhanced mock data service with automatic hourly updates
   useEffect(() => {
-    // Start mock data service
-    mockHealthService.startRealTimeUpdates(10000); // Update every 10 seconds
+    console.log('HealthOverview: Initializing enhanced vitals monitoring system');
+    
+    // Start automatic hourly data generation (3600000ms = 1 hour)
+    mockHealthService.startRealTimeUpdates(3600000);
     
     const unsubscribe = mockHealthService.subscribe((data: MockVitalSigns) => {
+      console.log('HealthOverview: Received new vitals data:', {
+        heartRate: data.heartRate,
+        bloodPressure: `${data.bloodPressureSystolic}/${data.bloodPressureDiastolic}`,
+        timestamp: data.timestamp.toLocaleTimeString()
+      });
+      
       setMockVitals(data);
       const score = mockHealthService.calculateHealthScore(data);
       setHealthScore(score);
+      
+      // Update achievements and goals based on new data
+      updateGoalsWithNewData(data);
     });
+
+    // Enable auto-generation
+    mockHealthService.setAutoGeneration(true);
+    
+    console.log('HealthOverview: Enhanced vitals monitoring system started with hourly updates');
 
     return () => {
       unsubscribe();
@@ -207,6 +223,40 @@ export function HealthOverview() {
       }
     ]);
   }, [currentVitals, mockVitals]);
+
+  // Update goals based on new vitals data
+  const updateGoalsWithNewData = (vitals: MockVitalSigns) => {
+    setGoals(prevGoals => 
+      prevGoals.map(goal => {
+        if (goal.type === 'heart_rate') {
+          const newCurrent = vitals.heartRate;
+          return {
+            ...goal,
+            current: newCurrent,
+            status: newCurrent <= goal.target ? 'achieved' : 
+                   Math.abs(newCurrent - goal.target) <= 10 ? 'on_track' : 'behind'
+          };
+        }
+        if (goal.type === 'steps' && vitals.steps) {
+          return {
+            ...goal,
+            current: vitals.steps,
+            status: vitals.steps >= goal.target ? 'achieved' :
+                   vitals.steps >= goal.target * 0.8 ? 'on_track' : 'behind'
+          };
+        }
+        if (goal.type === 'sleep' && vitals.sleepHours) {
+          return {
+            ...goal,
+            current: vitals.sleepHours,
+            status: vitals.sleepHours >= goal.target ? 'achieved' :
+                   vitals.sleepHours >= goal.target * 0.9 ? 'on_track' : 'behind'
+          };
+        }
+        return goal;
+      })
+    );
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

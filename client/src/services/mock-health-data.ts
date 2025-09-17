@@ -35,6 +35,10 @@ export class MockHealthDataService {
   private listeners: Set<(data: MockVitalSigns) => void> = new Set();
   private currentData: MockVitalSigns | null = null;
   private historicalData: MockVitalSigns[] = [];
+  private trendData: { [key: string]: number[] } = {};
+  private lastHealthScore: number = 85;
+  private anomalyDetection: boolean = true;
+  private isAutoGenerating: boolean = false;
 
   static getInstance(): MockHealthDataService {
     if (!MockHealthDataService.instance) {
@@ -132,30 +136,38 @@ export class MockHealthDataService {
     return 'poor';
   }
 
-  startRealTimeUpdates(intervalMs: number = 15000): void {
-    console.log('MockHealthDataService: Starting real-time updates with interval:', intervalMs);
+  startRealTimeUpdates(intervalMs: number = 3600000): void { // Default to 1 hour (3600000ms)
+    console.log('MockHealthDataService: Starting automatic hourly vitals generation with interval:', intervalMs, 'ms');
     this.stopRealTimeUpdates();
+    this.isAutoGenerating = true;
     
-    // Generate initial data
+    // Generate initial data and populate historical data if empty
+    if (this.historicalData.length === 0) {
+      console.log('MockHealthDataService: Generating initial historical data for past 24 hours');
+      this.generateInitialHistoricalData();
+    }
+    
     this.currentData = this.generateRealisticVitals();
-    this.historicalData.unshift(this.currentData);
-    console.log('MockHealthDataService: Generated initial data:', this.currentData);
+    this.addToHistoricalData(this.currentData);
+    console.log('MockHealthDataService: Generated initial current data:', this.currentData);
     this.notifyListeners(this.currentData);
     
-    // Set up interval for updates
+    // Set up interval for hourly updates
     this.intervalId = setInterval(() => {
       this.currentData = this.generateRealisticVitals();
-      this.historicalData.unshift(this.currentData);
+      this.addToHistoricalData(this.currentData);
       
-      // Keep only last 50 readings
-      if (this.historicalData.length > 50) {
-        this.historicalData = this.historicalData.slice(0, 50);
-      }
+      // Analyze trends and detect anomalies
+      this.updateTrends();
+      this.detectAnomalies();
       
-      console.log('MockHealthDataService: Generated new data:', {
+      console.log('MockHealthDataService: Generated new hourly data:', {
         heartRate: this.currentData.heartRate,
         bloodPressure: `${this.currentData.bloodPressureSystolic}/${this.currentData.bloodPressureDiastolic}`,
-        timestamp: this.currentData.timestamp
+        oxygenSaturation: this.currentData.oxygenSaturation,
+        temperature: this.currentData.bodyTemperature,
+        timestamp: this.currentData.timestamp.toLocaleTimeString(),
+        healthScore: this.calculateHealthScore(this.currentData)
       });
       this.notifyListeners(this.currentData);
     }, intervalMs);
@@ -204,7 +216,7 @@ export class MockHealthDataService {
     return this.historicalData.slice(0, limit);
   }
 
-  // Generate sample historical data for charts
+  // Generate comprehensive historical data for charts
   generateHistoricalData(days: number = 7): MockVitalSigns[] {
     const data: MockVitalSigns[] = [];
     const now = new Date();
@@ -212,18 +224,109 @@ export class MockHealthDataService {
     for (let i = days * 24; i >= 0; i--) {
       const timestamp = new Date(now.getTime() - (i * 60 * 60 * 1000)); // Go back hour by hour
       
-      // Skip some hours to make it more realistic
-      if (Math.random() < 0.3) continue;
+      // More consistent data - only skip 10% of hours for realistic gaps
+      if (Math.random() < 0.1) continue;
       
       const vitals = this.generateRealisticVitals();
       vitals.timestamp = timestamp;
       vitals.syncedAt = timestamp;
       vitals.id = `historical-${timestamp.getTime()}-${Math.random().toString(36).substr(2, 9)}`;
       
+      // Add some realistic variations for historical data
+      if (i > 168) { // Older than a week
+        vitals.dataQuality.confidence *= 0.9; // Slightly lower confidence for older data
+      }
+      
       data.push(vitals);
     }
     
     return data.reverse(); // Oldest first
+  }
+
+  // Generate initial 24 hours of historical data
+  private generateInitialHistoricalData(): void {
+    const data = this.generateHistoricalData(1); // Last 24 hours
+    this.historicalData = data;
+    console.log(`MockHealthDataService: Generated ${data.length} historical data points for the last 24 hours`);
+  }
+
+  // Add data to historical collection with smart management
+  private addToHistoricalData(vitals: MockVitalSigns): void {
+    this.historicalData.unshift(vitals);
+    
+    // Keep data for the last 30 days (720 hours max)
+    if (this.historicalData.length > 720) {
+      this.historicalData = this.historicalData.slice(0, 720);
+    }
+  }
+
+  // Update trend analysis
+  private updateTrends(): void {
+    if (this.historicalData.length < 5) return;
+
+    const recent5 = this.historicalData.slice(0, 5);
+    
+    this.trendData = {
+      heartRate: recent5.map(d => d.heartRate),
+      systolic: recent5.map(d => d.bloodPressureSystolic),
+      diastolic: recent5.map(d => d.bloodPressureDiastolic),
+      oxygenSaturation: recent5.map(d => d.oxygenSaturation),
+      temperature: recent5.map(d => d.bodyTemperature)
+    };
+
+    console.log('MockHealthDataService: Updated trends:', {
+      heartRateTrend: this.calculateTrend(this.trendData.heartRate),
+      bloodPressureTrend: this.calculateTrend(this.trendData.systolic),
+      oxygenTrend: this.calculateTrend(this.trendData.oxygenSaturation)
+    });
+  }
+
+  // Calculate trend direction (positive = increasing, negative = decreasing)
+  private calculateTrend(values: number[]): 'increasing' | 'decreasing' | 'stable' {
+    if (values.length < 3) return 'stable';
+    
+    const first = values[values.length - 1];
+    const last = values[0];
+    const change = (last - first) / first;
+    
+    if (change > 0.05) return 'increasing';
+    if (change < -0.05) return 'decreasing';
+    return 'stable';
+  }
+
+  // Detect health anomalies
+  private detectAnomalies(): void {
+    if (!this.currentData || !this.anomalyDetection) return;
+
+    const anomalies: string[] = [];
+    
+    // Heart rate anomalies
+    if (this.currentData.heartRate > 100) {
+      anomalies.push('Elevated heart rate detected');
+    } else if (this.currentData.heartRate < 50) {
+      anomalies.push('Low heart rate detected');
+    }
+    
+    // Blood pressure anomalies
+    if (this.currentData.bloodPressureSystolic > 140 || this.currentData.bloodPressureDiastolic > 90) {
+      anomalies.push('High blood pressure detected');
+    }
+    
+    // Oxygen saturation anomalies
+    if (this.currentData.oxygenSaturation < 95) {
+      anomalies.push('Low oxygen saturation detected');
+    }
+    
+    // Temperature anomalies
+    if (this.currentData.bodyTemperature > 99.5) {
+      anomalies.push('Elevated body temperature detected');
+    } else if (this.currentData.bodyTemperature < 97.0) {
+      anomalies.push('Low body temperature detected');
+    }
+
+    if (anomalies.length > 0) {
+      console.warn('MockHealthDataService: Health anomalies detected:', anomalies);
+    }
   }
 
   // Simulate device status
@@ -242,10 +345,17 @@ export class MockHealthDataService {
     return Math.random() < 0.001; // 0.1% chance
   }
 
-  // Health score calculation
+  // Enhanced health score calculation with trend analysis
   calculateHealthScore(vitals: MockVitalSigns): number {
     let score = 0;
-    const weights = { heartRate: 0.25, bloodPressure: 0.30, oxygen: 0.25, temperature: 0.20 };
+    const weights = { 
+      heartRate: 0.20, 
+      bloodPressure: 0.25, 
+      oxygen: 0.20, 
+      temperature: 0.15,
+      consistency: 0.10,
+      trend: 0.10
+    };
     
     // Heart rate scoring (60-100 BPM is optimal)
     if (vitals.heartRate >= 60 && vitals.heartRate <= 100) {
@@ -281,7 +391,152 @@ export class MockHealthDataService {
       score += 60 * weights.temperature;
     }
 
-    return Math.round(score);
+    // Data quality and consistency scoring
+    score += vitals.dataQuality.confidence * 100 * weights.consistency;
+
+    // Trend scoring (stable trends are good)
+    if (this.trendData.heartRate && this.trendData.heartRate.length >= 3) {
+      const heartTrend = this.calculateTrend(this.trendData.heartRate);
+      const bpTrend = this.calculateTrend(this.trendData.systolic);
+      
+      if (heartTrend === 'stable' && bpTrend === 'stable') {
+        score += 100 * weights.trend;
+      } else if (heartTrend !== 'stable' || bpTrend !== 'stable') {
+        score += 70 * weights.trend;
+      } else {
+        score += 50 * weights.trend;
+      }
+    } else {
+      score += 80 * weights.trend; // Default for insufficient data
+    }
+
+    const finalScore = Math.round(score);
+    this.lastHealthScore = finalScore;
+    return finalScore;
+  }
+
+  // Get health insights based on current data and trends
+  getHealthInsights(): {
+    score: number;
+    trends: { [key: string]: string };
+    recommendations: string[];
+    alerts: string[];
+  } {
+    if (!this.currentData) {
+      return {
+        score: 0,
+        trends: {},
+        recommendations: ['Connect your wristband to start monitoring'],
+        alerts: []
+      };
+    }
+
+    const insights = {
+      score: this.calculateHealthScore(this.currentData),
+      trends: {
+        heartRate: this.trendData.heartRate ? this.calculateTrend(this.trendData.heartRate) : 'stable',
+        bloodPressure: this.trendData.systolic ? this.calculateTrend(this.trendData.systolic) : 'stable',
+        oxygenSaturation: this.trendData.oxygenSaturation ? this.calculateTrend(this.trendData.oxygenSaturation) : 'stable'
+      },
+      recommendations: this.generateRecommendations(),
+      alerts: this.generateAlerts()
+    };
+
+    return insights;
+  }
+
+  // Generate personalized health recommendations
+  private generateRecommendations(): string[] {
+    if (!this.currentData) return [];
+
+    const recommendations: string[] = [];
+    
+    if (this.currentData.heartRate > 90) {
+      recommendations.push('Consider relaxation techniques to lower heart rate');
+    }
+    
+    if (this.currentData.bloodPressureSystolic > 130) {
+      recommendations.push('Monitor sodium intake and consider light exercise');
+    }
+    
+    if (this.currentData.steps && this.currentData.steps < 8000) {
+      recommendations.push('Try to increase daily steps for better cardiovascular health');
+    }
+    
+    if (this.currentData.sleepHours && this.currentData.sleepHours < 7) {
+      recommendations.push('Aim for 7-8 hours of sleep for optimal recovery');
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push('Great job! Your vitals are looking healthy');
+      recommendations.push('Continue your current healthy lifestyle');
+    }
+    
+    return recommendations;
+  }
+
+  // Generate health alerts
+  private generateAlerts(): string[] {
+    if (!this.currentData) return [];
+
+    const alerts: string[] = [];
+    
+    if (this.currentData.heartRate > 120) {
+      alerts.push('High heart rate detected - consider consulting a healthcare provider');
+    }
+    
+    if (this.currentData.bloodPressureSystolic > 140 || this.currentData.bloodPressureDiastolic > 90) {
+      alerts.push('High blood pressure detected - please monitor closely');
+    }
+    
+    if (this.currentData.oxygenSaturation < 92) {
+      alerts.push('Low oxygen saturation - seek immediate medical attention if persistent');
+    }
+    
+    return alerts;
+  }
+
+  // Get detailed vitals summary
+  getVitalsSummary(): {
+    current: MockVitalSigns | null;
+    last24Hours: MockVitalSigns[];
+    averages: { [key: string]: number };
+    dataPoints: number;
+  } {
+    const last24Hours = this.historicalData.slice(0, 24);
+    
+    const averages: { [key: string]: number } = last24Hours.length > 0 ? {
+      heartRate: Math.round(last24Hours.reduce((sum, v) => sum + v.heartRate, 0) / last24Hours.length),
+      systolic: Math.round(last24Hours.reduce((sum, v) => sum + v.bloodPressureSystolic, 0) / last24Hours.length),
+      diastolic: Math.round(last24Hours.reduce((sum, v) => sum + v.bloodPressureDiastolic, 0) / last24Hours.length),
+      oxygenSaturation: Math.round(last24Hours.reduce((sum, v) => sum + v.oxygenSaturation, 0) / last24Hours.length),
+      temperature: Math.round((last24Hours.reduce((sum, v) => sum + v.bodyTemperature, 0) / last24Hours.length) * 10) / 10
+    } : {};
+
+    return {
+      current: this.currentData,
+      last24Hours,
+      averages,
+      dataPoints: this.historicalData.length
+    };
+  }
+
+  // Control auto-generation
+  setAutoGeneration(enabled: boolean): void {
+    this.isAutoGenerating = enabled;
+    console.log(`MockHealthDataService: Auto-generation ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  // Manual data generation (for testing)
+  generateManualReading(): MockVitalSigns {
+    const vitals = this.generateRealisticVitals();
+    this.currentData = vitals;
+    this.addToHistoricalData(vitals);
+    this.updateTrends();
+    this.detectAnomalies();
+    this.notifyListeners(vitals);
+    console.log('MockHealthDataService: Manual reading generated:', vitals);
+    return vitals;
   }
 }
 
