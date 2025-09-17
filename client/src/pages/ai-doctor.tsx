@@ -287,7 +287,7 @@ How are you feeling today? Is there anything specific about your health you'd li
 
     formData.append('reportType', documentType);
     formData.append('sourceType', 'user_upload');
-    formData.append('sourceId', user?.uid || 'anonymous');
+    formData.append('sourceId', user?.id || 'anonymous');
     formData.append('description', `User uploaded ${documentType} for analysis`);
 
     try {
