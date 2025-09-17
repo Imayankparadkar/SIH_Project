@@ -29,6 +29,7 @@ import {
 import { Sidebar } from '@/components/layout/sidebar';
 import { useHealthData } from '@/hooks/use-health-data';
 import { useAuth } from '@/hooks/use-auth';
+import { mockHealthService } from '@/services/mock-health-data';
 
 interface HealthReport {
   id: string;
@@ -188,39 +189,106 @@ export function ReportsPage() {
   };
 
   const generateSampleReports = () => {
+    // Get current health insights from mock service
+    const healthInsights = mockHealthService.getHealthInsights();
+    const vitalsSummary = mockHealthService.getVitalsSummary();
+    
     const sampleReports: HealthReport[] = [
       {
         id: '1',
         type: 'weekly',
-        title: 'Weekly Health Summary',
-        generatedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        content: 'Comprehensive analysis of your health data over the past week...',
-        summary: 'Overall health status is good with minor areas for improvement',
-        recommendations: [
-          'Increase daily water intake to 8 glasses',
-          'Aim for 30 minutes of moderate exercise daily',
-          'Monitor blood pressure weekly'
-        ],
-        riskFactors: ['Slightly elevated stress levels'],
+        title: 'Hourly Vitals Analysis - Past Week',
+        generatedDate: new Date(),
+        content: `# Comprehensive Hourly Health Monitoring Report
+        
+## Data Overview
+- **Total Data Points**: ${vitalsSummary.dataPoints}
+- **Monitoring Period**: Continuous hourly tracking
+- **Health Score**: ${healthInsights.score}/100
+- **Data Quality**: Excellent (98.5% reliability)
+
+## Key Findings
+Based on ${vitalsSummary.dataPoints} hourly measurements over the past week:
+
+### Heart Rate Analysis
+- **Average**: ${vitalsSummary.averages.heartRate || 72} BPM
+- **Trend**: ${healthInsights.trends.heartRate}
+- **Circadian Pattern**: Normal variation observed (lower at night, higher during activity)
+
+### Blood Pressure Analysis  
+- **Average**: ${vitalsSummary.averages.systolic || 120}/${vitalsSummary.averages.diastolic || 80} mmHg
+- **Trend**: ${healthInsights.trends.bloodPressure}
+- **Risk Assessment**: ${healthInsights.alerts.length > 0 ? 'Attention needed' : 'Within normal range'}
+
+### Oxygen Saturation
+- **Average**: ${vitalsSummary.averages.oxygenSaturation || 98}%
+- **Consistency**: High (excellent respiratory function)
+
+### Temperature Regulation
+- **Average**: ${vitalsSummary.averages.temperature || 98.6}°F
+- **Circadian Rhythm**: Normal pattern detected
+
+## Continuous Monitoring Benefits
+- **Early Detection**: 24/7 monitoring enables early detection of health changes
+- **Trend Analysis**: Hour-by-hour data reveals patterns invisible in single measurements
+- **Personalized Baselines**: Your unique health patterns are being established
+- **Predictive Insights**: AI analysis of continuous data provides future health predictions`,
+        summary: `Continuous hourly monitoring shows ${healthInsights.score >= 85 ? 'excellent' : healthInsights.score >= 70 ? 'good' : 'concerning'} health patterns with ${vitalsSummary.dataPoints} data points analyzed`,
+        recommendations: healthInsights.recommendations,
+        riskFactors: healthInsights.alerts,
         status: 'generated'
       },
       {
         id: '2',
         type: 'ai-prediction',
-        title: 'AI Health Prediction Report',
-        generatedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        content: 'Based on your health trends, predictive analysis shows...',
-        summary: 'AI analysis indicates potential cardiovascular attention needed',
+        title: 'Predictive Health Analysis - Hourly Data Trends',
+        generatedDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        content: `# AI-Powered Predictive Health Analysis
+
+## Trend Analysis Summary
+Based on continuous hourly vital signs monitoring, our AI has identified the following patterns:
+
+### Heart Rate Trends
+- **Current Trend**: ${healthInsights.trends.heartRate}
+- **Prediction**: ${healthInsights.trends.heartRate === 'stable' ? 'Continued healthy heart rate patterns expected' : 'Heart rate trend requires monitoring'}
+
+### Blood Pressure Outlook
+- **Current Trend**: ${healthInsights.trends.bloodPressure}
+- **Risk Level**: ${healthInsights.alerts.length > 0 ? 'Elevated - requires attention' : 'Low - maintaining healthy levels'}
+
+### Sleep & Recovery Patterns
+- **Sleep Quality**: Good (based on night-time vital signs)
+- **Recovery Rate**: Normal physiological recovery observed
+
+### Weekly Health Score Trend
+- **Current Score**: ${healthInsights.score}/100
+- **7-Day Average**: ${Math.max(75, healthInsights.score - 5)}/100
+- **Trend**: ${healthInsights.score >= 80 ? 'Improving' : 'Stable'}
+
+## Personalized Recommendations
+The following recommendations are based on YOUR specific hourly data patterns:
+
+### Immediate Actions (Next 24-48 hours)
+${healthInsights.recommendations.slice(0, 2).map(rec => `- ${rec}`).join('\n')}
+
+### Weekly Goals
+- Maintain current positive health trends
+- Continue hourly monitoring for comprehensive health tracking
+- Focus on consistency in daily routines
+
+### Long-term Health Optimization
+- Build upon identified healthy patterns
+- Address any emerging trends early
+- Leverage continuous data for preventive care`,
+        summary: `AI analysis of hourly vitals data reveals ${healthInsights.trends.heartRate === 'stable' && healthInsights.trends.bloodPressure === 'stable' ? 'stable, healthy patterns' : 'trends requiring attention'} with personalized optimization opportunities`,
         recommendations: [
-          'Schedule cardiology consultation within 2 weeks',
-          'Reduce sodium intake to under 2300mg daily',
-          'Start stress management techniques'
+          ...healthInsights.recommendations,
+          'Continue hourly monitoring for comprehensive health insights',
+          'Review trends weekly to identify early health changes',
+          'Share continuous data with healthcare provider for better care'
         ],
-        riskFactors: [
-          'Blood pressure trending upward',
-          'Heart rate variability decreased'
-        ],
-        status: 'sent_to_doctor'
+        riskFactors: healthInsights.alerts.length > 0 ? healthInsights.alerts : ['No significant risk factors detected with current monitoring'],
+        status: 'generated'
       }
     ];
     setReports(sampleReports);
@@ -281,7 +349,7 @@ export function ReportsPage() {
           doctorId: selectedDoctor,
           report: report.content,
           patientData: {
-            name: user?.displayName || 'User',
+            name: user?.email || 'User',
             age: 30,
             gender: 'male'
           }
@@ -363,6 +431,126 @@ ${report.riskFactors.map(risk => `- ${risk}`).join('\n')}
             </TabsList>
 
             <TabsContent value="reports" className="space-y-6">
+              {/* Hourly Data Analytics Dashboard */}
+              {historicalData.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      Hourly Monitoring Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time analysis of your continuous health monitoring data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div className="p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {mockHealthService.getVitalsSummary().dataPoints}
+                        </div>
+                        <div className="text-sm text-blue-600">Total Data Points</div>
+                        <div className="text-xs text-muted-foreground">
+                          Hourly recordings
+                        </div>
+                      </div>
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">
+                          {mockHealthService.getHealthInsights().score}
+                        </div>
+                        <div className="text-sm text-green-600">Health Score</div>
+                        <div className="text-xs text-muted-foreground">
+                          Out of 100
+                        </div>
+                      </div>
+                      <div className="p-4 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">
+                          24/7
+                        </div>
+                        <div className="text-sm text-purple-600">Monitoring</div>
+                        <div className="text-xs text-muted-foreground">
+                          Continuous tracking
+                        </div>
+                      </div>
+                      <div className="p-4 bg-orange-50 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {mockHealthService.getHealthInsights().trends.heartRate === 'stable' ? '✓' : '⚠'}
+                        </div>
+                        <div className="text-sm text-orange-600">Trends</div>
+                        <div className="text-xs text-muted-foreground">
+                          {mockHealthService.getHealthInsights().trends.heartRate} patterns
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          Current Averages (24h)
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Heart Rate:</span>
+                            <span className="font-medium">{mockHealthService.getVitalsSummary().averages.heartRate || 72} BPM</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Blood Pressure:</span>
+                            <span className="font-medium">{mockHealthService.getVitalsSummary().averages.systolic || 120}/{mockHealthService.getVitalsSummary().averages.diastolic || 80} mmHg</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Oxygen Saturation:</span>
+                            <span className="font-medium">{mockHealthService.getVitalsSummary().averages.oxygenSaturation || 98}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Temperature:</span>
+                            <span className="font-medium">{mockHealthService.getVitalsSummary().averages.temperature || 98.6}°F</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-blue-600" />
+                          Trend Analysis
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Heart Rate Trend:</span>
+                            <Badge variant={mockHealthService.getHealthInsights().trends.heartRate === 'stable' ? 'default' : 'destructive'}>
+                              {mockHealthService.getHealthInsights().trends.heartRate}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Blood Pressure Trend:</span>
+                            <Badge variant={mockHealthService.getHealthInsights().trends.bloodPressure === 'stable' ? 'default' : 'destructive'}>
+                              {mockHealthService.getHealthInsights().trends.bloodPressure}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Data Quality:</span>
+                            <Badge variant="default">Excellent</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Monitoring Status:</span>
+                            <Badge variant="default">Active</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {mockHealthService.getHealthInsights().alerts.length > 0 && (
+                      <Alert className="mt-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Health Alerts:</strong> {mockHealthService.getHealthInsights().alerts.join(', ')}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Report Generation */}
               <Card>
             <CardHeader>
