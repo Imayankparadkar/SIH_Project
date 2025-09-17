@@ -8,21 +8,24 @@ let adminAuth: Auth;
 let adminDb: Firestore;
 let adminStorage: Storage;
 
-// Initialize Firebase Admin with service account or use development mode
+// Initialize Firebase Admin with service account credentials
 try {
   if (!getApps().length) {
-    // In development, we can use the Firebase project ID from environment
-    // In production, you should use a service account key
     const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     
-    if (!projectId) {
-      throw new Error('Firebase project ID not found');
+    if (!projectId || !privateKey || !clientEmail) {
+      throw new Error('Firebase credentials not found');
     }
 
     adminApp = initializeApp({
-      projectId: projectId,
-      // For development - in production you should use:
-      // credential: cert(serviceAccountKey)
+      credential: cert({
+        projectId: projectId,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
+        clientEmail: clientEmail,
+      }),
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
     });
   } else {
     adminApp = getApps()[0];
