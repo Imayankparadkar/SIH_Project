@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, InsertUserProfile } from '@shared/schema';
 import { useLocation } from 'wouter';
+import { auth } from '../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface AuthUser {
   id: string;
@@ -26,40 +28,63 @@ interface AuthContextType {
   register: (email: string, password: string, profileData: Omit<InsertUserProfile, 'email'>) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
+  getAuthHeaders: () => Record<string, string>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Auth API helper functions
+// Firebase Auth API helper functions
 const authApi = {
   async login(email: string, password: string) {
-    const response = await fetch('/api/auth/login', {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const idToken = await userCredential.user.getIdToken();
+    
+    // Verify token with server
+    const response = await fetch('/api/auth/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ idToken })
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      throw new Error(error.message || 'Login verification failed');
     }
 
-    return response.json();
+    const result = await response.json();
+    return {
+      success: true,
+      user: result.user,
+      token: idToken
+    };
   },
 
   async register(email: string, password: string, profileData: any) {
-    const response = await fetch('/api/auth/register', {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const idToken = await userCredential.user.getIdToken();
+    
+    // Create user profile on server
+    const response = await fetch('/api/auth/profile', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, ...profileData })
+      headers: { 
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(profileData)
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Registration failed');
+      throw new Error(error.message || 'Profile creation failed');
     }
 
-    return response.json();
+    const result = await response.json();
+    return {
+      success: true,
+      user: userCredential.user,
+      profile: result.profile,
+      token: idToken
+    };
   },
 
   async getMe(token: string) {
@@ -95,20 +120,9 @@ const authApi = {
     return response.json();
   },
 
-  async logout(token: string) {
-    const response = await fetch('/api/auth/logout', {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.warn('Logout request failed, but clearing local state anyway');
-    }
-
-    return response.ok;
+  async logout() {
+    await signOut(auth);
+    return true;
   }
 };
 
@@ -153,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (response.success) {
         setUser(response.user);
-        setUserProfile(response.user);
+        setUserProfile(response.user.profile);
         setToken(response.token);
         
         // Store token in localStorage
@@ -162,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Redirect to dashboard
         setLocation('/dashboard');
       } else {
-        throw new Error(response.message || 'Login failed');
+        throw new Error('Login failed');
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -175,8 +189,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authApi.register(email, password, profileData);
       
       if (response.success) {
-        setUser(response.user);
-        setUserProfile(response.user);
+        // Convert Firebase User to AuthUser format
+        const authUser: AuthUser = {
+          id: response.user.uid,
+          email: response.user.email || '',
+          name: response.user.displayName || response.profile?.name || '',
+          age: response.profile?.age || 0,
+          gender: response.profile?.gender || 'other',
+          phone: response.profile?.phone || '',
+          medicalHistory: response.profile?.medicalHistory,
+          abhaId: response.profile?.abhaId,
+          language: response.profile?.language || 'en',
+          country: response.profile?.country || 'IN',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        setUser(authUser);
+        setUserProfile(response.profile);
         setToken(response.token);
         
         // Store token in localStorage
@@ -185,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Redirect to dashboard
         setLocation('/dashboard');
       } else {
-        throw new Error(response.message || 'Registration failed');
+        throw new Error('Registration failed');
       }
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -195,9 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      if (token) {
-        await authApi.logout(token);
-      }
+      await authApi.logout();
       
       // Clear local state and localStorage
       setUser(null);
@@ -237,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Provide getAuthHeaders utility for API calls
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     if (!token) return {};
     return { 'Authorization': `Bearer ${token}` };
   };

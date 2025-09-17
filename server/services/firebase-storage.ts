@@ -3,12 +3,46 @@ import { randomUUID } from 'crypto';
 import * as fs from 'fs/promises';
 
 export class FirebaseStorageService {
-  private bucket = adminStorage.bucket();
+  private get bucket() {
+    if (!adminStorage) {
+      throw new Error('Firebase Storage not initialized. Please check your Firebase configuration.');
+    }
+    return adminStorage.bucket();
+  }
 
   /**
    * Upload a file to Firebase Storage
    */
-  async uploadFile(localFilePath: string, fileName: string, mimeType: string): Promise<string> {
+  async uploadFile(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+    try {
+      // Create a unique filename to avoid collisions
+      const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;
+      
+      // Create a file reference
+      const file = this.bucket.file(uniqueFileName);
+      
+      // Upload the file buffer directly
+      await file.save(fileBuffer, {
+        metadata: {
+          contentType: mimeType,
+        },
+      });
+
+      // Make the file publicly accessible
+      await file.makePublic();
+
+      // Return the public URL
+      return `https://storage.googleapis.com/${this.bucket.name}/${uniqueFileName}`;
+    } catch (error) {
+      console.error('Firebase Storage upload error:', error);
+      throw new Error('Failed to upload file to cloud storage');
+    }
+  }
+
+  /**
+   * Upload a file from local path to Firebase Storage (backward compatibility)
+   */
+  async uploadFileFromPath(localFilePath: string, fileName: string, mimeType: string): Promise<string> {
     try {
       // Create a unique filename to avoid collisions
       const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;

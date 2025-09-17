@@ -11,11 +11,12 @@ let adminStorage: Storage;
 // Initialize Firebase Admin with service account credentials
 try {
   if (!getApps().length) {
-    const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     
     if (!projectId || !privateKey || !clientEmail) {
+      console.warn('Firebase credentials not found. Falling back to development mode.');
       throw new Error('Firebase credentials not found');
     }
 
@@ -25,17 +26,20 @@ try {
         privateKey: privateKey.replace(/\\n/g, '\n'),
         clientEmail: clientEmail,
       }),
-      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
+    
+    adminAuth = getAuth(adminApp);
+    adminDb = getFirestore(adminApp);
+    adminStorage = getStorage(adminApp);
+
+    console.log('Firebase Admin initialized successfully');
   } else {
     adminApp = getApps()[0];
+    adminAuth = getAuth(adminApp);
+    adminDb = getFirestore(adminApp);
+    adminStorage = getStorage(adminApp);
   }
-
-  adminAuth = getAuth(adminApp);
-  adminDb = getFirestore(adminApp);
-  adminStorage = getStorage(adminApp);
-
-  console.log('Firebase Admin initialized successfully');
 } catch (error) {
   console.warn('Warning: Firebase Admin initialization failed. Using stub implementation.', error);
   // Fall back to stub implementation if initialization fails
@@ -67,7 +71,7 @@ export async function getUserProfile(userId: string) {
   }
   
   try {
-    const doc = await adminDb.collection('userProfiles').doc(userId).get();
+    const doc = await adminDb.collection('users').doc(userId).get();
     if (!doc.exists) {
       throw new Error('User profile not found');
     }
@@ -90,7 +94,7 @@ export async function saveUserProfile(userId: string, profileData: any) {
       createdAt: profileData.createdAt || new Date()
     };
     
-    await adminDb.collection('userProfiles').doc(userId).set(profileWithTimestamp, { merge: true });
+    await adminDb.collection('users').doc(userId).set(profileWithTimestamp, { merge: true });
     return { id: userId, ...profileWithTimestamp };
   } catch (error) {
     console.error('Error saving user profile:', error);

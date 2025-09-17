@@ -1061,5 +1061,22 @@ export class MemStorage implements IStorage {
 }
 
 import { FirebaseStorage } from './firebase-storage';
+import { adminStorage } from './services/firebase-admin';
 
-export const storage = new FirebaseStorage();
+// Use Firebase Storage if available, otherwise fall back to in-memory storage for development
+let storageInstance: IStorage;
+
+try {
+  if (adminStorage) {
+    storageInstance = new FirebaseStorage();
+    console.log('Using Firebase Storage');
+  } else {
+    console.warn('Firebase not available, using in-memory storage for development');
+    storageInstance = new MemStorage();
+  }
+} catch (error) {
+  console.warn('Firebase Storage initialization failed, falling back to in-memory storage:', error);
+  storageInstance = new MemStorage();
+}
+
+export const storage = storageInstance;
