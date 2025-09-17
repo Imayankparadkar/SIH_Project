@@ -39,7 +39,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     // Subscribe to real-time vital signs updates
     const vitalsQuery = query(
       collection(db, 'vitals'),
-      where('userId', '==', user.uid),
+      where('userId', '==', user.id),
       orderBy('timestamp', 'desc'),
       limit(50)
     );
@@ -107,7 +107,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const result = await response.json();
         const analysisData: Omit<InsertHealthAnalysis, 'id'> = {
-          userId: user!.uid,
+          userId: user!.id,
           vitalSignsId: vitals.id,
           analysis: result.analysis,
           riskLevel: result.riskLevel,
@@ -123,7 +123,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Fallback analysis if server fails
         const fallbackAnalysis: Omit<InsertHealthAnalysis, 'id'> = {
-          userId: user!.uid,
+          userId: user!.id,
           vitalSignsId: vitals.id,
           analysis: 'Basic vital signs recorded. Server analysis temporarily unavailable.',
           riskLevel: vitals.heartRate > 100 || vitals.bloodPressureSystolic > 140 ? 'medium' : 'low',
@@ -147,7 +147,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
     const vitals: Omit<InsertVitalSigns, 'id'> = {
       ...vitalsData,
-      userId: user.uid
+      userId: user.id
     };
 
     await addDoc(collection(db, 'vitals'), vitals);

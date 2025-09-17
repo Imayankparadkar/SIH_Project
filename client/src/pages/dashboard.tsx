@@ -7,6 +7,7 @@ import { AIChatbot } from '@/components/dashboard/ai-chatbot';
 import { EmergencySOS } from '@/components/dashboard/emergency-sos';
 import { WristbandStatus } from '@/components/dashboard/wristband-status';
 import { HealthNotifications } from '@/components/dashboard/health-notifications';
+import { HealthOverview } from '@/components/dashboard/health-overview';
 import { useAuth } from '@/hooks/use-auth';
 import { useHealthData } from '@/hooks/use-health-data';
 
@@ -57,6 +58,11 @@ export function Dashboard() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Health Overview - New comprehensive section */}
+        <div className="mb-8">
+          <HealthOverview />
         </div>
 
         {/* Wristband Status */}
