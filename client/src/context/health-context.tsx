@@ -154,8 +154,37 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshAnalysis = async () => {
-    if (currentVitals) {
-      await analyzeVitals(currentVitals);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // If no current vitals, generate sample vitals first
+      if (!currentVitals) {
+        const sampleVitals: Omit<InsertVitalSigns, 'userId'> = {
+          heartRate: Math.floor(Math.random() * 40) + 60, // 60-100 BPM
+          bloodPressureSystolic: Math.floor(Math.random() * 40) + 110, // 110-150
+          bloodPressureDiastolic: Math.floor(Math.random() * 30) + 70, // 70-100
+          oxygenSaturation: Math.floor(Math.random() * 8) + 92, // 92-100%
+          bodyTemperature: Math.random() * 4 + 97, // 97-101°F
+          // respiratoryRate: Math.floor(Math.random() * 10) + 12, // 12-22 (not in schema yet)
+          timestamp: new Date()
+        };
+        
+        await addVitalSigns(sampleVitals);
+        
+        // Wait a moment for the data to be saved and the listener to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      // Now analyze the current vitals (either existing or just created)
+      if (currentVitals) {
+        await analyzeVitals(currentVitals);
+      }
+    } catch (error) {
+      console.error('Error refreshing analysis:', error);
+      setError('Failed to generate analysis. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

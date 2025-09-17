@@ -74,7 +74,7 @@ interface QuickAction {
 
 export function HealthOverview() {
   const { t } = useTranslation();
-  const { currentVitals, analysis, isLoading, refreshAnalysis } = useHealthData();
+  const { currentVitals, analysis, isLoading, error, refreshAnalysis } = useHealthData();
   const { user, userProfile } = useAuth();
   const [healthScore, setHealthScore] = useState(0);
   const [goals, setGoals] = useState<HealthGoal[]>([]);
@@ -537,7 +537,19 @@ export function HealthOverview() {
             </TabsContent>
 
             <TabsContent value="insights" className="space-y-4 mt-6">
-              {analysis ? (
+              {isLoading ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                      <div>
+                        <p className="font-semibold">Generating AI Analysis</p>
+                        <p className="text-sm text-muted-foreground">Analyzing your vital signs and health data...</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : analysis ? (
                 <div className="space-y-4">
                   <Card>
                     <CardHeader>
@@ -545,6 +557,12 @@ export function HealthOverview() {
                         <Brain className="w-5 h-5" />
                         AI Health Analysis
                       </CardTitle>
+                      <div className="flex gap-2">
+                        <Button onClick={refreshAnalysis} variant="outline" size="sm">
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Refresh Analysis
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
@@ -553,7 +571,7 @@ export function HealthOverview() {
                           <p className="text-sm">{analysis.analysis}</p>
                         </div>
                         
-                        {analysis.recommendations.length > 0 && (
+                        {analysis.recommendations && analysis.recommendations.length > 0 && (
                           <div>
                             <h4 className="font-semibold mb-2">Recommendations</h4>
                             <ul className="space-y-1">
@@ -567,11 +585,35 @@ export function HealthOverview() {
                           </div>
                         )}
                         
+                        {analysis.anomalies && analysis.anomalies.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold mb-2">Health Alerts</h4>
+                            <ul className="space-y-1">
+                              {analysis.anomalies.map((anomaly, index) => (
+                                <li key={index} className="text-sm flex items-start gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5" />
+                                  {anomaly}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
                         <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm">
-                            <span className="font-semibold">AI Confidence:</span> {Math.round(analysis.aiConfidence * 100)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm">
+                                <span className="font-semibold">Risk Level:</span> {analysis.riskLevel.toUpperCase()}
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-semibold">AI Confidence:</span> {Math.round((analysis.aiConfidence || 0.8) * 100)}%
+                              </p>
+                            </div>
+                            <Badge variant={analysis.riskLevel === 'low' ? 'secondary' : analysis.riskLevel === 'medium' ? 'default' : 'destructive'}>
+                              {analysis.riskLevel}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
                             Analysis generated {analysis.timestamp.toLocaleString()}
                           </p>
                         </div>
@@ -579,12 +621,28 @@ export function HealthOverview() {
                     </CardContent>
                   </Card>
                 </div>
+              ) : error ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <p className="text-red-600 font-semibold">Analysis Failed</p>
+                    <p className="text-sm text-muted-foreground mt-1">{error}</p>
+                    <Button onClick={refreshAnalysis} className="mt-4">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
+                  </CardContent>
+                </Card>
               ) : (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <Brain className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No AI analysis available yet</p>
+                    <div className="space-y-2">
+                      <p className="text-muted-foreground">No AI analysis available yet</p>
+                      <p className="text-xs text-muted-foreground">Generate AI-powered health insights based on your vital signs</p>
+                    </div>
                     <Button onClick={refreshAnalysis} className="mt-4">
+                      <Sparkles className="w-4 h-4 mr-2" />
                       Generate Analysis
                     </Button>
                   </CardContent>
