@@ -375,15 +375,26 @@ export function HealthOverview() {
                 Your comprehensive health status and insights
               </CardDescription>
             </div>
-            <Button 
-              onClick={handleRefresh} 
-              disabled={isRefreshing}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => mockHealthService.generateManualReading()} 
+                variant="outline"
+                size="sm"
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Generate Reading
+              </Button>
+              <Button 
+                onClick={handleRefresh} 
+                disabled={isRefreshing}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -468,6 +479,181 @@ export function HealthOverview() {
                         </div>
                       </Button>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Enhanced Health Monitoring Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Battery className="w-5 h-5 text-green-500" />
+                    Live Monitoring Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <div>
+                        <p className="font-semibold text-sm text-green-800">Device Connected</p>
+                        <p className="text-xs text-green-600">HealthBand Pro</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div>
+                        <p className="font-semibold text-sm text-blue-800">Data Syncing</p>
+                        <p className="text-xs text-blue-600">Hourly Updates</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <Brain className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <p className="font-semibold text-sm text-purple-800">AI Analysis</p>
+                        <p className="text-xs text-purple-600">Active</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <Shield className="w-4 h-4 text-yellow-600" />
+                      <div>
+                        <p className="font-semibold text-sm text-yellow-800">Data Quality</p>
+                        <p className="text-xs text-yellow-600">
+                          {mockVitals ? (mockVitals.dataQuality.confidence * 100).toFixed(0) : '95'}% Confidence
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Last Update Info */}
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          Last Reading: {mockVitals ? mockVitals.timestamp.toLocaleTimeString() : 'Initializing...'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TimerReset className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm text-blue-600">
+                          Next Update: {new Date(Date.now() + 3600000).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Health Insights Panel */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-500" />
+                    Health Insights & Trends
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Current Health Metrics Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="text-center p-3 bg-red-50 rounded-lg border border-red-100">
+                        <Heart className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                        <p className="text-lg font-bold text-red-700">
+                          {mockVitals?.heartRate || currentVitals?.heartRate || '--'} BPM
+                        </p>
+                        <p className="text-xs text-red-600">Heart Rate</p>
+                        <div className="mt-1">
+                          {mockVitals && mockVitals.heartRate > 100 ? (
+                            <span className="text-xs text-red-700 bg-red-100 px-2 py-1 rounded">Elevated</span>
+                          ) : (
+                            <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">Normal</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <Activity className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                        <p className="text-lg font-bold text-blue-700">
+                          {mockVitals ? `${mockVitals.bloodPressureSystolic}/${mockVitals.bloodPressureDiastolic}` : 
+                           currentVitals ? `${currentVitals.bloodPressureSystolic}/${currentVitals.bloodPressureDiastolic}` : '--/--'}
+                        </p>
+                        <p className="text-xs text-blue-600">Blood Pressure</p>
+                        <div className="mt-1">
+                          {mockVitals && (mockVitals.bloodPressureSystolic > 140 || mockVitals.bloodPressureDiastolic > 90) ? (
+                            <span className="text-xs text-red-700 bg-red-100 px-2 py-1 rounded">High</span>
+                          ) : (
+                            <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">Normal</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
+                        <Droplets className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                        <p className="text-lg font-bold text-green-700">
+                          {mockVitals?.oxygenSaturation || currentVitals?.oxygenSaturation || '--'}%
+                        </p>
+                        <p className="text-xs text-green-600">SpO₂</p>
+                        <div className="mt-1">
+                          {mockVitals && mockVitals.oxygenSaturation < 95 ? (
+                            <span className="text-xs text-red-700 bg-red-100 px-2 py-1 rounded">Low</span>
+                          ) : (
+                            <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">Normal</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <Thermometer className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
+                        <p className="text-lg font-bold text-yellow-700">
+                          {mockVitals?.bodyTemperature || currentVitals?.bodyTemperature || '--'}°F
+                        </p>
+                        <p className="text-xs text-yellow-600">Temperature</p>
+                        <div className="mt-1">
+                          {mockVitals && (mockVitals.bodyTemperature > 99.5 || mockVitals.bodyTemperature < 97.0) ? (
+                            <span className="text-xs text-red-700 bg-red-100 px-2 py-1 rounded">Abnormal</span>
+                          ) : (
+                            <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">Normal</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Health Metrics */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <Footprints className="w-5 h-5 text-indigo-500" />
+                        <div>
+                          <p className="font-semibold text-sm text-indigo-800">Daily Steps</p>
+                          <p className="text-lg font-bold text-indigo-700">
+                            {mockVitals?.steps ? mockVitals.steps.toLocaleString() : '8,547'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                        <Moon className="w-5 h-5 text-purple-500" />
+                        <div>
+                          <p className="font-semibold text-sm text-purple-800">Sleep Quality</p>
+                          <p className="text-lg font-bold text-purple-700">
+                            {mockVitals?.sleepHours ? `${mockVitals.sleepHours}h` : '7.2h'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                        <Flame className="w-5 h-5 text-orange-500" />
+                        <div>
+                          <p className="font-semibold text-sm text-orange-800">Calories Burned</p>
+                          <p className="text-lg font-bold text-orange-700">
+                            {mockVitals?.steps ? Math.round(mockVitals.steps * 0.04) : '342'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
