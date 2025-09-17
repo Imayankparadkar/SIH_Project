@@ -1,6 +1,7 @@
 import { adminStorage } from './firebase-admin';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs/promises';
+import * as path from 'path';
 
 export class FirebaseStorageService {
   private get bucket() {
@@ -10,32 +11,61 @@ export class FirebaseStorageService {
     return adminStorage.bucket();
   }
 
+  private async ensureLocalUploadDir(): Promise<string> {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      await fs.mkdir(uploadDir, { recursive: true });
+    }
+    return uploadDir;
+  }
+
   /**
-   * Upload a file to Firebase Storage
+   * Upload a file to Firebase Storage or local storage (fallback for development)
    */
   async uploadFile(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+    // Try Firebase Storage first
+    if (adminStorage && process.env.NODE_ENV === 'production') {
+      try {
+        // Create a unique filename to avoid collisions
+        const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;
+        
+        // Create a file reference
+        const file = this.bucket.file(uniqueFileName);
+        
+        // Upload the file buffer directly
+        await file.save(fileBuffer, {
+          metadata: {
+            contentType: mimeType,
+          },
+        });
+
+        // Make the file publicly accessible
+        await file.makePublic();
+
+        // Return the public URL
+        return `https://storage.googleapis.com/${this.bucket.name}/${uniqueFileName}`;
+      } catch (error) {
+        console.error('Firebase Storage upload error:', error);
+        // Fall through to local storage
+      }
+    }
+
+    // Fallback to local storage for development
+    console.log('Using local storage for file upload (development mode)');
     try {
-      // Create a unique filename to avoid collisions
-      const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;
+      const uploadDir = await this.ensureLocalUploadDir();
+      const uniqueFileName = `${randomUUID()}-${fileName}`;
+      const filePath = path.join(uploadDir, uniqueFileName);
       
-      // Create a file reference
-      const file = this.bucket.file(uniqueFileName);
+      await fs.writeFile(filePath, fileBuffer);
       
-      // Upload the file buffer directly
-      await file.save(fileBuffer, {
-        metadata: {
-          contentType: mimeType,
-        },
-      });
-
-      // Make the file publicly accessible
-      await file.makePublic();
-
-      // Return the public URL
-      return `https://storage.googleapis.com/${this.bucket.name}/${uniqueFileName}`;
+      // Return a local URL that can be served by Express
+      return `/uploads/${uniqueFileName}`;
     } catch (error) {
-      console.error('Firebase Storage upload error:', error);
-      throw new Error('Failed to upload file to cloud storage');
+      console.error('Local storage upload error:', error);
+      throw new Error('Failed to upload file to storage');
     }
   }
 
