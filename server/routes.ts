@@ -10,6 +10,7 @@ import { authRoutes } from "./routes/auth";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
+import { firebaseStorageService } from "./services/firebase-storage";
 import { HealthAnalysisRequestSchema, ChatRequestSchema, MedicalFileUploadSchema, FileAccessParamsSchema, ReportIdParamsSchema } from "./validation/health";
 import { insertMedicalReportSchema, insertLabBookingSchema } from "@shared/schema";
 import { z } from "zod";
@@ -73,6 +74,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "User not authenticated" });
       }
       
+      // Upload file to Firebase Storage
+      const cloudStorageUrl = await firebaseStorageService.uploadFile(
+        req.file.path,
+        req.file.originalname,
+        req.file.mimetype
+      );
+
+      // Clean up the local temporary file
+      await firebaseStorageService.cleanupTempFile(req.file.path);
+
       const reportData = {
         userId,
         fileName: req.file.filename,
@@ -82,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mimeType: req.file.mimetype,
         fileSize: req.file.size,
         checksum: randomUUID(), // Simple checksum for now
-        storageUrl: `/api/uploads/${req.file.filename}`,
+        storageUrl: cloudStorageUrl,
         reportType: reportType as any,
         sourceType,
         sourceId,
@@ -181,7 +192,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { filename } = paramValidation.data;
-      const filePath = path.join(uploadDir, filename);
       
       // Get authenticated user ID
       const userId = (req as any).user?.uid;
@@ -191,13 +201,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify user owns this file
       const userReports = await storage.getMedicalReportsByUserId(userId);
-      const hasAccess = userReports.some(r => r.fileName === filename);
+      const report = userReports.find(r => r.fileName === filename);
       
-      if (!hasAccess) {
+      if (!report) {
         return res.status(403).json({ error: "Access denied" });
       }
       
-      res.sendFile(filePath);
+      // Generate signed URL for the file from Firebase Storage
+      const signedUrl = await firebaseStorageService.getSignedUrl(report.storageUrl, 60); // 60 minutes expiry
+      
+      // Redirect to the signed URL for secure access
+      res.redirect(signedUrl);
     } catch (error) {
       console.error('File access error:', error);
       res.status(404).json({ error: "File not found" });
@@ -228,12 +242,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Report not found or access denied" });
       }
       
-      // Delete file from filesystem
-      const filePath = path.join(uploadDir, report.fileName);
+      // Delete file from Firebase Storage
       try {
-        await fs.unlink(filePath);
+        await firebaseStorageService.deleteFile(report.storageUrl);
       } catch (fileError) {
-        console.warn('File deletion error:', fileError);
+        console.warn('Firebase Storage deletion error:', fileError);
       }
       
       // Delete from database
