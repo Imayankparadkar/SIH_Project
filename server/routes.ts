@@ -95,23 +95,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const report = await storage.createMedicalReport(reportData);
       
-      // Provide basic analysis result for uploaded medical files
+      // Provide AI-powered analysis for uploaded medical files
       try {
         const language = req.body.language || 'en';
         let analysisResult;
         
         if (req.file.mimetype === 'application/pdf') {
-          analysisResult = {
-            summary: `PDF medical document uploaded successfully. Document analysis will be available in a future update.`,
-            keyFindings: [`${reportType} PDF document uploaded`, "Document stored securely"],
-            recommendations: ["Share with your healthcare provider during appointments", "Keep a backup copy for your records"],
-            followUpNeeded: false
-          };
+          let tempFilePath: string | null = null;
+          try {
+            // Extract text from PDF and analyze with Gemini AI
+            tempFilePath = `/tmp/${randomUUID()}-${req.file.originalname}`;
+            await fs.writeFile(tempFilePath, req.file.buffer);
+            
+            const extractedText = await geminiHealthService.extractTextFromFile(tempFilePath);
+            
+            if (extractedText && extractedText.trim().length > 10) {
+              // Use Gemini AI for comprehensive analysis
+              analysisResult = await geminiHealthService.analyzeMedicalDocument(
+                extractedText,
+                reportType as 'lab_report' | 'prescription' | 'medical_record',
+                language
+              );
+            } else {
+              throw new Error('Could not extract meaningful text from PDF');
+            }
+          } catch (extractError) {
+            console.error('PDF analysis error:', extractError);
+            // Fallback to basic analysis if Gemini fails
+            analysisResult = {
+              summary: `PDF medical document uploaded successfully. AI analysis encountered an issue, but the document is securely stored. Please consult your healthcare provider for detailed interpretation.`,
+              keyFindings: [`${reportType} PDF document uploaded`, "Document stored securely", "Manual review recommended"],
+              recommendations: ["Consult with your healthcare provider for document interpretation", "Share with your medical team during appointments", "Keep a backup copy for your records"],
+              dietPlan: { breakfast: [], lunch: [], dinner: [], snacks: [] },
+              exercisePlan: { cardio: [], strength: [], flexibility: [] },
+              youtubeVideos: [{ title: "General Health Tips", searchTerm: "basic health tips for beginners" }],
+              lifestyleChanges: ["Maintain regular healthcare checkups"],
+              actionPlan: { immediate: ["Contact your healthcare provider"], shortTerm: ["Schedule a consultation"], longTerm: ["Follow medical advice"] },
+              followUpNeeded: true
+            };
+          } finally {
+            // Always clean up temp file
+            if (tempFilePath) {
+              try {
+                await fs.unlink(tempFilePath);
+              } catch (unlinkError) {
+                console.warn('Failed to delete temp file:', unlinkError);
+              }
+            }
+          }
         } else if (req.file.mimetype.startsWith('image/')) {
+          // For images, provide general health guidance since we can't do OCR yet
           analysisResult = {
-            summary: `Medical image uploaded successfully. For detailed analysis of images, please consult with your healthcare provider who can provide professional interpretation.`,
-            keyFindings: [`${reportType} image uploaded`, "Professional interpretation recommended"],
+            summary: `Medical image uploaded successfully. While AI cannot analyze images directly yet, here are some general health recommendations based on the document type.`,
+            keyFindings: [`${reportType} image uploaded`, "Professional interpretation recommended for images"],
             recommendations: ["Consult with your healthcare provider for image interpretation", "Share with your medical team during appointments"],
+            dietPlan: { 
+              breakfast: ["Include fruits and vegetables", "Choose whole grains", "Stay hydrated"], 
+              lunch: ["Lean proteins", "Colorful vegetables", "Healthy fats"], 
+              dinner: ["Light, nutritious meals", "Avoid late eating"], 
+              snacks: ["Nuts", "Fruits", "Yogurt"] 
+            },
+            exercisePlan: { 
+              cardio: ["30 minutes walking daily", "Swimming if accessible", "Cycling"], 
+              strength: ["Bodyweight exercises", "Light weights", "Resistance bands"], 
+              flexibility: ["Daily stretching", "Yoga poses", "Deep breathing"] 
+            },
+            youtubeVideos: [
+              { title: "Basic Health Tips", searchTerm: "daily health habits for beginners" },
+              { title: "Simple Exercise Routine", searchTerm: "beginner home workout" }
+            ],
+            lifestyleChanges: ["Regular sleep schedule", "Stress management", "Stay hydrated"],
+            actionPlan: { 
+              immediate: ["Consult healthcare provider for image interpretation"], 
+              shortTerm: ["Follow general wellness practices"], 
+              longTerm: ["Maintain healthy lifestyle"] 
+            },
             followUpNeeded: true
           };
         }
@@ -121,10 +179,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             summary: analysisResult.summary,
             keyFindings: analysisResult.keyFindings,
             recommendations: analysisResult.recommendations,
+            dietPlan: analysisResult.dietPlan || { breakfast: [], lunch: [], dinner: [], snacks: [] },
+            exercisePlan: analysisResult.exercisePlan || { cardio: [], strength: [], flexibility: [] },
+            youtubeVideos: analysisResult.youtubeVideos || [],
+            lifestyleChanges: analysisResult.lifestyleChanges || [],
+            actionPlan: analysisResult.actionPlan || { immediate: [], shortTerm: [], longTerm: [] },
             followUpNeeded: analysisResult.followUpNeeded,
             analyzedAt: new Date(),
-            confidence: 0.8,
-            aiModelUsed: "basic-upload-analysis",
+            confidence: 0.9,
+            aiModelUsed: "gemini-1.5-flash",
             language: language
           };
           

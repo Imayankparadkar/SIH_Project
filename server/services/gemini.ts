@@ -76,7 +76,7 @@ Focus on:
         model: 'gemini-1.5-flash',
         contents: prompt
       });
-      const text = response.text;
+      const text = response.text || '';
 
       // Parse JSON response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -225,10 +225,11 @@ Please provide:
 Respond in JSON format with keys: summary, recommendations (array), riskFactors (array), improvements (array).`;
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: prompt
+      });
+      const text = response.text || '';
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -281,6 +282,11 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
     summary: string;
     keyFindings: string[];
     recommendations: string[];
+    dietPlan: { breakfast: string[]; lunch: string[]; dinner: string[]; snacks: string[] };
+    exercisePlan: { cardio: string[]; strength: string[]; flexibility: string[] };
+    youtubeVideos: { title: string; searchTerm: string }[];
+    lifestyleChanges: string[];
+    actionPlan: { immediate: string[]; shortTerm: string[]; longTerm: string[] };
     followUpNeeded: boolean;
   }> {
     if (!this.genAI) {
@@ -291,51 +297,127 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
         'hi': 'Provide the analysis in Hindi (हिंदी). Use simple, clear Hindi language.',
         'es': 'Provide the analysis in Spanish (Español). Use clear, accessible Spanish.',
         'fr': 'Provide the analysis in French (Français). Use clear, accessible French.',
+        'de': 'Provide the analysis in German (Deutsch). Use clear, accessible German.',
+        'pt': 'Provide the analysis in Portuguese (Português). Use clear, accessible Portuguese.',
+        'it': 'Provide the analysis in Italian (Italiano). Use clear, accessible Italian.',
+        'ja': 'Provide the analysis in Japanese (日本語). Use simple, clear Japanese.',
+        'ko': 'Provide the analysis in Korean (한국어). Use simple, clear Korean.',
+        'zh': 'Provide the analysis in Chinese (中文). Use simple, clear Chinese.',
+        'ar': 'Provide the analysis in Arabic (العربية). Use simple, clear Arabic.',
+        'ru': 'Provide the analysis in Russian (Русский). Use clear, accessible Russian.',
+        'tr': 'Provide the analysis in Turkish (Türkçe). Use clear, accessible Turkish.',
         'en': 'Provide the analysis in English.'
       };
       return languageInstructions[lang as keyof typeof languageInstructions] || languageInstructions['en'];
     };
 
-    const prompt = `Analyze the following ${documentType.replace('_', ' ')} and provide a patient-friendly summary.
+    const prompt = `You are Dr. AI, a comprehensive health assistant. Analyze the following ${documentType.replace('_', ' ')} and provide a complete, patient-friendly health plan.
 
 ${getLanguageInstruction(language || 'en')}
 
 Document Content:
 ${documentText}
 
-Please provide:
-1. A clear, easy-to-understand summary
+Please provide a comprehensive analysis that includes:
+
+🏥 **MEDICAL ANALYSIS**:
+1. Clear, easy-to-understand summary of the document
 2. Key findings that the patient should be aware of
-3. General recommendations (emphasizing doctor consultation)
-4. Whether follow-up with a healthcare provider is recommended
+3. Risk factors and areas of concern
+4. Follow-up recommendations
 
-Respond in JSON format with keys: summary, keyFindings (array), recommendations (array), followUpNeeded (boolean).
+🥗 **PERSONALIZED DIET PLAN**:
+- Specific foods to include/avoid based on the findings
+- Meal timing and portion suggestions
+- Hydration recommendations
+- Nutritional supplements if needed
 
-Important: Always emphasize that this analysis is for informational purposes only and should not replace professional medical advice.`;
+🏃‍♂️ **EXERCISE RECOMMENDATIONS**:
+- Specific exercise types suitable for the condition
+- Intensity levels (beginner/intermediate/advanced)
+- Duration and frequency guidelines
+- Exercises to avoid if any
 
-    try {
-      const response = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: prompt
-      });
-      const text = response.text;
+📹 **YOUTUBE VIDEO RECOMMENDATIONS**:
+- Search for "Heart Healthy Diet Plan" on YouTube for cardiovascular issues
+- Search for "Diabetes Exercise Routine" on YouTube for diabetes-related findings
+- Check out "Yoga with Adriene" for stress management and flexibility
+- Look for "Fitness Blender HIIT" for general fitness improvement
+- Search for "Mediterranean Diet Recipes" for anti-inflammatory benefits
+- Find "Meditation for Healing" for mental wellness support
 
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const analysis = JSON.parse(jsonMatch[0]);
-        return {
-          summary: analysis.summary || 'Document analysis completed',
-          keyFindings: Array.isArray(analysis.keyFindings) ? analysis.keyFindings : [],
-          recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
-          followUpNeeded: typeof analysis.followUpNeeded === 'boolean' ? analysis.followUpNeeded : true
-        };
+💪 **LIFESTYLE MODIFICATIONS**:
+- Sleep hygiene recommendations
+- Stress management techniques
+- Habit formation tips
+- Mental wellness support
+
+🎯 **ACTION PLAN**:
+- Immediate steps to take
+- Short-term goals (1-4 weeks)
+- Long-term goals (1-6 months)
+- When to seek emergency care
+
+Respond in JSON format with keys: 
+- summary (string)
+- keyFindings (array)
+- recommendations (array)
+- dietPlan (object with breakfast, lunch, dinner, snacks arrays)
+- exercisePlan (object with cardio, strength, flexibility arrays)
+- youtubeVideos (array of objects with title and searchTerm)
+- lifestyleChanges (array)
+- actionPlan (object with immediate, shortTerm, longTerm arrays)
+- followUpNeeded (boolean)
+
+Important: This analysis is for informational purposes only and should not replace professional medical advice. Always consult healthcare providers for medical decisions.`;
+
+    // Retry mechanism for API overload errors
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const response = await this.genAI.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: prompt
+        });
+        const text = response.text || '';
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysis = JSON.parse(jsonMatch[0]);
+          return {
+            summary: analysis.summary || 'Document analysis completed',
+            keyFindings: Array.isArray(analysis.keyFindings) ? analysis.keyFindings : [],
+            recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+            dietPlan: analysis.dietPlan || { breakfast: [], lunch: [], dinner: [], snacks: [] },
+            exercisePlan: analysis.exercisePlan || { cardio: [], strength: [], flexibility: [] },
+            youtubeVideos: Array.isArray(analysis.youtubeVideos) ? analysis.youtubeVideos : [],
+            lifestyleChanges: Array.isArray(analysis.lifestyleChanges) ? analysis.lifestyleChanges : [],
+            actionPlan: analysis.actionPlan || { immediate: [], shortTerm: [], longTerm: [] },
+            followUpNeeded: typeof analysis.followUpNeeded === 'boolean' ? analysis.followUpNeeded : true
+          };
+        }
+
+        throw new Error('Invalid response format');
+      } catch (error: any) {
+        retryCount++;
+        console.error(`Document analysis attempt ${retryCount} failed:`, error);
+        
+        // Check if it's an API overload error
+        if (error.status === 503 && retryCount < maxRetries) {
+          console.log(`API overloaded, retrying in ${retryCount * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+          continue;
+        }
+        
+        // If all retries failed or it's a different error, throw
+        throw new Error('Failed to analyze medical document after retries');
       }
-
-      throw new Error('Invalid response format');
-    } catch (error) {
-      console.error('Error analyzing medical document:', error);
-      throw new Error('Failed to analyze medical document');
     }
+    
+    // This should never be reached due to the throw above, but TypeScript requires it
+    throw new Error('Analysis failed after all retry attempts');
   }
   private getFallbackDocumentAnalysis(
     documentType: string,
@@ -344,6 +426,11 @@ Important: Always emphasize that this analysis is for informational purposes onl
     summary: string;
     keyFindings: string[];
     recommendations: string[];
+    dietPlan: { breakfast: string[]; lunch: string[]; dinner: string[]; snacks: string[] };
+    exercisePlan: { cardio: string[]; strength: string[]; flexibility: string[] };
+    youtubeVideos: { title: string; searchTerm: string }[];
+    lifestyleChanges: string[];
+    actionPlan: { immediate: string[]; shortTerm: string[]; longTerm: string[] };
     followUpNeeded: boolean;
   } {
     const languageResponses = {
@@ -373,7 +460,30 @@ Important: Always emphasize that this analysis is for informational purposes onl
       }
     };
 
-    return languageResponses[language as keyof typeof languageResponses] || languageResponses['en'];
+    const baseResponse = languageResponses[language as keyof typeof languageResponses] || languageResponses['en'];
+    return {
+      ...baseResponse,
+      dietPlan: { 
+        breakfast: ["Consult your healthcare provider for personalized dietary recommendations"], 
+        lunch: [], 
+        dinner: [], 
+        snacks: [] 
+      },
+      exercisePlan: { 
+        cardio: ["Consult your healthcare provider for exercise recommendations"], 
+        strength: [], 
+        flexibility: [] 
+      },
+      youtubeVideos: [
+        { title: "General Health Tips", searchTerm: "basic health tips for beginners" }
+      ],
+      lifestyleChanges: ["Maintain regular healthcare checkups", "Follow your doctor's recommendations"],
+      actionPlan: { 
+        immediate: ["Contact your healthcare provider"], 
+        shortTerm: ["Schedule a consultation"], 
+        longTerm: ["Follow medical advice"] 
+      }
+    };
   }
 
   private getFallbackChatResponse(message: string): string {
