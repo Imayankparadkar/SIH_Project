@@ -26,7 +26,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.id) {
       setCurrentVitals(null);
       setHistoricalData([]);
       setAnalysis(null);
@@ -166,7 +166,19 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           bloodPressureDiastolic: Math.floor(Math.random() * 30) + 70, // 70-100
           oxygenSaturation: Math.floor(Math.random() * 8) + 92, // 92-100%
           bodyTemperature: Math.random() * 4 + 97, // 97-101°F
-          // respiratoryRate: Math.floor(Math.random() * 10) + 12, // 12-22 (not in schema yet)
+          deviceInfo: {
+            deviceId: 'demo-wristband-001',
+            deviceType: 'wristband',
+            manufacturer: 'Sehatify',
+            model: 'SH-2025',
+            isMedicalGrade: true,
+            certifications: ['CE', 'FDA']
+          },
+          dataQuality: {
+            confidence: 0.95,
+            signalQuality: 'excellent',
+            artifactsDetected: false
+          },
           timestamp: new Date()
         };
         
