@@ -2,6 +2,7 @@ import express from 'express';
 import { verifyIdToken, getUserProfile, saveUserProfile } from '../services/firebase-admin';
 import { insertUserProfileSchema } from '@shared/schema';
 import { z } from 'zod';
+import * as devAuth from '../services/dev-auth';
 
 const router = express.Router();
 
@@ -164,5 +165,62 @@ router.put('/profile', async (req, res) => {
     });
   }
 });
+
+// Development mode login endpoints
+if (process.env.NODE_ENV === 'development') {
+  router.post('/dev/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email and password are required'
+        });
+      }
+
+      const result = await devAuth.login(email, password);
+      
+      res.json({
+        success: true,
+        user: result.user,
+        token: result.token
+      });
+    } catch (error) {
+      console.error('Dev login error:', error);
+      res.status(401).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Login failed'
+      });
+    }
+  });
+
+  router.post('/dev/register', async (req, res) => {
+    try {
+      const { email, password, ...profileData } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email and password are required'
+        });
+      }
+
+      const result = await devAuth.register(email, password, profileData);
+      
+      res.json({
+        success: true,
+        user: result.user,
+        token: result.token
+      });
+    } catch (error) {
+      console.error('Dev register error:', error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Registration failed'
+      });
+    }
+  });
+}
 
 export { router as authRoutes };

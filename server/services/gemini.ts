@@ -102,7 +102,8 @@ Focus on:
     message: string, 
     healthContext?: VitalSigns,
     userProfile?: { age: number; gender: string; medicalHistory?: string },
-    language?: string
+    language?: string,
+    medicalReports?: any[]
   ): Promise<string> {
     if (!this.genAI) {
       return this.getFallbackChatResponse(message);
@@ -170,10 +171,25 @@ Important guidelines:
     const userInfo = userProfile ?
       `User profile: ${userProfile.age}-year-old ${userProfile.gender}${userProfile.medicalHistory ? `, Medical history: ${userProfile.medicalHistory}` : ''}` : '';
 
+    // Include uploaded medical reports in context
+    const medicalReportsContext = medicalReports && medicalReports.length > 0 ? `
+📋 **UPLOADED MEDICAL REPORTS** (${medicalReports.length} report(s) available):
+${medicalReports.map((report, index) => `
+${index + 1}. **${report.originalFileName}** (uploaded ${new Date(report.uploadedAt).toLocaleDateString()})
+   - Type: ${report.reportType}
+   - Analysis Available: ${report.isAnalyzed ? 'Yes' : 'No'}
+   ${report.analysis ? `- Summary: ${report.analysis.summary || 'Analysis completed'}
+   - Key Findings: ${Array.isArray(report.analysis.keyFindings) ? report.analysis.keyFindings.join(', ') : 'None specified'}
+   - Recommendations: ${Array.isArray(report.analysis.recommendations) ? report.analysis.recommendations.join(', ') : 'None specified'}` : ''}
+`).join('')}
+
+You can reference these reports when answering questions about the user's health.` : '';
+
     const prompt = `${systemPrompt}
 
 ${userInfo}
 ${contextInfo}
+${medicalReportsContext}
 
 User question: ${message}
 

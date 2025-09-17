@@ -36,55 +36,110 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Firebase Auth API helper functions
 const authApi = {
   async login(email: string, password: string) {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const idToken = await userCredential.user.getIdToken();
-    
-    // Verify token with server
-    const response = await fetch('/api/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken })
-    });
+    // Try development API first if Firebase is not configured
+    if (!auth || import.meta.env.DEV) {
+      try {
+        const response = await fetch('/api/auth/dev/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login verification failed');
+        if (response.ok) {
+          const result = await response.json();
+          return {
+            success: true,
+            user: result.user,
+            token: result.token
+          };
+        }
+      } catch (devError) {
+        console.log('Development login failed, trying Firebase:', devError);
+      }
     }
 
-    const result = await response.json();
-    return {
-      success: true,
-      user: result.user,
-      token: idToken
-    };
+    // Fallback to Firebase authentication
+    if (auth) {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Verify token with server
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login verification failed');
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        user: result.user,
+        token: idToken
+      };
+    } else {
+      throw new Error('Authentication not available. Please check your configuration.');
+    }
   },
 
   async register(email: string, password: string, profileData: any) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const idToken = await userCredential.user.getIdToken();
-    
-    // Create user profile on server
-    const response = await fetch('/api/auth/profile', {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${idToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(profileData)
-    });
+    // Try development API first if Firebase is not configured
+    if (!auth || import.meta.env.DEV) {
+      try {
+        const response = await fetch('/api/auth/dev/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, ...profileData })
+        });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Profile creation failed');
+        if (response.ok) {
+          const result = await response.json();
+          return {
+            success: true,
+            user: result.user,
+            profile: result.user,
+            token: result.token
+          };
+        }
+      } catch (devError) {
+        console.log('Development registration failed, trying Firebase:', devError);
+      }
     }
 
-    const result = await response.json();
-    return {
-      success: true,
-      user: userCredential.user,
-      profile: result.profile,
-      token: idToken
-    };
+    // Fallback to Firebase authentication
+    if (auth) {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Create user profile on server
+      const response = await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(profileData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Profile creation failed');
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        user: userCredential.user,
+        profile: result.profile,
+        token: idToken
+      };
+    } else {
+      throw new Error('Registration not available. Please check your configuration.');
+    }
   },
 
   async getMe(token: string) {

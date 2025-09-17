@@ -730,11 +730,23 @@ Please respond in JSON format with:
       
       console.log('Chat request received:', { message: message?.substring(0, 50) });
       
+      // Get user's medical reports to include in context
+      let medicalReports: any[] = [];
+      try {
+        // Use demo user for development
+        const userId = 'demo-user-1';
+        medicalReports = await storage.getMedicalReportsByUserId(userId);
+        console.log(`Found ${medicalReports.length} medical reports for user`);
+      } catch (error) {
+        console.log('Could not fetch medical reports:', error);
+      }
+      
       const response = await geminiHealthService.generateChatResponse(
         message,
         healthContext,
         userProfile,
-        language
+        language,
+        medicalReports
       );
       
       console.log('Chat response generated:', response.substring(0, 100));
