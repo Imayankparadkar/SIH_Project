@@ -3,6 +3,7 @@ import { collection, addDoc, query, where, orderBy, limit, onSnapshot, getDocs }
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { VitalSigns, HealthAnalysis, InsertVitalSigns, InsertHealthAnalysis } from '@shared/schema';
+import { mockHealthService } from '@/services/mock-health-data';
 // Health analysis will be handled server-side
 
 interface HealthContextType {
@@ -70,11 +71,88 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
       return unsubscribe;
     } else {
-      // Firebase not available, use development mode
-      console.log('Firebase not available, using development mode for health data');
-      setHistoricalData([]);
-      setCurrentVitals(null);
+      // Firebase not available, use MockHealthDataService for development mode
+      console.log('Firebase not available, using MockHealthDataService for realistic development data');
+      
+      // Start the mock health service with hourly updates (for demo, use 10 seconds)
+      mockHealthService.startRealTimeUpdates(10000); // 10 seconds for demo
+      
+      // Subscribe to mock health data updates
+      const unsubscribe = mockHealthService.subscribe((mockData) => {
+        // Convert mock data to VitalSigns format
+        const vitalSigns: VitalSigns = {
+          id: mockData.id,
+          userId: user.id,
+          heartRate: mockData.heartRate,
+          bloodPressureSystolic: mockData.bloodPressureSystolic,
+          bloodPressureDiastolic: mockData.bloodPressureDiastolic,
+          oxygenSaturation: mockData.oxygenSaturation,
+          bodyTemperature: mockData.bodyTemperature,
+          ecgData: mockData.ecgData,
+          steps: mockData.steps,
+          sleepHours: mockData.sleepHours,
+          deviceInfo: mockData.deviceInfo,
+          dataQuality: mockData.dataQuality,
+          timestamp: mockData.timestamp,
+          syncedAt: mockData.syncedAt
+        };
+        
+        setCurrentVitals(vitalSigns);
+        
+        // Get historical data from mock service
+        const mockHistoricalData = mockHealthService.getHistoricalData(50);
+        const historicalVitals: VitalSigns[] = mockHistoricalData.map(mock => ({
+          id: mock.id,
+          userId: user.id,
+          heartRate: mock.heartRate,
+          bloodPressureSystolic: mock.bloodPressureSystolic,
+          bloodPressureDiastolic: mock.bloodPressureDiastolic,
+          oxygenSaturation: mock.oxygenSaturation,
+          bodyTemperature: mock.bodyTemperature,
+          ecgData: mock.ecgData,
+          steps: mock.steps,
+          sleepHours: mock.sleepHours,
+          deviceInfo: mock.deviceInfo,
+          dataQuality: mock.dataQuality,
+          timestamp: mock.timestamp,
+          syncedAt: mock.syncedAt
+        }));
+        
+        setHistoricalData(historicalVitals);
+        
+        // Analyze latest vitals
+        analyzeVitals(vitalSigns);
+        setIsLoading(false);
+      });
+      
+      // Generate initial historical data and current data
+      const initialHistoricalData = mockHealthService.generateHistoricalData(7); // 7 days
+      const initialVitals: VitalSigns[] = initialHistoricalData.map(mock => ({
+        id: mock.id,
+        userId: user.id,
+        heartRate: mock.heartRate,
+        bloodPressureSystolic: mock.bloodPressureSystolic,
+        bloodPressureDiastolic: mock.bloodPressureDiastolic,
+        oxygenSaturation: mock.oxygenSaturation,
+        bodyTemperature: mock.bodyTemperature,
+        ecgData: mock.ecgData,
+        steps: mock.steps,
+        sleepHours: mock.sleepHours,
+        deviceInfo: mock.deviceInfo,
+        dataQuality: mock.dataQuality,
+        timestamp: mock.timestamp,
+        syncedAt: mock.syncedAt
+      }));
+      
+      setHistoricalData(initialVitals);
+      if (initialVitals.length > 0) {
+        setCurrentVitals(initialVitals[0]);
+        analyzeVitals(initialVitals[0]);
+      }
       setIsLoading(false);
+      
+      // Return cleanup function
+      return unsubscribe;
     }
   }, [user]);
 
