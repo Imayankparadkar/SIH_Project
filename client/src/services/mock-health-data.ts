@@ -525,6 +525,9 @@ export class MockHealthDataService {
   setAutoGeneration(enabled: boolean): void {
     this.isAutoGenerating = enabled;
     console.log(`MockHealthDataService: Auto-generation ${enabled ? 'enabled' : 'disabled'}`);
+    if (!enabled && this.intervalId) {
+      this.stopRealTimeUpdates();
+    }
   }
 
   // Manual data generation (for testing)

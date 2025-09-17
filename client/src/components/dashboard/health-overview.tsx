@@ -261,16 +261,16 @@ export function HealthOverview() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     
-    // Force new mock data generation
-    mockHealthService.stopRealTimeUpdates();
-    mockHealthService.startRealTimeUpdates(10000);
+    // Generate a manual reading without breaking the hourly cadence
+    mockHealthService.generateManualReading();
     
     // Also refresh real analysis if available
     if (refreshAnalysis) {
       await refreshAnalysis();
     }
     
-    setTimeout(() => setIsRefreshing(false), 2000);
+    console.log('HealthOverview: Manual refresh completed, hourly cadence maintained');
+    setTimeout(() => setIsRefreshing(false), 1000);
   };
 
   const quickActions: QuickAction[] = [
