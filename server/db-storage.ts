@@ -38,6 +38,129 @@ if (!process.env.DATABASE_URL) {
 const sql_conn = neon(process.env.DATABASE_URL);
 const db = drizzle(sql_conn);
 
+// Type conversion utilities
+function convertNullToUndefined<T extends Record<string, any>>(obj: T): T {
+  const result = { ...obj };
+  for (const key in result) {
+    if (result[key] === null) {
+      result[key] = undefined as any;
+    }
+  }
+  return result;
+}
+
+function convertDbResultToUserProfile(dbResult: any): UserProfile {
+  return convertNullToUndefined({
+    ...dbResult,
+    gender: dbResult.gender as UserProfile['gender'],
+  }) as UserProfile;
+}
+
+function convertDbResultToMedicalReport(dbResult: any): MedicalReport {
+  return convertNullToUndefined({
+    ...dbResult,
+    fileType: dbResult.fileType as MedicalReport['fileType'],
+    sourceType: dbResult.sourceType as MedicalReport['sourceType'],
+    reportType: dbResult.reportType as MedicalReport['reportType'],
+  }) as MedicalReport;
+}
+
+function convertDbResultToLabTest(dbResult: any): LabTest {
+  return convertNullToUndefined({
+    ...dbResult,
+    sampleType: dbResult.sampleType as LabTest['sampleType'],
+  }) as LabTest;
+}
+
+function convertDbResultToLabBooking(dbResult: any): LabBooking {
+  return convertNullToUndefined({
+    ...dbResult,
+    status: dbResult.status as LabBooking['status'],
+    bookingType: dbResult.bookingType as LabBooking['bookingType'],
+  }) as LabBooking;
+}
+
+function convertDbResultToDoctor(dbResult: any): Doctor {
+  return convertNullToUndefined({
+    ...dbResult,
+  }) as Doctor;
+}
+
+function convertDbResultToAppointment(dbResult: any): Appointment {
+  return convertNullToUndefined({
+    ...dbResult,
+    status: dbResult.status as Appointment['status'],
+    paymentStatus: dbResult.paymentStatus as Appointment['paymentStatus'],
+    appointmentType: dbResult.appointmentType as Appointment['appointmentType'],
+  }) as Appointment;
+}
+
+function convertDbResultToMedicine(dbResult: any): Medicine {
+  return convertNullToUndefined({
+    ...dbResult,
+    dosageForm: dbResult.dosageForm as Medicine['dosageForm'],
+  }) as Medicine;
+}
+
+function convertDbResultToOrder(dbResult: any): Order {
+  return convertNullToUndefined({
+    ...dbResult,
+    paymentStatus: dbResult.paymentStatus as Order['paymentStatus'],
+  }) as Order;
+}
+
+function convertDbResultToPrescription(dbResult: any): Prescription {
+  return convertNullToUndefined({
+    ...dbResult,
+    status: dbResult.status as Prescription['status'],
+  }) as Prescription;
+}
+
+function convertDbResultToHospital(dbResult: any): Hospital {
+  return convertNullToUndefined(dbResult) as Hospital;
+}
+
+function convertDbResultToPharmacy(dbResult: any): Pharmacy {
+  return convertNullToUndefined(dbResult) as Pharmacy;
+}
+
+function convertDbResultToDonorProfile(dbResult: any): DonorProfile {
+  return convertNullToUndefined({
+    ...dbResult,
+    bloodGroup: dbResult.bloodGroup as DonorProfile['bloodGroup'],
+    donorType: dbResult.donorType as DonorProfile['donorType'],
+  }) as DonorProfile;
+}
+
+function convertDbResultToDonation(dbResult: any): Donation {
+  return convertNullToUndefined({
+    ...dbResult,
+    status: dbResult.status as Donation['status'],
+    bloodGroup: dbResult.bloodGroup as Donation['bloodGroup'],
+    donationType: dbResult.donationType as Donation['donationType'],
+  }) as Donation;
+}
+
+function convertDbResultToDonationRequest(dbResult: any): DonationRequest {
+  return convertNullToUndefined({
+    ...dbResult,
+    bloodGroup: dbResult.bloodGroup as DonationRequest['bloodGroup'],
+    urgencyLevel: dbResult.urgencyLevel as DonationRequest['urgencyLevel'],
+    donationType: dbResult.donationType as DonationRequest['donationType'],
+  }) as DonationRequest;
+}
+
+function convertDbResultToVitalSigns(dbResult: any): VitalSigns {
+  return convertNullToUndefined(dbResult) as VitalSigns;
+}
+
+function convertDbResultToHealthAnalysis(dbResult: any): HealthAnalysis {
+  return convertNullToUndefined({
+    ...dbResult,
+    riskLevel: dbResult.riskLevel as HealthAnalysis['riskLevel'],
+  }) as HealthAnalysis;
+}
+
 export class DbStorage implements IStorage {
   constructor() {
     if (process.env.NODE_ENV === 'development') {
@@ -76,13 +199,13 @@ export class DbStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<UserProfile | undefined> {
     const result = await db.select().from(userProfilesTable).where(eq(userProfilesTable.id, id)).limit(1);
-    return result[0] as UserProfile;
+    return result[0] ? convertDbResultToUserProfile(result[0]) : undefined;
   }
 
   async getUserByEmail(email: string): Promise<UserProfile | undefined> {
     const normalizedEmail = email.trim().toLowerCase();
     const result = await db.select().from(userProfilesTable).where(eq(userProfilesTable.email, normalizedEmail)).limit(1);
-    return result[0] as UserProfile;
+    return result[0] ? convertDbResultToUserProfile(result[0]) : undefined;
   }
 
   async createUser(insertUser: InsertUserProfile): Promise<UserProfile> {
@@ -99,7 +222,7 @@ export class DbStorage implements IStorage {
       email: normalizedEmail
     }).returning();
     
-    return result[0];
+    return convertDbResultToUserProfile(result[0]);
   }
 
   async updateUser(id: string, updates: Partial<UserProfile>): Promise<UserProfile | undefined> {
@@ -120,23 +243,23 @@ export class DbStorage implements IStorage {
       .where(eq(userProfilesTable.id, id))
       .returning();
     
-    return result[0] as UserProfile;
+    return result[0] ? convertDbResultToUserProfile(result[0]) : undefined;
   }
 
   // Medical Report operations
   async getMedicalReport(id: string): Promise<MedicalReport | undefined> {
     const result = await db.select().from(medicalReportsTable).where(eq(medicalReportsTable.id, id)).limit(1);
-    return result[0] as MedicalReport;
+    return result[0] ? convertDbResultToMedicalReport(result[0]) : undefined;
   }
 
   async getMedicalReportsByUserId(userId: string): Promise<MedicalReport[]> {
     const result = await db.select().from(medicalReportsTable).where(eq(medicalReportsTable.userId, userId));
-    return result as MedicalReport[];
+    return result.map(convertDbResultToMedicalReport);
   }
 
   async createMedicalReport(insertReport: InsertMedicalReport): Promise<MedicalReport> {
     const result = await db.insert(medicalReportsTable).values(insertReport).returning();
-    return result[0];
+    return convertDbResultToMedicalReport(result[0]);
   }
 
   async updateMedicalReport(id: string, updates: Partial<MedicalReport>): Promise<MedicalReport | undefined> {
@@ -145,7 +268,7 @@ export class DbStorage implements IStorage {
       .where(eq(medicalReportsTable.id, id))
       .returning();
     
-    return result[0] as MedicalReport;
+    return result[0] ? convertDbResultToMedicalReport(result[0]) : undefined;
   }
 
   async deleteMedicalReport(id: string): Promise<boolean> {
@@ -180,31 +303,33 @@ export class DbStorage implements IStorage {
   // Lab Test operations
   async getLabTest(id: string): Promise<LabTest | undefined> {
     const result = await db.select().from(labTestsTable).where(eq(labTestsTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToLabTest(result[0]) : undefined;
   }
 
   async getLabTestsByLabId(labId: string): Promise<LabTest[]> {
-    return await db.select().from(labTestsTable).where(eq(labTestsTable.labId, labId));
+    const result = await db.select().from(labTestsTable).where(eq(labTestsTable.labId, labId));
+    return result.map(convertDbResultToLabTest);
   }
 
   async createLabTest(insertTest: InsertLabTest): Promise<LabTest> {
     const result = await db.insert(labTestsTable).values(insertTest).returning();
-    return result[0];
+    return convertDbResultToLabTest(result[0]);
   }
 
   // Lab Booking operations
   async getLabBooking(id: string): Promise<LabBooking | undefined> {
     const result = await db.select().from(labBookingsTable).where(eq(labBookingsTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToLabBooking(result[0]) : undefined;
   }
 
   async getLabBookingsByUserId(userId: string): Promise<LabBooking[]> {
-    return await db.select().from(labBookingsTable).where(eq(labBookingsTable.userId, userId));
+    const result = await db.select().from(labBookingsTable).where(eq(labBookingsTable.userId, userId));
+    return result.map(convertDbResultToLabBooking);
   }
 
   async createLabBooking(insertBooking: InsertLabBooking): Promise<LabBooking> {
     const result = await db.insert(labBookingsTable).values(insertBooking).returning();
-    return result[0];
+    return convertDbResultToLabBooking(result[0]);
   }
 
   async updateLabBooking(id: string, updates: Partial<LabBooking>): Promise<LabBooking | undefined> {
@@ -213,13 +338,13 @@ export class DbStorage implements IStorage {
       .where(eq(labBookingsTable.id, id))
       .returning();
     
-    return result[0];
+    return result[0] ? convertDbResultToLabBooking(result[0]) : undefined;
   }
 
   // Doctor operations
   async getDoctor(id: string): Promise<Doctor | undefined> {
     const result = await db.select().from(doctorsTable).where(eq(doctorsTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToDoctor(result[0]) : undefined;
   }
 
   async getDoctors(filters?: { specialization?: string; city?: string }): Promise<Doctor[]> {
@@ -229,31 +354,34 @@ export class DbStorage implements IStorage {
       query = query.where(sql`LOWER(${doctorsTable.specialization}) LIKE ${`%${filters.specialization.toLowerCase()}%`}`);
     }
     
-    return await query;
+    const result = await query;
+    return result.map(convertDbResultToDoctor);
   }
 
   async createDoctor(insertDoctor: InsertDoctor): Promise<Doctor> {
     const result = await db.insert(doctorsTable).values(insertDoctor).returning();
-    return result[0];
+    return convertDbResultToDoctor(result[0]);
   }
 
   // Appointment operations
   async getAppointment(id: string): Promise<Appointment | undefined> {
     const result = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToAppointment(result[0]) : undefined;
   }
 
   async getAppointmentsByUserId(userId: string): Promise<Appointment[]> {
-    return await db.select().from(appointmentsTable).where(eq(appointmentsTable.userId, userId));
+    const result = await db.select().from(appointmentsTable).where(eq(appointmentsTable.userId, userId));
+    return result.map(convertDbResultToAppointment);
   }
 
   async getAppointmentsByDoctorId(doctorId: string): Promise<Appointment[]> {
-    return await db.select().from(appointmentsTable).where(eq(appointmentsTable.doctorId, doctorId));
+    const result = await db.select().from(appointmentsTable).where(eq(appointmentsTable.doctorId, doctorId));
+    return result.map(convertDbResultToAppointment);
   }
 
   async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
     const result = await db.insert(appointmentsTable).values(insertAppointment).returning();
-    return result[0];
+    return convertDbResultToAppointment(result[0]);
   }
 
   async updateAppointment(id: string, updates: Partial<Appointment>): Promise<Appointment | undefined> {
@@ -262,13 +390,13 @@ export class DbStorage implements IStorage {
       .where(eq(appointmentsTable.id, id))
       .returning();
     
-    return result[0];
+    return result[0] ? convertDbResultToAppointment(result[0]) : undefined;
   }
 
   // Medicine operations
   async getMedicine(id: string): Promise<Medicine | undefined> {
     const result = await db.select().from(medicinesTable).where(eq(medicinesTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToMedicine(result[0]) : undefined;
   }
 
   async getMedicines(filters?: { name?: string; prescriptionRequired?: boolean }): Promise<Medicine[]> {
@@ -282,27 +410,29 @@ export class DbStorage implements IStorage {
       query = query.where(eq(medicinesTable.prescriptionRequired, filters.prescriptionRequired));
     }
     
-    return await query;
+    const result = await query;
+    return result.map(convertDbResultToMedicine);
   }
 
   async createMedicine(insertMedicine: InsertMedicine): Promise<Medicine> {
     const result = await db.insert(medicinesTable).values(insertMedicine).returning();
-    return result[0];
+    return convertDbResultToMedicine(result[0]);
   }
 
   // Order operations
   async getOrder(id: string): Promise<Order | undefined> {
     const result = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToOrder(result[0]) : undefined;
   }
 
   async getOrdersByUserId(userId: string): Promise<Order[]> {
-    return await db.select().from(ordersTable).where(eq(ordersTable.userId, userId));
+    const result = await db.select().from(ordersTable).where(eq(ordersTable.userId, userId));
+    return result.map(convertDbResultToOrder);
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
     const result = await db.insert(ordersTable).values(insertOrder).returning();
-    return result[0];
+    return convertDbResultToOrder(result[0]);
   }
 
   async updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined> {
@@ -311,53 +441,35 @@ export class DbStorage implements IStorage {
       .where(eq(ordersTable.id, id))
       .returning();
     
-    return result[0];
+    return result[0] ? convertDbResultToOrder(result[0]) : undefined;
   }
 
   // Prescription operations
   async getPrescription(id: string): Promise<Prescription | undefined> {
     const result = await db.select().from(prescriptionsTable).where(eq(prescriptionsTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToPrescription(result[0]) : undefined;
   }
 
   async getPrescriptionsByUserId(userId: string): Promise<Prescription[]> {
-    return await db.select().from(prescriptionsTable).where(eq(prescriptionsTable.userId, userId));
+    const result = await db.select().from(prescriptionsTable).where(eq(prescriptionsTable.userId, userId));
+    return result.map(convertDbResultToPrescription);
   }
 
   async getPrescriptionsByDoctorId(doctorId: string): Promise<Prescription[]> {
-    return await db.select().from(prescriptionsTable).where(eq(prescriptionsTable.doctorId, doctorId));
+    const result = await db.select().from(prescriptionsTable).where(eq(prescriptionsTable.doctorId, doctorId));
+    return result.map(convertDbResultToPrescription);
   }
 
   async createPrescription(insertPrescription: InsertPrescription): Promise<Prescription> {
     const result = await db.insert(prescriptionsTable).values(insertPrescription).returning();
-    return result[0];
+    return convertDbResultToPrescription(result[0]);
   }
 
-  // Hospital operations
-  async getHospital(id: string): Promise<Hospital | undefined> {
-    const result = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getHospitals(filters?: { city?: string; specialties?: string[] }): Promise<Hospital[]> {
-    let query = db.select().from(hospitalsTable);
-    
-    if (filters?.city) {
-      query = query.where(sql`LOWER(${hospitalsTable.city}) LIKE ${`%${filters.city.toLowerCase()}%`}`);
-    }
-    
-    return await query;
-  }
-
-  async createHospital(insertHospital: InsertHospital): Promise<Hospital> {
-    const result = await db.insert(hospitalsTable).values(insertHospital).returning();
-    return result[0];
-  }
 
   // Pharmacy operations
   async getPharmacy(id: string): Promise<Pharmacy | undefined> {
     const result = await db.select().from(pharmaciesTable).where(eq(pharmaciesTable.id, id)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToPharmacy(result[0]) : undefined;
   }
 
   async getPharmacies(filters?: { city?: string; deliveryAvailable?: boolean }): Promise<Pharmacy[]> {
@@ -371,18 +483,19 @@ export class DbStorage implements IStorage {
       query = query.where(eq(pharmaciesTable.deliveryAvailable, filters.deliveryAvailable));
     }
     
-    return await query;
+    const result = await query;
+    return result.map(convertDbResultToPharmacy);
   }
 
   async createPharmacy(insertPharmacy: InsertPharmacy): Promise<Pharmacy> {
     const result = await db.insert(pharmaciesTable).values(insertPharmacy).returning();
-    return result[0];
+    return convertDbResultToPharmacy(result[0]);
   }
 
   // Donor Profile operations
   async getDonorProfile(userId: string): Promise<DonorProfile | undefined> {
     const result = await db.select().from(donorProfilesTable).where(eq(donorProfilesTable.userId, userId)).limit(1);
-    return result[0];
+    return result[0] ? convertDbResultToDonorProfile(result[0]) : undefined;
   }
 
   async getDonorProfiles(filters?: { bloodGroup?: string; city?: string; isAvailable?: boolean }): Promise<DonorProfile[]> {
@@ -396,12 +509,13 @@ export class DbStorage implements IStorage {
       query = query.where(eq(donorProfilesTable.isAvailable, filters.isAvailable));
     }
     
-    return await query;
+    const result = await query;
+    return result.map(convertDbResultToDonorProfile);
   }
 
   async createDonorProfile(insertProfile: InsertDonorProfile): Promise<DonorProfile> {
     const result = await db.insert(donorProfilesTable).values(insertProfile).returning();
-    return result[0];
+    return convertDbResultToDonorProfile(result[0]);
   }
 
   async updateDonorProfile(userId: string, updates: Partial<DonorProfile>): Promise<DonorProfile | undefined> {
@@ -410,7 +524,7 @@ export class DbStorage implements IStorage {
       .where(eq(donorProfilesTable.userId, userId))
       .returning();
     
-    return result[0];
+    return result[0] ? convertDbResultToDonorProfile(result[0]) : undefined;
   }
 
   // Donation operations
@@ -469,6 +583,43 @@ export class DbStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  // Hospital operations
+  async getHospital(id: string): Promise<Hospital | undefined> {
+    const result = await db.select().from(hospitalsTable).where(eq(hospitalsTable.id, id)).limit(1);
+    return result[0] as Hospital;
+  }
+
+  async getHospitals(filters?: { city?: string; specialties?: string[]; emergency?: boolean }): Promise<Hospital[]> {
+    let query = db.select().from(hospitalsTable);
+    
+    if (filters?.city) {
+      query = query.where(sql`${hospitalsTable.city} ILIKE ${`%${filters.city}%`}`);
+    }
+    
+    const results = await query;
+    let hospitals = results as Hospital[];
+    
+    // Client-side filtering for specialties and emergency
+    if (filters?.specialties && filters.specialties.length > 0) {
+      hospitals = hospitals.filter(h => 
+        filters.specialties!.some(specialty => 
+          h.specialties.includes(specialty)
+        )
+      );
+    }
+    
+    if (filters?.emergency !== undefined) {
+      hospitals = hospitals.filter(h => h.emergencyServices === filters.emergency);
+    }
+    
+    return hospitals;
+  }
+
+  async createHospital(insertHospital: InsertHospital): Promise<Hospital> {
+    const result = await db.insert(hospitalsTable).values(insertHospital).returning();
+    return result[0] as Hospital;
   }
 
   // Hospital Rating operations
