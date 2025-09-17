@@ -1,103 +1,47 @@
 import express from 'express';
-import { register, login, logout, verifyToken, getUserById, updateUserProfile, initializeDemoUsers } from '../services/dev-auth';
+import { verifyIdToken, getUserProfile, saveUserProfile } from '../services/firebase-admin';
 import { insertUserProfileSchema } from '@shared/schema';
 import { z } from 'zod';
 
 const router = express.Router();
 
-// Initialize demo users on startup (async)
-initializeDemoUsers().catch(console.error);
-
-// Register endpoint
-router.post('/register', async (req, res) => {
+// Firebase auth verification endpoint
+router.post('/verify', async (req, res) => {
   try {
-    const { email, password, ...profileData } = req.body;
+    const { idToken } = req.body;
 
-    // Validate input
-    const loginSchema = z.object({
-      email: z.string().email(),
-      password: z.string().min(6)
-    });
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID token is required'
+      });
+    }
 
-    const { email: validatedEmail, password: validatedPassword } = loginSchema.parse({
-      email,
-      password
-    });
-
-    // Validate profile data
-    const validatedProfileData = insertUserProfileSchema.parse({
-      email: validatedEmail,
-      ...profileData
-    });
-
-    // Remove email from profile data as it's handled separately
-    const { email: _, ...profileDataWithoutEmail } = validatedProfileData;
-
-    const { user, token } = await register(validatedEmail, validatedPassword, profileDataWithoutEmail);
-
-    res.status(201).json({
-      success: true,
-      user,
-      token
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Registration failed'
-    });
-  }
-});
-
-// Login endpoint
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate input
-    const loginSchema = z.object({
-      email: z.string().email(),
-      password: z.string().min(1)
-    });
-
-    const { email: validatedEmail, password: validatedPassword } = loginSchema.parse({
-      email,
-      password
-    });
-
-    const { user, token } = await login(validatedEmail, validatedPassword);
-
-    res.json({
-      success: true,
-      user,
-      token
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(401).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Login failed'
-    });
-  }
-});
-
-// Logout endpoint
-router.post('/logout', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (token) {
-      await logout(token);
+    const decodedToken = await verifyIdToken(idToken);
+    
+    // Try to get user profile from Firestore
+    let userProfile;
+    try {
+      userProfile = await getUserProfile(decodedToken.uid);
+    } catch (error) {
+      // User profile doesn't exist yet, that's okay
+      userProfile = null;
     }
 
     res.json({
       success: true,
-      message: 'Logged out successfully'
+      user: {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        name: decodedToken.name || (userProfile as any)?.name,
+        profile: userProfile
+      }
     });
   } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({
+    console.error('Token verification error:', error);
+    res.status(401).json({
       success: false,
-      message: 'Logout failed'
+      message: 'Invalid token'
     });
   }
 });
@@ -113,23 +57,59 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    const user = await verifyToken(token);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
-    }
+    const decodedToken = await verifyIdToken(token);
+    const userProfile = await getUserProfile(decodedToken.uid);
 
     res.json({
       success: true,
-      user
+      user: {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        name: decodedToken.name || (userProfile as any)?.name,
+        profile: userProfile
+      }
     });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({
+    res.status(401).json({
       success: false,
       message: 'Failed to get user profile'
+    });
+  }
+});
+
+// Create or update user profile
+router.post('/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    const decodedToken = await verifyIdToken(token);
+    
+    // Validate profile data
+    const profileData = {
+      email: decodedToken.email,
+      ...req.body
+    };
+
+    const validatedProfileData = insertUserProfileSchema.parse(profileData);
+    
+    const userProfile = await saveUserProfile(decodedToken.uid, validatedProfileData);
+
+    res.json({
+      success: true,
+      profile: userProfile
+    });
+  } catch (error) {
+    console.error('Profile save error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save profile'
     });
   }
 });
@@ -145,19 +125,12 @@ router.put('/profile', async (req, res) => {
       });
     }
 
-    const currentUser = await verifyToken(token);
-    if (!currentUser) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
-    }
-
-    const updatedUser = await updateUserProfile(currentUser.id, req.body);
+    const decodedToken = await verifyIdToken(token);
+    const userProfile = await saveUserProfile(decodedToken.uid, req.body);
 
     res.json({
       success: true,
-      user: updatedUser
+      profile: userProfile
     });
   } catch (error) {
     console.error('Update profile error:', error);

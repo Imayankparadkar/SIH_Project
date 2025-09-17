@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../services/dev-auth';
+import { verifyIdToken } from '../services/firebase-admin';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -31,17 +31,14 @@ export async function authMiddleware(
       });
     }
 
-    // Verify the token with development auth
-    const user = await verifyToken(idToken);
-    
-    if (!user) {
-      throw new Error('Invalid token');
-    }
+    // Verify the token with Firebase
+    const decodedToken = await verifyIdToken(idToken);
     
     // Add user info to request object
     req.user = {
-      uid: user.id,
-      ...user
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+      ...decodedToken
     };
 
     next();
@@ -71,12 +68,13 @@ export function optionalAuth(
   }
 
   // Try to verify token, but don't fail if invalid
-  verifyToken(idToken)
-    .then(user => {
-      if (user) {
+  verifyIdToken(idToken)
+    .then(decodedToken => {
+      if (decodedToken) {
         req.user = {
-          uid: user.id,
-          ...user
+          uid: decodedToken.uid,
+          email: decodedToken.email,
+          ...decodedToken
         };
       }
       next();
