@@ -14,10 +14,19 @@ export function VitalCharts() {
   const chartData = useMemo(() => {
     if (historicalData && historicalData.length > 0) {
       return historicalData.map(vital => {
-        // Ensure timestamp is a valid Date object
-        const timestamp = vital.timestamp instanceof Date 
-          ? vital.timestamp 
-          : new Date(vital.timestamp);
+        // Ensure timestamp is a valid Date object with proper validation
+        let timestamp: Date;
+        
+        if (vital.timestamp instanceof Date) {
+          timestamp = vital.timestamp;
+        } else if (vital.timestamp) {
+          const dateAttempt = new Date(vital.timestamp);
+          // Check if the date is valid
+          timestamp = isNaN(dateAttempt.getTime()) ? new Date() : dateAttempt;
+        } else {
+          // Fallback to current date if timestamp is null/undefined
+          timestamp = new Date();
+        }
         
         return {
           date: format(timestamp, 'MMM dd'),

@@ -36,37 +36,46 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     setError(null);
 
-    // Subscribe to real-time vital signs updates
-    const vitalsQuery = query(
-      collection(db, 'vitals'),
-      where('userId', '==', user.id),
-      orderBy('timestamp', 'desc'),
-      limit(50)
-    );
+    // Only use Firebase if it's properly configured
+    if (db) {
+      // Subscribe to real-time vital signs updates
+      const vitalsQuery = query(
+        collection(db, 'vitals'),
+        where('userId', '==', user.id),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+      );
 
-    const unsubscribe = onSnapshot(vitalsQuery, 
-      (snapshot) => {
-        const vitals: VitalSigns[] = [];
-        snapshot.forEach((doc) => {
-          vitals.push({ id: doc.id, ...doc.data() } as VitalSigns);
-        });
+      const unsubscribe = onSnapshot(vitalsQuery, 
+        (snapshot) => {
+          const vitals: VitalSigns[] = [];
+          snapshot.forEach((doc) => {
+            vitals.push({ id: doc.id, ...doc.data() } as VitalSigns);
+          });
 
-        setHistoricalData(vitals);
-        if (vitals.length > 0) {
-          setCurrentVitals(vitals[0]);
-          // Analyze latest vitals
-          analyzeVitals(vitals[0]);
+          setHistoricalData(vitals);
+          if (vitals.length > 0) {
+            setCurrentVitals(vitals[0]);
+            // Analyze latest vitals
+            analyzeVitals(vitals[0]);
+          }
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching vitals:', error);
+          setError('Failed to load health data');
+          setIsLoading(false);
         }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching vitals:', error);
-        setError('Failed to load health data');
-        setIsLoading(false);
-      }
-    );
+      );
 
-    return unsubscribe;
+      return unsubscribe;
+    } else {
+      // Firebase not available, use development mode
+      console.log('Firebase not available, using development mode for health data');
+      setHistoricalData([]);
+      setCurrentVitals(null);
+      setIsLoading(false);
+    }
   }, [user]);
 
   const analyzeVitals = async (vitals: VitalSigns) => {
