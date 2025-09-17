@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { pgTable, varchar, integer, timestamp, boolean, real, jsonb, text, serial } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // User schemas with regulatory compliance
 export const userProfileSchema = z.object({
@@ -760,3 +762,317 @@ export type DoctorRating = z.infer<typeof doctorRatingSchema>;
 export type InsertDoctorRating = z.infer<typeof insertDoctorRatingSchema>;
 export type DonationRequest = z.infer<typeof donationRequestSchema>;
 export type InsertDonationRequest = z.infer<typeof insertDonationRequestSchema>;
+
+// Drizzle table definitions
+export const userProfilesTable = pgTable("user_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  name: varchar("name").notNull(),
+  age: integer("age").notNull(),
+  gender: varchar("gender").notNull(),
+  phone: varchar("phone").notNull(),
+  medicalHistory: text("medical_history"),
+  allergies: jsonb("allergies").$type<string[]>(),
+  medications: jsonb("medications").$type<string[]>(),
+  abhaId: varchar("abha_id"),
+  language: varchar("language").notNull().default("en"),
+  country: varchar("country").notNull().default("IN"),
+  emergencyContacts: jsonb("emergency_contacts").$type<Array<{name: string; phone: string; relation: string; email?: string}>>(),
+  insuranceInfo: jsonb("insurance_info").$type<{provider?: string; policyNumber?: string; validUntil?: string; pmjayId?: string; stateSchemeId?: string}>(),
+  dataRetentionPreference: jsonb("data_retention_preference").$type<{healthData: number; aiAnalysis: number; emergencyData: number}>(),
+  privacySettings: jsonb("privacy_settings").$type<{shareWithDoctors: boolean; shareForResearch: boolean; marketingConsent: boolean}>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+export const vitalSignsTable = pgTable("vital_signs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  heartRate: integer("heart_rate").notNull(),
+  bloodPressureSystolic: integer("blood_pressure_systolic").notNull(),
+  bloodPressureDiastolic: integer("blood_pressure_diastolic").notNull(),
+  oxygenSaturation: integer("oxygen_saturation").notNull(),
+  bodyTemperature: real("body_temperature").notNull(),
+  ecgData: text("ecg_data"),
+  steps: integer("steps"),
+  sleepHours: real("sleep_hours"),
+  deviceInfo: jsonb("device_info").$type<{deviceId: string; deviceType: string; manufacturer: string; model: string; isMedicalGrade: boolean; certifications?: string[]; firmwareVersion?: string}>().notNull(),
+  dataQuality: jsonb("data_quality").$type<{confidence: number; signalQuality?: string; artifactsDetected: boolean}>().notNull(),
+  location: jsonb("location").$type<{latitude?: number; longitude?: number; accuracy?: number}>(),
+  timestamp: timestamp("timestamp").notNull(),
+  syncedAt: timestamp("synced_at"),
+});
+
+export const healthAnalysisTable = pgTable("health_analysis", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  vitalSignsId: varchar("vital_signs_id").notNull().references(() => vitalSignsTable.id),
+  analysis: text("analysis").notNull(),
+  riskLevel: varchar("risk_level").notNull(),
+  recommendations: jsonb("recommendations").$type<string[]>().notNull(),
+  anomalies: jsonb("anomalies").$type<string[]>(),
+  aiConfidence: real("ai_confidence").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+});
+
+export const doctorsTable = pgTable("doctors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  specialization: varchar("specialization").notNull(),
+  qualification: varchar("qualification").notNull(),
+  experience: integer("experience").notNull(),
+  rating: real("rating").notNull(),
+  consultationFee: real("consultation_fee").notNull(),
+  availability: jsonb("availability").$type<Array<{day: string; startTime: string; endTime: string}>>().notNull(),
+  hospitalAffiliation: varchar("hospital_affiliation"),
+  languages: jsonb("languages").$type<string[]>().notNull(),
+  isOnline: boolean("is_online").notNull().default(true),
+});
+
+export const medicalReportsTable = pgTable("medical_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  fileName: varchar("file_name").notNull(),
+  originalFileName: varchar("original_file_name").notNull(),
+  fileType: varchar("file_type").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  checksum: varchar("checksum").notNull(),
+  storageUrl: varchar("storage_url").notNull(),
+  reportType: varchar("report_type").notNull(),
+  sourceType: varchar("source_type"),
+  sourceId: varchar("source_id"),
+  doctorId: varchar("doctor_id"),
+  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+  isAnalyzed: boolean("is_analyzed").notNull().default(false),
+  analysis: jsonb("analysis").$type<{summary: string; keyFindings: string[]; recommendations: string[]; followUpNeeded: boolean; analyzedAt: Date; confidence: number; aiModelUsed?: string; aiModelVersion?: string; language: string}>(),
+  sharedWith: jsonb("shared_with").$type<string[]>().notNull().default([]),
+  tags: jsonb("tags").$type<string[]>().notNull().default([]),
+  isEncrypted: boolean("is_encrypted").notNull().default(true),
+  isDeidentified: boolean("is_deidentified").notNull().default(false),
+});
+
+export const labsTable = pgTable("labs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  address: varchar("address").notNull(),
+  city: varchar("city").notNull(),
+  state: varchar("state").notNull(),
+  pincode: varchar("pincode").notNull(),
+  phone: varchar("phone").notNull(),
+  email: varchar("email").notNull(),
+  rating: real("rating").notNull().default(0),
+  isPartner: boolean("is_partner").notNull().default(false),
+  homeCollectionAvailable: boolean("home_collection_available").notNull().default(false),
+  homeCollectionFee: real("home_collection_fee").notNull().default(0),
+  coordinates: jsonb("coordinates").$type<{latitude: number; longitude: number}>().notNull(),
+  operatingHours: jsonb("operating_hours").$type<Array<{day: string; open: string; close: string}>>().notNull(),
+  specializations: jsonb("specializations").$type<string[]>().notNull().default([]),
+  accreditations: jsonb("accreditations").$type<string[]>().notNull().default([]),
+  reportDeliveryTime: jsonb("report_delivery_time").$type<{normal: string; urgent: string}>().notNull(),
+});
+
+export const labTestsTable = pgTable("lab_tests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  labId: varchar("lab_id").notNull().references(() => labsTable.id),
+  name: varchar("name").notNull(),
+  category: varchar("category").notNull(),
+  description: text("description").notNull(),
+  price: real("price").notNull(),
+  discountedPrice: real("discounted_price"),
+  sampleType: varchar("sample_type").notNull(),
+  fastingRequired: boolean("fasting_required").notNull().default(false),
+  fastingHours: integer("fasting_hours").notNull().default(0),
+  reportTime: varchar("report_time").notNull(),
+  instructions: text("instructions"),
+  normalRanges: jsonb("normal_ranges").$type<Record<string, string>>(),
+});
+
+export const labBookingsTable = pgTable("lab_bookings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  labId: varchar("lab_id").notNull().references(() => labsTable.id),
+  testIds: jsonb("test_ids").$type<string[]>().notNull(),
+  bookingType: varchar("booking_type").notNull(),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  scheduledTime: varchar("scheduled_time").notNull(),
+  patientInfo: jsonb("patient_info").$type<{name: string; age: number; gender: string; phone: string}>().notNull(),
+  address: jsonb("address").$type<{street: string; city: string; state: string; pincode: string; landmark?: string}>(),
+  totalAmount: real("total_amount").notNull(),
+  paymentStatus: varchar("payment_status").notNull().default("pending"),
+  status: varchar("status").notNull().default("booked"),
+  phlebotomistId: varchar("phlebotomist_id"),
+  reportFileId: varchar("report_file_id"),
+  cancellationReason: text("cancellation_reason"),
+  bookedAt: timestamp("booked_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"),
+});
+
+export const appointmentsTable = pgTable("appointments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  doctorId: varchar("doctor_id").notNull().references(() => doctorsTable.id),
+  appointmentType: varchar("appointment_type").notNull(),
+  scheduledDateTime: timestamp("scheduled_date_time").notNull(),
+  timezone: varchar("timezone").notNull().default("Asia/Kolkata"),
+  duration: integer("duration").notNull().default(30),
+  consultationFee: real("consultation_fee").notNull(),
+  status: varchar("status").notNull().default("scheduled"),
+  paymentStatus: varchar("payment_status").notNull().default("pending"),
+  symptoms: text("symptoms"),
+  medicalReports: jsonb("medical_reports").$type<string[]>().notNull().default([]),
+  prescription: varchar("prescription"),
+  meetingLink: varchar("meeting_link"),
+  clinicId: varchar("clinic_id"),
+  doctorNotes: text("doctor_notes"),
+  followUpRequired: boolean("follow_up_required").notNull().default(false),
+  followUpDate: timestamp("follow_up_date"),
+  cancellationReason: text("cancellation_reason"),
+  noShowReason: text("no_show_reason"),
+  bookedAt: timestamp("booked_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const medicinesTable = pgTable("medicines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  genericName: varchar("generic_name").notNull(),
+  manufacturer: varchar("manufacturer").notNull(),
+  composition: varchar("composition").notNull(),
+  dosageForm: varchar("dosage_form").notNull(),
+  strength: varchar("strength").notNull(),
+  price: real("price").notNull(),
+  prescriptionRequired: boolean("prescription_required").notNull(),
+});
+
+export const ordersTable = pgTable("orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  pharmacyId: varchar("pharmacy_id"),
+  orderItems: jsonb("order_items").$type<Array<{medicineId: string; quantity: number; price: number; prescriptionRequired: boolean}>>().notNull(),
+  prescriptionId: varchar("prescription_id"),
+  deliveryAddress: jsonb("delivery_address").$type<{name: string; phone: string; street: string; city: string; state: string; pincode: string; landmark?: string; isDefault: boolean}>().notNull(),
+  totalAmount: real("total_amount").notNull(),
+  deliveryFee: real("delivery_fee").notNull().default(0),
+  discount: real("discount").notNull().default(0),
+  finalAmount: real("final_amount").notNull(),
+  currency: varchar("currency").notNull().default("INR"),
+  paymentId: varchar("payment_id"),
+  paymentStatus: varchar("payment_status").notNull().default("pending"),
+  orderStatus: varchar("order_status").notNull().default("placed"),
+  estimatedDelivery: timestamp("estimated_delivery"),
+  deliveredAt: timestamp("delivered_at"),
+  trackingId: varchar("tracking_id"),
+  orderedAt: timestamp("ordered_at").notNull().defaultNow(),
+});
+
+export const prescriptionsTable = pgTable("prescriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  doctorId: varchar("doctor_id").notNull().references(() => doctorsTable.id),
+  medicines: jsonb("medicines").$type<Array<{medicineId: string; quantity: number; dosage: string; frequency: string; duration: string; instructions?: string}>>().notNull(),
+  issuedAt: timestamp("issued_at").notNull(),
+  validUntil: timestamp("valid_until").notNull(),
+  status: varchar("status").notNull(),
+});
+
+export const hospitalsTable = pgTable("hospitals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  address: varchar("address").notNull(),
+  city: varchar("city").notNull(),
+  state: varchar("state").notNull(),
+  country: varchar("country").notNull(),
+  pincode: varchar("pincode").notNull(),
+  phone: varchar("phone").notNull(),
+  email: varchar("email").notNull(),
+  specialties: jsonb("specialties").$type<string[]>().notNull(),
+  rating: real("rating").notNull(),
+  isPartner: boolean("is_partner").notNull().default(false),
+  coordinates: jsonb("coordinates").$type<{latitude: number; longitude: number}>().notNull(),
+  operatingHours: jsonb("operating_hours").$type<Array<{day: string; open: string; close: string}>>().notNull(),
+  emergencyServices: boolean("emergency_services").notNull().default(false),
+});
+
+export const pharmaciesTable = pgTable("pharmacies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  address: varchar("address").notNull(),
+  city: varchar("city").notNull(),
+  state: varchar("state").notNull(),
+  phone: varchar("phone").notNull(),
+  isPartner: boolean("is_partner").notNull().default(false),
+  deliveryAvailable: boolean("delivery_available").notNull().default(false),
+  operatingHours: jsonb("operating_hours").$type<Array<{day: string; open: string; close: string}>>().notNull(),
+});
+
+export const donorProfilesTable = pgTable("donor_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  bloodGroup: varchar("blood_group").notNull(),
+  isAvailable: boolean("is_available").notNull().default(true),
+  lastDonationDate: timestamp("last_donation_date"),
+  totalDonations: integer("total_donations").notNull().default(0),
+  rewardCoins: integer("reward_coins").notNull().default(0),
+  donorType: varchar("donor_type").notNull().default("all"),
+  location: jsonb("location").$type<{city: string; state: string; pincode: string; coordinates?: {latitude: number; longitude: number}}>().notNull(),
+  medicalEligibility: jsonb("medical_eligibility").$type<{weight: number; hemoglobin: number; lastHealthCheck?: Date; isEligible: boolean}>().notNull(),
+  emergencyContact: jsonb("emergency_contact").$type<{name: string; phone: string; relation: string}>().notNull(),
+  registeredAt: timestamp("registered_at").notNull().defaultNow(),
+});
+
+export const donationsTable = pgTable("donations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  donorId: varchar("donor_id").notNull(),
+  recipientHospitalId: varchar("recipient_hospital_id").notNull(),
+  donationType: varchar("donation_type").notNull(),
+  bloodGroup: varchar("blood_group").notNull(),
+  quantity: real("quantity").notNull(),
+  rewardCoins: integer("reward_coins").notNull(),
+  status: varchar("status").notNull(),
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  completedDate: timestamp("completed_date"),
+});
+
+export const donationRequestsTable = pgTable("donation_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hospitalId: varchar("hospital_id").notNull(),
+  bloodGroup: varchar("blood_group").notNull(),
+  donationType: varchar("donation_type").notNull(),
+  urgencyLevel: varchar("urgency_level").notNull(),
+  unitsNeeded: integer("units_needed").notNull(),
+  unitsCollected: integer("units_collected").notNull().default(0),
+  location: jsonb("location").$type<{city: string; state: string; pincode: string; coordinates?: {latitude: number; longitude: number}}>().notNull(),
+  patientInfo: jsonb("patient_info").$type<{age?: number; condition: string; department?: string; ward?: string; isEmergency: boolean}>().notNull(),
+  validUntil: timestamp("valid_until").notNull(),
+  contactPerson: jsonb("contact_person").$type<{name: string; phone: string; designation: string}>().notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const hospitalRatingsTable = pgTable("hospital_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  hospitalId: varchar("hospital_id").notNull().references(() => hospitalsTable.id),
+  rating: integer("rating").notNull(),
+  review: text("review"),
+  serviceType: varchar("service_type").notNull(),
+  visitDate: timestamp("visit_date").notNull(),
+  isVerified: boolean("is_verified").notNull().default(false),
+  helpful: integer("helpful").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const doctorRatingsTable = pgTable("doctor_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  doctorId: varchar("doctor_id").notNull().references(() => doctorsTable.id),
+  rating: integer("rating").notNull(),
+  review: text("review"),
+  visitDate: timestamp("visit_date").notNull(),
+  isVerified: boolean("is_verified").notNull().default(false),
+  helpful: integer("helpful").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

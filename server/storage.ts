@@ -1090,22 +1090,24 @@ import { FirebaseStorage } from './firebase-storage';
 import { adminStorage } from './services/firebase-admin';
 
 // Use Firebase Storage if available, otherwise fall back to in-memory storage for development
+import { DbStorage } from './db-storage';
+
 let storageInstance: IStorage;
 
 try {
-  // In development mode, always use in-memory storage
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Development mode: using in-memory storage');
-    storageInstance = new MemStorage();
-  } else if (adminStorage) {
+  // Check if DATABASE_URL is available for database storage
+  if (process.env.DATABASE_URL) {
+    console.log('Using PostgreSQL database storage');
+    storageInstance = new DbStorage();
+  } else if (adminStorage && process.env.NODE_ENV !== 'development') {
     storageInstance = new FirebaseStorage();
     console.log('Using Firebase Storage');
   } else {
-    console.warn('Firebase not available, using in-memory storage for development');
+    console.log('Development mode: using in-memory storage');
     storageInstance = new MemStorage();
   }
 } catch (error) {
-  console.warn('Firebase Storage initialization failed, falling back to in-memory storage:', error);
+  console.warn('Database Storage initialization failed, falling back to in-memory storage:', error);
   storageInstance = new MemStorage();
 }
 
