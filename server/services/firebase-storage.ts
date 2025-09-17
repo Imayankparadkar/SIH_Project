@@ -22,6 +22,18 @@ export class FirebaseStorageService {
   }
 
   /**
+   * Sanitize filename to prevent path traversal attacks
+   */
+  private sanitizeFileName(fileName: string): string {
+    // Extract just the filename without path
+    const baseName = path.basename(fileName);
+    // Remove dangerous characters and limit length
+    const sanitized = baseName.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 100);
+    // Ensure it's not empty
+    return sanitized || 'file';
+  }
+
+  /**
    * Upload a file to Firebase Storage or local storage (fallback for development)
    */
   async uploadFile(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
@@ -30,7 +42,8 @@ export class FirebaseStorageService {
       console.log('Using local storage for file upload (development mode)');
       try {
         const uploadDir = await this.ensureLocalUploadDir();
-        const uniqueFileName = `${randomUUID()}-${fileName}`;
+        const safeFileName = this.sanitizeFileName(fileName);
+        const uniqueFileName = `${randomUUID()}-${safeFileName}`;
         const filePath = path.join(uploadDir, uniqueFileName);
         
         await fs.writeFile(filePath, fileBuffer);
@@ -47,7 +60,8 @@ export class FirebaseStorageService {
     if (adminStorage) {
       try {
         // Create a unique filename to avoid collisions
-        const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;
+        const safeFileName = this.sanitizeFileName(fileName);
+        const uniqueFileName = `medical-files/${randomUUID()}-${safeFileName}`;
         
         // Create a file reference
         const file = this.bucket.file(uniqueFileName);
@@ -79,7 +93,8 @@ export class FirebaseStorageService {
   async uploadFileFromPath(localFilePath: string, fileName: string, mimeType: string): Promise<string> {
     try {
       // Create a unique filename to avoid collisions
-      const uniqueFileName = `medical-files/${randomUUID()}-${fileName}`;
+      const safeFileName = this.sanitizeFileName(fileName);
+      const uniqueFileName = `medical-files/${randomUUID()}-${safeFileName}`;
       
       // Upload the file to Firebase Storage
       const [file] = await this.bucket.upload(localFilePath, {
