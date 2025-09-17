@@ -26,6 +26,7 @@ export class GeminiHealthAnalyzer {
     if (token) {
       return { 'Authorization': `Bearer ${token}` };
     }
+    console.warn('No authentication token found. Please login first to use AI chat features.');
     return {};
   }
 
@@ -88,6 +89,9 @@ export class GeminiHealthAnalyzer {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login first to use the AI Medical Consultation feature.');
+        }
         throw new Error(`Chat API error: ${response.status}`);
       }
 
