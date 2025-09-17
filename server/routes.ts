@@ -64,8 +64,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          // Use demo user ID for development mode
-          userId = 'demo-user-id-for-testing';
+          // Use demo user ID for development mode (matching dev-auth.ts)
+          userId = 'demo-user-1';
           console.log('Using demo user ID for development mode upload');
         } else {
           return res.status(401).json({ error: "User not authenticated" });

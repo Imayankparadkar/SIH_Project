@@ -186,6 +186,32 @@ export class MemStorage implements IStorage {
     this.appointmentsByDoctorId = new Map();
     this.testsByLabId = new Map();
     this.bookingsByUserId = new Map();
+
+    // Initialize demo user for development
+    if (process.env.NODE_ENV === 'development') {
+      this.initializeDemoUser();
+    }
+  }
+
+  private initializeDemoUser() {
+    const demoUser: UserProfile = {
+      id: 'demo-user-1',
+      email: 'demo@sehatify.com',
+      name: 'Demo User',
+      age: 30,
+      gender: 'male',
+      phone: '+91-9876543210',
+      medicalHistory: 'No major medical history',
+      abhaId: 'AB123456789',
+      language: 'en',
+      country: 'IN',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.users.set(demoUser.id, demoUser);
+    this.usersByEmail.set(demoUser.email.toLowerCase(), demoUser.id);
+    console.log('Demo user initialized in storage:', demoUser.email);
   }
 
   // User operations
