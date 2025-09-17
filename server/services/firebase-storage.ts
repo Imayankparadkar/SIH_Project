@@ -116,9 +116,28 @@ export class FirebaseStorageService {
   }
 
   /**
-   * Delete a file from Firebase Storage
+   * Delete a file from Firebase Storage or local storage
    */
   async deleteFile(storageUrl: string): Promise<boolean> {
+    // Handle local storage deletion (development mode)
+    if (storageUrl.startsWith('/uploads/')) {
+      try {
+        const fileName = path.basename(storageUrl);
+        const filePath = path.join(process.cwd(), 'uploads', fileName);
+        
+        // Verify file exists before deletion
+        await fs.access(filePath);
+        await fs.unlink(filePath);
+        
+        console.log(`Local file deleted successfully: ${fileName}`);
+        return true;
+      } catch (error) {
+        console.error('Local file delete error:', error);
+        return false;
+      }
+    }
+
+    // Handle Firebase Storage deletion (production mode)
     try {
       // Extract the file path from the storage URL
       const urlParts = storageUrl.split('/');
@@ -132,6 +151,7 @@ export class FirebaseStorageService {
 
       const file = this.bucket.file(filePath);
       await file.delete();
+      console.log(`Firebase file deleted successfully: ${filePath}`);
       return true;
     } catch (error) {
       console.error('Firebase Storage delete error:', error);
