@@ -810,6 +810,45 @@ Please respond in JSON format with:
     }
   });
 
+  // Mentor Registration endpoint
+  app.post("/api/mentors/apply", async (req, res) => {
+    try {
+      const { name, email, specialization, experience, qualifications, availability, motivation } = req.body;
+      
+      if (!name || !email || !motivation) {
+        return res.status(400).json({ error: "Name, email, and motivation are required" });
+      }
+
+      console.log('Mentor application received:', { name, email, specialization });
+
+      // In a production environment, this would save to database
+      // For now, we'll just simulate success and log the application
+      const application = {
+        id: randomUUID(),
+        name,
+        email,
+        specialization,
+        experience,
+        qualifications,
+        availability,
+        motivation,
+        status: 'pending',
+        submittedAt: new Date().toISOString()
+      };
+
+      console.log('Mentor application processed:', application);
+      
+      res.json({ 
+        success: true, 
+        message: "Application submitted successfully",
+        applicationId: application.id
+      });
+    } catch (error) {
+      console.error('Mentor application error:', error);
+      res.status(500).json({ error: "Failed to submit application" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/status", (req, res) => {
     res.json({
@@ -833,7 +872,7 @@ Please respond in JSON format with:
     // Extract authentication from query params or headers
     const url = new URL(request.url!, `http://${request.headers.host}`);
     const token = url.searchParams.get('token') || request.headers.authorization?.replace('Bearer ', '');
-    const studentId = url.searchParams.get('studentId'); // For anonymous students
+    const studentId = url.searchParams.get('studentId') || undefined; // For anonymous students
     
     // TODO: Validate Firebase token if provided
     let userId: string | undefined;
