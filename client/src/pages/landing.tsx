@@ -53,26 +53,79 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section - Clean MediBuddy Style */}
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          {/* Main Title */}
-          <div className="text-center mb-12">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8 leading-tight">
-              Consult with Top Doctors Online, <span className="text-purple-600">24x7</span>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      {/* Hero Section - Modern Professional Style */}
+      <section className="relative py-20 px-4 overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <svg className="w-full h-full" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" className="text-purple-600" />
+          </svg>
+        </div>
+        
+        <div className="relative z-10 max-w-7xl mx-auto">
+          {/* Main Content */}
+          <div className="text-center mb-16">
+            {/* Badge */}
+            <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-8">
+              <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+              Trusted by 10M+ Users
+            </div>
+            
+            {/* Main Headline */}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+              Your Health,{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                Our Priority
+              </span>
             </h1>
             
-            {/* Start Consultation Button */}
-            <div className="mb-8">
+            {/* Subtitle */}
+            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Consult with top doctors online, anytime. Access premium healthcare services from the comfort of your home.
+            </p>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
               <Link href="/doctors">
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base rounded-lg">
-                  Start Consultation <ArrowRight className="w-4 h-4 ml-2" />
+                <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Link href="/vitals">
+                <Button variant="outline" className="border-2 border-purple-200 text-purple-700 hover:bg-purple-50 px-8 py-4 text-lg rounded-xl">
+                  Book Health Checkup
                 </Button>
               </Link>
             </div>
+            
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap justify-center items-center gap-8 text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>24/7 Available</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Verified Doctors</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Secure & Private</span>
+              </div>
+            </div>
           </div>
         </div>
+        
+        {/* Floating Elements */}
+        <div className="absolute top-20 left-10 w-20 h-20 bg-purple-200 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-16 h-16 bg-indigo-200 rounded-full opacity-20 animate-pulse delay-75"></div>
+        <div className="absolute bottom-20 left-20 w-12 h-12 bg-purple-300 rounded-full opacity-20 animate-pulse delay-150"></div>
       </section>
 
       {/* Services Grid - MediBuddy Style */}
