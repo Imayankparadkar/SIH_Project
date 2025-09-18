@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Star, Clock, DollarSign, Video, Phone, MapPin, Filter, Navigation, Calendar, User, Shield, Heart } from 'lucide-react';
+import { Search, Star, Clock, DollarSign, Video, Phone, MapPin, Filter, Navigation, Calendar, User, Shield, Heart, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import HospitalMap from '@/components/ui/hospital-map';
+import AppointmentBookingDialog from '@/components/ui/appointment-booking-dialog';
 import { Doctor } from '@/types/user';
 
 interface Hospital {
@@ -47,8 +48,10 @@ export function DoctorsPage() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('doctors');
+  const [showMapView, setShowMapView] = useState(false);
 
   // Get user location
   const getUserLocation = useCallback(() => {
@@ -116,58 +119,146 @@ export function DoctorsPage() {
     return R * c;
   };
 
-  // Fetch hospitals data
+  // Real Indore hospital data
+  const indoreHospitals: Hospital[] = [
+    {
+      id: '1',
+      name: 'Maharaja Yeshwantrao Hospital (MYH)',
+      address: 'Mahatma Gandhi Road, A.B. Road, Indore, Madhya Pradesh 452001',
+      phone: '0731 252 5555',
+      rating: 4.2,
+      coordinates: { latitude: 22.7196, longitude: 75.8577 },
+      specialties: ['Teaching Hospital', 'Tertiary Care', 'Medical Education', 'Emergency Care'],
+      emergencyServices: true
+    },
+    {
+      id: '2',
+      name: 'Apollo Hospitals',
+      address: 'Vijay Nagar, Scheme No 74C, Sector D, Indore, Madhya Pradesh 452010',
+      phone: '0731 244 5566',
+      rating: 4.5,
+      coordinates: { latitude: 22.7296, longitude: 75.8677 },
+      specialties: ['Cardiology', 'Neurosurgery', 'Oncology', 'Emergency Care'],
+      emergencyServices: true
+    },
+    {
+      id: '3',
+      name: 'CHL Hospitals / Convenient Hospitals Ltd',
+      address: 'AB Road, near LIG Square, Indore, Madhya Pradesh 452008',
+      phone: '0731 662 2222',
+      rating: 4.1,
+      coordinates: { latitude: 22.7096, longitude: 75.8477 },
+      specialties: ['Multi-specialty', 'Emergency Care', 'ICU'],
+      emergencyServices: true
+    },
+    {
+      id: '4',
+      name: 'Choithram Hospital & Research Centre',
+      address: 'Mainak Bagh Road, Indore, Madhya Pradesh 452014',
+      phone: '0731 256 6666',
+      rating: 4.4,
+      coordinates: { latitude: 22.7396, longitude: 75.8777 },
+      specialties: ['Cardiology', 'Neurology', 'Orthopedics', 'Oncology'],
+      emergencyServices: true
+    },
+    {
+      id: '5',
+      name: 'Mohak Hi Tech Speciality Hospital',
+      address: 'Ujjain Road, Indore, Madhya Pradesh 452001',
+      phone: '0731 256 7777',
+      rating: 4.3,
+      coordinates: { latitude: 22.7150, longitude: 75.8550 },
+      specialties: ['Hi-Tech Surgery', 'Cardiology', 'Orthopedics', 'Gastroenterology'],
+      emergencyServices: true
+    },
+    {
+      id: '6',
+      name: 'Bombay Hospital',
+      address: 'Ring Road, Vijay Nagar, Indore, Madhya Pradesh 452010',
+      phone: '0731 256 8888',
+      rating: 4.2,
+      coordinates: { latitude: 22.7250, longitude: 75.8650 },
+      specialties: ['Multi-specialty', 'Surgery', 'Medicine', 'Pediatrics'],
+      emergencyServices: true
+    },
+    {
+      id: '7',
+      name: 'Sri Aurobindo Institute of Medical Sciences',
+      address: 'Ujjain Road, near MR-10 Crossing, Sanwer Road, Indore, Madhya Pradesh 452020',
+      phone: '0731 256 9999',
+      rating: 4.0,
+      coordinates: { latitude: 22.6800, longitude: 75.8200 },
+      specialties: ['Medical Education', 'Teaching Hospital', 'Multi-specialty'],
+      emergencyServices: true
+    },
+    {
+      id: '8',
+      name: 'Neema Hospitals Pvt Ltd (Unique Superspeciality Centre)',
+      address: 'Opp Dashehara Maidan, Annapurna Road, Indore, Madhya Pradesh 452009',
+      phone: '0731 256 1010',
+      rating: 4.3,
+      coordinates: { latitude: 22.7100, longitude: 75.8400 },
+      specialties: ['Superspeciality', 'Surgery', 'Critical Care'],
+      emergencyServices: true
+    },
+    {
+      id: '9',
+      name: 'Bhandari Hospital & Research Center',
+      address: 'Scheme No. 54, Vijay Nagar, Indore, Madhya Pradesh 452010',
+      phone: '0731 256 1111',
+      rating: 4.1,
+      coordinates: { latitude: 22.7200, longitude: 75.8600 },
+      specialties: ['Research Center', 'Multi-specialty', 'Surgery'],
+      emergencyServices: true
+    },
+    {
+      id: '10',
+      name: 'Greater Kailash Hospital',
+      address: 'Old Palasia, Indore, Madhya Pradesh 452001',
+      phone: '0731 256 1212',
+      rating: 3.9,
+      coordinates: { latitude: 22.7300, longitude: 75.8500 },
+      specialties: ['General Medicine', 'Surgery', 'Pediatrics'],
+      emergencyServices: true
+    },
+    {
+      id: '11',
+      name: 'Indore Eye Hospital',
+      address: 'Dhar Road, Indore, Madhya Pradesh 452001',
+      phone: '0731 256 1313',
+      rating: 4.2,
+      coordinates: { latitude: 22.7000, longitude: 75.8300 },
+      specialties: ['Ophthalmology', 'Eye Surgery', 'Retina Care'],
+      emergencyServices: false
+    },
+    {
+      id: '12',
+      name: 'Vasan Eye Care Hospital',
+      address: 'Diamond Colony, Janjeerwala Square, Indore, Madhya Pradesh 452001',
+      phone: '0731 256 1414',
+      rating: 4.1,
+      coordinates: { latitude: 22.7050, longitude: 75.8350 },
+      specialties: ['Eye Care', 'Cataract Surgery', 'Laser Treatment'],
+      emergencyServices: false
+    }
+  ];
+
+  // Fetch hospitals data from backend API
   const fetchHospitals = async () => {
     try {
-      // Sample hospital data from Indore (will be replaced with API call)
-      const sampleHospitals: Hospital[] = [
-        {
-          id: '1',
-          name: 'CHL Group of Hospitals',
-          address: 'A.B. Road, Near L.I.G Square, Indore, Madhya Pradesh 452008',
-          phone: '0731 662 2222',
-          rating: 4.1,
-          coordinates: { latitude: 22.7196, longitude: 75.8577 },
-          specialties: ['Cardiology', 'Neurology', 'Orthopedics', 'Emergency Care'],
-          emergencyServices: true
-        },
-        {
-          id: '2',
-          name: 'Jupiter Hospital',
-          address: 'Scheme No. 94, Sector 1, Ring Road, Near Teen Imli Square, Indore, Madhya Pradesh 452020',
-          phone: '0731 471 8111',
-          rating: 4.5,
-          coordinates: { latitude: 22.7296, longitude: 75.8677 },
-          specialties: ['Multi-specialty', 'Cancer Care', 'Heart Surgery'],
-          emergencyServices: true
-        },
-        {
-          id: '3',
-          name: 'Apollo Hospitals',
-          address: 'Scheme No. 74 C, Sector D, Indore, Madhya Pradesh 452010',
-          phone: '0731 244 5566',
-          rating: 4.3,
-          coordinates: { latitude: 22.7096, longitude: 75.8477 },
-          specialties: ['Cardiology', 'Neurosurgery', 'Oncology'],
-          emergencyServices: true
-        },
-        {
-          id: '4',
-          name: 'Medista Hospital',
-          address: '52/a, Khisnpuri Colony, Udhyog Nagar, Musakhedi, Indore, Madhya Pradesh 452020',
-          phone: '0731 353 6666',
-          rating: 5.0,
-          coordinates: { latitude: 22.7396, longitude: 75.8777 },
-          specialties: ['Gynecology', 'Orthopedics', 'General Medicine'],
-          emergencyServices: false
-        }
-      ];
-      setHospitals(sampleHospitals);
+      const response = await fetch('/api/hospitals');
+      if (!response.ok) {
+        throw new Error('Failed to fetch hospitals');
+      }
+      const hospitalData = await response.json();
+      setHospitals(hospitalData);
     } catch (error) {
       console.error('Error fetching hospitals:', error);
+      // Fallback to hardcoded data if API fails
+      setHospitals(indoreHospitals);
       toast({
         title: 'Error',
-        description: 'Failed to load hospitals. Please try again.',
+        description: 'Failed to load hospitals from server. Using offline data.',
         variant: 'destructive'
       });
     }
@@ -343,11 +434,33 @@ export function DoctorsPage() {
 
   const specialties = Array.from(new Set(doctors.map(d => d.specialization)));
 
-  const handleBookAppointment = (doctorId: string, type: 'video' | 'phone' | 'visit') => {
+  const handleBookAppointment = (doctorId: string, type?: 'video' | 'phone' | 'visit') => {
     const doctor = doctors.find(d => d.id === doctorId);
     if (doctor) {
       setSelectedDoctor(doctor);
+      // Find associated hospital
+      const hospital = hospitals.find(h => h.name === doctor.hospitalAffiliation);
+      setSelectedHospital(hospital || null);
       setIsBookingModalOpen(true);
+    }
+  };
+
+  const handleHospitalBooking = (hospitalId: string) => {
+    const hospital = hospitals.find(h => h.id === hospitalId);
+    if (hospital) {
+      // Find a doctor from this hospital
+      const hospitalDoctor = doctors.find(d => d.hospitalAffiliation === hospital.name);
+      if (hospitalDoctor) {
+        setSelectedDoctor(hospitalDoctor);
+        setSelectedHospital(hospital);
+        setIsBookingModalOpen(true);
+      } else {
+        toast({
+          title: "No Doctors Available",
+          description: "No doctors are currently available at this hospital for booking.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -368,20 +481,35 @@ export function DoctorsPage() {
 
   const confirmAppointment = async (appointmentData: any) => {
     try {
-      // In production, this would call your booking API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Call the appointments API
+      const response = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(appointmentData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to book appointment');
+      }
+
+      const result = await response.json();
       
       toast({
-        title: "Appointment Booked!",
-        description: `Your appointment with ${selectedDoctor?.name} has been confirmed.`,
+        title: "Appointment Booked Successfully!",
+        description: `Your ${appointmentData.appointmentType.replace('_', ' ')} appointment with ${result.doctor.name} has been confirmed for ${new Date(appointmentData.scheduledDateTime).toLocaleDateString()}.`,
       });
       
       setIsBookingModalOpen(false);
       setSelectedDoctor(null);
-    } catch (error) {
+      setSelectedHospital(null);
+    } catch (error: any) {
+      console.error('Booking error:', error);
       toast({
         title: "Booking Failed",
-        description: "Unable to book appointment. Please try again.",
+        description: error.message || "Unable to book appointment. Please try again.",
         variant: "destructive"
       });
     }
@@ -488,7 +616,7 @@ export function DoctorsPage() {
             </TabsTrigger>
             <TabsTrigger value="hospitals" className="flex items-center gap-2">
               <Heart className="w-4 h-4" />
-              Nearby Hospitals
+              Hospitals & Map
             </TabsTrigger>
           </TabsList>
 
@@ -541,95 +669,118 @@ export function DoctorsPage() {
           <TabsContent value="hospitals">
             <Card className="mb-8">
               <CardContent className="p-6">
-                <div className="text-center">
-                  {!userLocation ? (
-                    <div className="py-8">
-                      <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Location Required</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Enable location access to see nearby hospitals and get directions
-                      </p>
-                      <Button onClick={getUserLocation} disabled={isLocationLoading}>
-                        <Navigation className="w-4 h-4 mr-2" />
-                        {isLocationLoading ? 'Getting Location...' : 'Enable Location'}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Hospitals in Indore</h3>
+                    <p className="text-muted-foreground text-sm">View hospitals in list or map format</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {!userLocation && (
+                      <Button 
+                        onClick={getUserLocation} 
+                        disabled={isLocationLoading}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Navigation className={`w-4 h-4 mr-2 ${isLocationLoading ? 'animate-spin' : ''}`} />
+                        {isLocationLoading ? 'Getting Location...' : 'Get Location'}
                       </Button>
-                    </div>
-                  ) : nearbyHospitals.length === 0 ? (
-                    <div className="py-8">
-                      <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Hospitals Found</h3>
-                      <p className="text-muted-foreground">
-                        No hospitals found in your area
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-left">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium">Hospitals Near You</h3>
-                        <Badge variant="secondary">
-                          {nearbyHospitals.length} found
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {nearbyHospitals.map((hospital) => (
-                          <Card key={hospital.id} className="hover:shadow-lg transition-shadow">
-                            <CardHeader className="pb-3">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <CardTitle className="text-base font-medium">{hospital.name}</CardTitle>
-                                  <div className="flex items-center mt-1">
-                                    {renderRatingStars(hospital.rating)}
-                                    <span className="text-sm text-muted-foreground ml-1">({hospital.rating})</span>
-                                  </div>
-                                </div>
-                                {hospital.emergencyServices && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    Emergency
-                                  </Badge>
-                                )}
-                              </div>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <div className="space-y-2">
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                  <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                                  <span className="line-clamp-2">{hospital.address}</span>
-                                </div>
-                                {hospital.distance && (
-                                  <div className="flex items-center text-sm text-muted-foreground">
-                                    <Navigation className="w-4 h-4 mr-2" />
-                                    <span>{hospital.distance.toFixed(1)} km away</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                  <Phone className="w-4 h-4 mr-2" />
-                                  <span>{hospital.phone}</span>
-                                </div>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {hospital.specialties.slice(0, 3).map((specialty) => (
-                                    <Badge key={specialty} variant="secondary" className="text-xs">
-                                      {specialty}
-                                    </Badge>
-                                  ))}
-                                </div>
-                                <div className="pt-2">
-                                  <Button 
-                                    onClick={() => openDirections(hospital)}
-                                    className="w-full"
-                                    size="sm"
-                                  >
-                                    <Navigation className="w-4 h-4 mr-2" />
-                                    Get Directions
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                    <Button
+                      onClick={() => setShowMapView(!showMapView)}
+                      variant={showMapView ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      <MapIcon className="w-4 h-4 mr-2" />
+                      {showMapView ? 'List View' : 'Map View'}
+                    </Button>
+                  </div>
                 </div>
+
+                {showMapView ? (
+                  <Suspense fallback={
+                    <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <MapIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-600">Loading map...</p>
+                      </div>
+                    </div>
+                  }>
+                    <HospitalMap
+                      hospitals={nearbyHospitals.length > 0 ? nearbyHospitals : hospitals}
+                      userLocation={userLocation || undefined}
+                      onDirectionsClick={openDirections}
+                      onBookAppointment={handleHospitalBooking}
+                      height="500px"
+                      className="mb-4"
+                    />
+                  </Suspense>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(nearbyHospitals.length > 0 ? nearbyHospitals : hospitals).map((hospital) => (
+                      <Card key={hospital.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-base font-medium">{hospital.name}</CardTitle>
+                              <div className="flex items-center mt-1">
+                                {renderRatingStars(hospital.rating)}
+                                <span className="text-sm text-muted-foreground ml-1">({hospital.rating})</span>
+                              </div>
+                            </div>
+                            {hospital.emergencyServices && (
+                              <Badge variant="destructive" className="text-xs">
+                                Emergency
+                              </Badge>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center text-muted-foreground">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              <span className="line-clamp-2">{hospital.address}</span>
+                            </div>
+                            <div className="flex items-center text-muted-foreground">
+                              <Phone className="w-4 h-4 mr-2" />
+                              <span>{hospital.phone}</span>
+                            </div>
+                            <div className="flex items-center text-muted-foreground">
+                              <Shield className="w-4 h-4 mr-2" />
+                              <span>{hospital.specialties.slice(0, 2).join(', ')}</span>
+                              {hospital.specialties.length > 2 && (
+                                <span className="ml-1 text-xs">+{hospital.specialties.length - 2} more</span>
+                              )}
+                            </div>
+                            {hospital.distance && (
+                              <div className="text-green-600 font-medium">
+                                {hospital.distance.toFixed(1)} km away
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2 mt-4">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => openDirections(hospital)}
+                            >
+                              <Navigation className="w-4 h-4 mr-1" />
+                              Directions
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleHospitalBooking(hospital.id)}
+                            >
+                              Book Appointment
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -789,8 +940,9 @@ export function DoctorsPage() {
           </div>
         )}
 
-        {/* Appointment Booking Modal */}
-        <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
+        {/* OLD DIALOG - DISABLED FOR TESTING */}
+        {false && (
+          <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -932,7 +1084,21 @@ export function DoctorsPage() {
             )}
           </DialogContent>
         </Dialog>
+        )}
       </div>
+      
+      {/* Enhanced Appointment Booking Dialog */}
+      <AppointmentBookingDialog
+        isOpen={isBookingModalOpen}
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          setSelectedDoctor(null);
+          setSelectedHospital(null);
+        }}
+        doctor={selectedDoctor}
+        hospital={selectedHospital || undefined}
+        onConfirm={confirmAppointment}
+      />
     </div>
   );
 }
