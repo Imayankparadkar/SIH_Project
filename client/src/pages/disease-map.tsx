@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { 
   Search, 
   MapPin, 
@@ -22,7 +22,9 @@ import {
   Download,
   Share,
   Bell,
-  Plus
+  Plus,
+  X,
+  MapPinIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +35,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import 'leaflet/dist/leaflet.css';
 
@@ -71,6 +76,7 @@ function HeatmapEffect({ diseaseData, opacity }: { diseaseData: DiseaseData[], o
 
 interface DiseaseData {
   id: string;
+  disease: string;
   name: string;
   cases: number;
   incidenceRate: number;
@@ -80,12 +86,57 @@ interface DiseaseData {
   latitude: number;
   longitude: number;
   lastUpdated: string;
+  area: string;
+  population: number;
   sources: Array<{
     type: 'hospital' | 'lab' | 'user_report' | 'official';
     confidence: number;
     count: number;
   }>;
   symptoms: string[];
+  timeline: Array<{
+    date: string;
+    cases: number;
+  }>;
+}
+
+interface DiseaseApiResponse {
+  data: DiseaseData[];
+  summary: {
+    totalCases: number;
+    newToday: number;
+    activeHotspots: number;
+    lastUpdated: string;
+  };
+  hotspots: Array<{
+    id: string;
+    latitude: number;
+    longitude: number;
+    radius: number;
+    cases: number;
+    severity: string;
+    diseases: string[];
+    detectedAt: string;
+    riskScore: number;
+  }>;
+}
+
+interface SearchResult {
+  id: string;
+  name: string;
+  area: string;
+  cases: number;
+  severity: string;
+}
+
+interface ReportCaseData {
+  disease: string;
+  latitude: number;
+  longitude: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  symptoms: string[];
+  source: 'hospital' | 'lab' | 'user_report' | 'official';
+  description?: string;
 }
 
 interface MapLayerConfig {
@@ -107,8 +158,8 @@ export function DiseaseMapPage() {
   });
 
   // Extract disease data and summary from response
-  const backendDiseaseData = diseaseResponse?.data || [];
-  const summary = diseaseResponse?.summary || {
+  const backendDiseaseData = (diseaseResponse as DiseaseApiResponse)?.data || [];
+  const summary = (diseaseResponse as DiseaseApiResponse)?.summary || {
     totalCases: 0,
     newToday: 0,
     activeHotspots: 0,
@@ -124,6 +175,16 @@ export function DiseaseMapPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [selectedArea, setSelectedArea] = useState<DiseaseData | null>(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportFormData, setReportFormData] = useState<ReportCaseData>({
+    disease: '',
+    latitude: 0,
+    longitude: 0,
+    severity: 'low',
+    symptoms: [],
+    source: 'user_report',
+    description: ''
+  });
   
   const [mapLayers, setMapLayers] = useState<MapLayerConfig[]>([
     { id: 'choropleth', name: 'Area Rates', type: 'choropleth', enabled: true, opacity: 0.7 },
@@ -154,7 +215,9 @@ export function DiseaseMapPage() {
   // Update search results when searchResponse changes
   useEffect(() => {
     if (searchResponse && debouncedSearchQuery.length > 2) {
-      setSearchResults(searchResponse.diseases || []);
+      // Handle both direct array response and wrapped response
+      const results = Array.isArray(searchResponse) ? searchResponse : (searchResponse as any)?.results || (searchResponse as any)?.diseases || [];
+      setSearchResults(results);
       setShowSearchResults(true);
     } else {
       setSearchResults([]);
@@ -241,6 +304,42 @@ export function DiseaseMapPage() {
     );
   };
 
+  // Report case mutation
+  const reportCaseMutation = useMutation({
+    mutationFn: async (data: ReportCaseData) => {
+      const response = await fetch('/api/disease-surveillance/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to report case');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Case Reported",
+        description: "Your case report has been submitted successfully.",
+      });
+      refetch(); // Refresh the disease data
+    },
+    onError: (error) => {
+      console.error('Error reporting case:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit case report. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleReportCase = (data: ReportCaseData) => {
+    reportCaseMutation.mutate(data);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25">
       {/* Top Navigation Bar */}
@@ -269,8 +368,30 @@ export function DiseaseMapPage() {
               </div>
             </div>
 
-            {/* Center Section - Search */}
-            <div className="flex-1 max-w-md mx-8">
+            {/* Center Section - Last 7 Days Stats */}
+            <div className="flex items-center space-x-4">
+              <Card className="p-3">
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="text-center">
+                    <div className="font-semibold text-lg text-purple-600">{summary.totalCases.toLocaleString()}</div>
+                    <div className="text-xs text-gray-600">Total Cases</div>
+                  </div>
+                  <Separator orientation="vertical" className="h-8" />
+                  <div className="text-center">
+                    <div className="font-semibold text-lg text-green-600">+{summary.newToday}</div>
+                    <div className="text-xs text-gray-600">New Today</div>
+                  </div>
+                  <Separator orientation="vertical" className="h-8" />
+                  <div className="text-center">
+                    <div className="font-semibold text-lg text-orange-600">{summary.activeHotspots}</div>
+                    <div className="text-xs text-gray-600">Active Hotspots</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Right Section - Search */}
+            <div className="flex-1 max-w-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -289,7 +410,7 @@ export function DiseaseMapPage() {
                         className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                         onClick={() => {
                           // Focus on the disease location on map
-                          const matchingDisease = diseaseData.find(d => d.id === result.id);
+                          const matchingDisease = diseaseData.find((d: DiseaseData) => d.id === result.id);
                           if (matchingDisease) {
                             setUserLocation({
                               lat: matchingDisease.latitude,
@@ -513,10 +634,27 @@ export function DiseaseMapPage() {
                 </Card>
 
                 {/* Report Case Button */}
-                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Report a Case
-                </Button>
+                <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Report a Case
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Report a Disease Case</DialogTitle>
+                    </DialogHeader>
+                    <ReportCaseForm 
+                      userLocation={userLocation}
+                      onSubmit={(data) => {
+                        handleReportCase(data);
+                        setShowReportDialog(false);
+                      }}
+                      onCancel={() => setShowReportDialog(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>
@@ -726,5 +864,195 @@ export function DiseaseMapPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Report Case Form Component
+interface ReportCaseFormProps {
+  userLocation: { lat: number; lng: number } | null;
+  onSubmit: (data: ReportCaseData) => void;
+  onCancel: () => void;
+}
+
+function ReportCaseForm({ userLocation, onSubmit, onCancel }: ReportCaseFormProps) {
+  const [formData, setFormData] = useState<ReportCaseData>({
+    disease: '',
+    latitude: userLocation?.lat || 28.6139, // Default to Delhi if no location
+    longitude: userLocation?.lng || 77.2090,
+    severity: 'low',
+    symptoms: [],
+    source: 'user_report',
+    description: ''
+  });
+
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+
+  // Update coordinates when userLocation changes
+  useEffect(() => {
+    if (userLocation) {
+      setFormData(prev => ({
+        ...prev,
+        latitude: userLocation.lat,
+        longitude: userLocation.lng
+      }));
+    }
+  }, [userLocation]);
+  const availableSymptoms = [
+    'Fever', 'Cough', 'Fatigue', 'Body aches', 'Headache', 'Sore throat',
+    'Shortness of breath', 'Nausea', 'Vomiting', 'Diarrhea', 'Chills',
+    'Joint pain', 'Rash', 'High fever', 'Severe headache', 'Sweats'
+  ];
+
+  const availableDiseases = [
+    { id: 'covid19', name: 'COVID-19' },
+    { id: 'dengue', name: 'Dengue Fever' },
+    { id: 'malaria', name: 'Malaria' },
+    { id: 'typhoid', name: 'Typhoid' },
+    { id: 'chikungunya', name: 'Chikungunya' }
+  ];
+
+  const handleSymptomToggle = (symptom: string) => {
+    setSelectedSymptoms(prev => {
+      const newSymptoms = prev.includes(symptom) 
+        ? prev.filter(s => s !== symptom)
+        : [...prev, symptom];
+      setFormData(current => ({ ...current, symptoms: newSymptoms }));
+      return newSymptoms;
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.disease) {
+      alert('Please select a disease');
+      return;
+    }
+    if (selectedSymptoms.length === 0) {
+      alert('Please select at least one symptom');
+      return;
+    }
+    if (formData.latitude === 0 && formData.longitude === 0) {
+      alert('Please provide a valid location');
+      return;
+    }
+    onSubmit({ ...formData, symptoms: selectedSymptoms });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Disease Selection */}
+      <div>
+        <Label htmlFor="disease">Disease</Label>
+        <Select 
+          value={formData.disease} 
+          onValueChange={(value) => setFormData(prev => ({ ...prev, disease: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a disease" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableDiseases.map((disease) => (
+              <SelectItem key={disease.id} value={disease.id}>
+                {disease.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Severity */}
+      <div>
+        <Label htmlFor="severity">Severity</Label>
+        <Select 
+          value={formData.severity} 
+          onValueChange={(value: any) => setFormData(prev => ({ ...prev, severity: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Symptoms */}
+      <div>
+        <Label>Symptoms (select all that apply)</Label>
+        <div className="grid grid-cols-2 gap-2 mt-2 max-h-32 overflow-y-auto">
+          {availableSymptoms.map((symptom) => (
+            <div key={symptom} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id={symptom}
+                checked={selectedSymptoms.includes(symptom)}
+                onChange={() => handleSymptomToggle(symptom)}
+                className="rounded"
+              />
+              <Label htmlFor={symptom} className="text-sm">{symptom}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div>
+        <Label htmlFor="description">Additional Details (Optional)</Label>
+        <Textarea
+          id="description"
+          placeholder="Describe any additional symptoms or context..."
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          className="mt-1"
+        />
+      </div>
+
+      {/* Location */}
+      <div>
+        <Label>Location</Label>
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <div>
+            <Label htmlFor="latitude" className="text-xs">Latitude</Label>
+            <Input
+              id="latitude"
+              type="number"
+              step="0.0001"
+              value={formData.latitude}
+              onChange={(e) => setFormData(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
+              className="text-sm"
+              placeholder="28.6139"
+            />
+          </div>
+          <div>
+            <Label htmlFor="longitude" className="text-xs">Longitude</Label>
+            <Input
+              id="longitude"
+              type="number"
+              step="0.0001"
+              value={formData.longitude}
+              onChange={(e) => setFormData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
+              className="text-sm"
+              placeholder="77.2090"
+            />
+          </div>
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          {userLocation ? 'Auto-detected your location. You can edit coordinates above.' : 'Please enter coordinates or allow location access.'}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex space-x-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+          Cancel
+        </Button>
+        <Button type="submit" className="flex-1 bg-purple-600 hover:bg-purple-700">
+          Submit Report
+        </Button>
+      </div>
+    </form>
   );
 }
