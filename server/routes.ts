@@ -1,5 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer } from 'ws';
+import { randomUUID } from 'crypto';
+import { setupWebSocketHandlers } from "./routes/messages";
 import cors from "cors";
 import multer from "multer";
 import path from "path";
@@ -787,5 +790,51 @@ Please respond in JSON format with:
   });
 
   const httpServer = createServer(app);
+  
+  // Setup WebSocket Server for real-time messaging
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/api/ws'
+  });
+
+  wss.on('connection', (ws, request) => {
+    const connectionId = randomUUID();
+    
+    // Extract authentication from query params or headers
+    const url = new URL(request.url!, `http://${request.headers.host}`);
+    const token = url.searchParams.get('token') || request.headers.authorization?.replace('Bearer ', '');
+    const studentId = url.searchParams.get('studentId'); // For anonymous students
+    
+    // TODO: Validate Firebase token if provided
+    let userId: string | undefined;
+    if (token && token !== 'anonymous') {
+      // For production, verify Firebase token here
+      // userId = await verifyFirebaseToken(token);
+      userId = token; // For development, use token as userId
+    }
+
+    console.log(`WebSocket connection established: ${connectionId}, userId: ${userId}, studentId: ${studentId}`);
+    
+    // Setup message handlers
+    setupWebSocketHandlers(ws, connectionId, userId, studentId);
+    
+    // Send connection confirmation
+    ws.send(JSON.stringify({
+      type: 'connection_established',
+      connectionId,
+      timestamp: new Date().toISOString()
+    }));
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error for connection', connectionId, ':', error);
+    });
+
+    ws.on('close', () => {
+      console.log(`WebSocket connection closed: ${connectionId}`);
+    });
+  });
+
+  console.log('WebSocket server configured on /api/ws');
+  
   return httpServer;
 }

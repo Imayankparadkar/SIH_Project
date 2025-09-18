@@ -82,7 +82,7 @@ router.get('/session/:sessionId', optionalAuth, async (req: AuthenticatedRequest
       .leftJoin(studentProfilesTable, eq(mentorStudentMessagesTable.senderId, studentProfilesTable.id))
       .leftJoin(mentorProfilesTable, eq(mentorStudentMessagesTable.senderId, mentorProfilesTable.id))
       .where(eq(mentorStudentMessagesTable.sessionId, sessionId))
-      .orderBy(asc(mentorStudentMessagesTable.createdAt))
+      .orderBy(asc(mentorStudentMessagesTable.sentAt))
       .limit(limit)
       .offset(offset);
 
@@ -91,14 +91,12 @@ router.get('/session/:sessionId', optionalAuth, async (req: AuthenticatedRequest
       const currentUserId = userId || studentId;
       await db.update(mentorStudentMessagesTable)
         .set({
-          isRead: true,
-          readAt: new Date(),
-          updatedAt: new Date()
+          readAt: new Date()
         })
         .where(and(
           eq(mentorStudentMessagesTable.sessionId, sessionId),
           sql`${mentorStudentMessagesTable.senderId} != ${currentUserId}`,
-          eq(mentorStudentMessagesTable.isRead, false)
+          sql`${mentorStudentMessagesTable.readAt} IS NULL`
         ));
     }
 
@@ -183,19 +181,17 @@ router.post('/send', optionalAuth, async (req: AuthenticatedRequest, res: Respon
       messageType: messageType || 'text',
       content,
       attachment,
-      isUrgent: isUrgent || false,
-      isEmergency: detectEmergency(content) // AI-based emergency detection
+      // Note: isUrgent and isEmergency fields not available in current schema
+      attachments: attachment ? [attachment] : []
     });
 
     const [message] = await db.insert(mentorStudentMessagesTable)
       .values(messageData)
       .returning();
 
-    // Update session with last message info
+    // Update session timestamp
     await db.update(mentorStudentSessionsTable)
       .set({
-        lastMessageAt: new Date(),
-        lastMessage: content.substring(0, 100), // Store preview
         updatedAt: new Date()
       })
       .where(eq(mentorStudentSessionsTable.id, sessionId));
@@ -207,12 +203,12 @@ router.post('/send', optionalAuth, async (req: AuthenticatedRequest, res: Respon
         ...message,
         senderName: actualSenderType === 'student' ? 
           (sessionData.student?.displayName || 'Student') :
-          (sessionData.mentor?.displayName || 'Mentor')
+          (sessionData.mentor?.name || 'Mentor')
       }
     });
 
-    // If message is flagged as emergency, notify support
-    if (messageData.isEmergency) {
+    // Emergency detection based on content
+    if (detectEmergency(content)) {
       await handleEmergencyMessage(message, sessionData);
     }
 
@@ -286,7 +282,7 @@ router.get('/unread/:userId', optionalAuth, async (req: AuthenticatedRequest, re
       .where(and(
         sql`${mentorStudentMessagesTable.sessionId} = ANY(${sessionIds})`,
         sql`${mentorStudentMessagesTable.senderId} != ${userId}`,
-        eq(mentorStudentMessagesTable.isRead, false)
+        sql`${mentorStudentMessagesTable.readAt} IS NULL`
       ));
 
     res.json({ 
@@ -461,8 +457,8 @@ async function handleEmergencyMessage(message: any, sessionData: any) {
   // For now, we'll log and flag for immediate mentor attention
   await db.update(mentorStudentSessionsTable)
     .set({
-      priority: 'emergency',
-      isEmergency: true,
+      priority: 'urgent',
+      status: 'escalated',
       updatedAt: new Date()
     })
     .where(eq(mentorStudentSessionsTable.id, message.sessionId));

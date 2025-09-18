@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
-import { Heart, Menu, X, Globe, Phone } from 'lucide-react';
+import { Heart, Menu, X, Globe, Phone, Users, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -64,6 +64,14 @@ export function Navigation() {
             </Link>
             <Link href="/donations" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/donations' ? 'text-primary font-medium' : ''}`}>
               {t('nav_donations')}
+            </Link>
+            <Link href="/student-support" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/student-support' ? 'text-primary font-medium' : ''}`}>
+              <MessageCircle className="w-4 h-4 inline mr-1" />
+              Student Support
+            </Link>
+            <Link href="/become-mentor" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/become-mentor' ? 'text-primary font-medium' : ''}`}>
+              <Users className="w-4 h-4 inline mr-1" />
+              Become a Mentor
             </Link>
           </div>
 
@@ -160,6 +168,14 @@ export function Navigation() {
               </Link>
               <Link href="/donations" className="py-2 text-muted-foreground hover:text-primary">
                 {t('nav_donations')}
+              </Link>
+              <Link href="/student-support" className="py-2 text-muted-foreground hover:text-primary flex items-center">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Student Support
+              </Link>
+              <Link href="/become-mentor" className="py-2 text-muted-foreground hover:text-primary flex items-center">
+                <Users className="w-4 h-4 mr-2" />
+                Become a Mentor
               </Link>
             </div>
           </div>
