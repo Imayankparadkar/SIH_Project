@@ -750,7 +750,18 @@ Please respond in JSON format with:
   app.post("/api/medicines/order", authMiddleware, async (req, res) => {
     try {
       const { medicines, deliveryAddress } = req.body;
-      const userId = (req as any).user?.uid || 'demo-user-1';
+      const userId = (req as any).user?.uid;
+      
+      // Get the demo user ID if not authenticated
+      let actualUserId = userId;
+      if (!userId) {
+        const demoUser = await storage.getUserByEmail('demo@sehatify.com');
+        if (demoUser) {
+          actualUserId = demoUser.id;
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
+      }
       
       // Calculate totals
       const totalAmount = medicines.reduce((sum: number, med: any) => sum + med.price * med.quantity, 0);
@@ -759,7 +770,7 @@ Please respond in JSON format with:
       
       // Create order in database
       const order = await storage.createOrder({
-        userId: userId,
+        userId: actualUserId,
         pharmacyId: 'default-pharmacy',
         orderItems: medicines.map((med: any) => ({
           medicineId: med.id,
