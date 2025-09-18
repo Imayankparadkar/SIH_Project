@@ -710,42 +710,90 @@ Please respond in JSON format with:
   });
 
   // Medicine ordering endpoints
-  app.get("/api/medicines/search", authMiddleware, (req, res) => {
-    const { query } = req.query;
-    // Mock medicine search
-    res.json({
-      medicines: [
-        {
-          id: "med1",
-          name: "Paracetamol 500mg",
-          price: 45,
-          discountedPrice: 38,
-          availability: true,
-          prescription: false
-        },
-        {
-          id: "med2",
-          name: "Amoxicillin 250mg",
-          price: 120,
-          discountedPrice: 102,
-          availability: true,
-          prescription: true
-        }
-      ]
-    });
+  app.get("/api/medicines/search", authMiddleware, async (req, res) => {
+    try {
+      const { query } = req.query;
+      const searchQuery = typeof query === 'string' ? query : '';
+      
+      // Use real database search
+      const medicines = await storage.getMedicines({
+        name: searchQuery || undefined
+      });
+      
+      // Transform to frontend format
+      const formattedMedicines = medicines.map(med => ({
+        id: med.id,
+        name: med.name,
+        genericName: med.genericName,
+        manufacturer: med.manufacturer,
+        composition: med.composition,
+        dosageForm: med.dosageForm,
+        strength: med.strength,
+        price: med.price,
+        discountedPrice: Math.round(med.price * 0.85), // 15% discount
+        discount: 15,
+        availability: true,
+        prescription: med.prescriptionRequired,
+        category: med.dosageForm.charAt(0).toUpperCase() + med.dosageForm.slice(1) + 's',
+        dosage: med.strength,
+        packaging: '1 unit',
+        description: `${med.genericName} - ${med.composition}`
+      }));
+      
+      res.json({ medicines: formattedMedicines });
+    } catch (error) {
+      console.error('Error searching medicines:', error);
+      res.status(500).json({ error: "Failed to search medicines" });
+    }
   });
 
   app.post("/api/medicines/order", authMiddleware, async (req, res) => {
     try {
       const { medicines, deliveryAddress } = req.body;
-      // TODO: Process medicine order
+      const userId = (req as any).user?.uid || 'demo-user-1';
+      
+      // Calculate totals
+      const totalAmount = medicines.reduce((sum: number, med: any) => sum + med.price * med.quantity, 0);
+      const discount = medicines.reduce((sum: number, med: any) => sum + (med.price - med.discountedPrice) * med.quantity, 0);
+      const finalAmount = totalAmount - discount;
+      
+      // Create order in database
+      const order = await storage.createOrder({
+        userId: userId,
+        pharmacyId: 'default-pharmacy',
+        orderItems: medicines.map((med: any) => ({
+          medicineId: med.id,
+          quantity: med.quantity,
+          price: med.price,
+          prescriptionRequired: med.prescription || false
+        })),
+        deliveryAddress: {
+          name: 'User Name',
+          phone: '+91-9876543210',
+          street: deliveryAddress || 'Default Address',
+          city: 'City',
+          state: 'State',
+          pincode: '123456',
+          isDefault: true
+        },
+        totalAmount: totalAmount,
+        deliveryFee: 0,
+        discount: discount,
+        finalAmount: finalAmount,
+        currency: 'INR',
+        paymentStatus: 'pending',
+        orderStatus: 'placed',
+        estimatedDelivery: new Date(Date.now() + 48 * 60 * 60 * 1000)
+      });
+      
       res.json({
         success: true,
-        orderId: `ORD-${Date.now()}`,
-        estimatedDelivery: new Date(Date.now() + 48 * 60 * 60 * 1000),
-        totalAmount: medicines.reduce((sum: number, med: any) => sum + med.discountedPrice * med.quantity, 0)
+        orderId: order.id,
+        estimatedDelivery: order.estimatedDelivery,
+        totalAmount: finalAmount
       });
     } catch (error) {
+      console.error('Error processing medicine order:', error);
       res.status(500).json({ error: "Failed to process medicine order" });
     }
   });
