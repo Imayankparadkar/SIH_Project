@@ -63,89 +63,31 @@ export function MedicinesPage() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
 
   useEffect(() => {
-    loadSampleMedicines();
+    loadMedicinesFromAPI();
     loadSampleOrders();
   }, []);
 
-  const loadSampleMedicines = () => {
-    const sampleMedicines: Medicine[] = [
-      {
-        id: '1',
-        name: 'Paracetamol 500mg',
-        genericName: 'Acetaminophen',
-        description: 'Pain reliever and fever reducer',
-        price: 50,
-        discountedPrice: 42,
-        discount: 16,
-        availability: true,
-        prescription: false,
-        manufacturer: 'Generic Pharma',
-        category: 'Pain Relief',
-        dosage: '500mg',
-        packaging: '20 tablets'
-      },
-      {
-        id: '2',
-        name: 'Amoxicillin 250mg',
-        genericName: 'Amoxicillin',
-        description: 'Antibiotic for bacterial infections',
-        price: 150,
-        discountedPrice: 135,
-        discount: 10,
-        availability: true,
-        prescription: true,
-        manufacturer: 'MediCore',
-        category: 'Antibiotics',
-        dosage: '250mg',
-        packaging: '10 capsules'
-      },
-      {
-        id: '3',
-        name: 'Metformin 500mg',
-        genericName: 'Metformin HCl',
-        description: 'Type 2 diabetes management',
-        price: 120,
-        discountedPrice: 108,
-        discount: 10,
-        availability: true,
-        prescription: true,
-        manufacturer: 'DiabetoCare',
-        category: 'Diabetes',
-        dosage: '500mg',
-        packaging: '30 tablets'
-      },
-      {
-        id: '4',
-        name: 'Vitamin D3 1000 IU',
-        genericName: 'Cholecalciferol',
-        description: 'Vitamin D supplement for bone health',
-        price: 200,
-        discountedPrice: 160,
-        discount: 20,
-        availability: true,
-        prescription: false,
-        manufacturer: 'HealthVit',
-        category: 'Vitamins',
-        dosage: '1000 IU',
-        packaging: '60 capsules'
-      },
-      {
-        id: '5',
-        name: 'Omeprazole 20mg',
-        genericName: 'Omeprazole',
-        description: 'Proton pump inhibitor for acid reflux',
-        price: 180,
-        discountedPrice: 153,
-        discount: 15,
-        availability: false,
-        prescription: true,
-        manufacturer: 'GastroMed',
-        category: 'Gastroenterology',
-        dosage: '20mg',
-        packaging: '14 capsules'
+  const loadMedicinesFromAPI = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/medicines/search', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMedicines(data.medicines);
+        console.log(`Loaded ${data.medicines.length} medicines from database`);
+      } else {
+        console.error('Failed to load medicines:', response.status);
+        setMedicines([]);
       }
-    ];
-    setMedicines(sampleMedicines);
+    } catch (error) {
+      console.error('Error loading medicines:', error);
+      setMedicines([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loadSampleOrders = () => {
@@ -168,7 +110,10 @@ export function MedicinesPage() {
   };
 
   const searchMedicines = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      loadMedicinesFromAPI(); // Load all medicines if search is empty
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -178,6 +123,7 @@ export function MedicinesPage() {
       if (response.ok) {
         const data = await response.json();
         setMedicines(data.medicines);
+        console.log(`Search found ${data.medicines.length} medicines for query: "${searchQuery}"`);
       }
     } catch (error) {
       console.error('Error searching medicines:', error);
