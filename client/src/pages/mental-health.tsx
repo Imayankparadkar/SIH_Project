@@ -48,35 +48,35 @@ const helpCategories = [
     title: 'Loneliness & Stress',
     description: 'When you feel isolated or overwhelmed',
     icon: Heart,
-    color: 'bg-pink-50 hover:bg-pink-100'
+    color: 'bg-white hover:bg-purple-50 border border-purple-100'
   },
   {
     id: 'study' as HelpCategory,
     title: 'Study/Exam Pressure',
     description: 'Academic stress and performance anxiety',
     icon: Brain,
-    color: 'bg-blue-50 hover:bg-blue-100'
+    color: 'bg-white hover:bg-purple-50 border border-purple-100'
   },
   {
     id: 'confidence' as HelpCategory,
     title: 'Confidence & Personality',
     description: 'Building self-esteem and social skills',
     icon: Shield,
-    color: 'bg-green-50 hover:bg-green-100'
+    color: 'bg-white hover:bg-purple-50 border border-purple-100'
   },
   {
     id: 'career' as HelpCategory,
     title: 'Career & Future Path',
     description: 'Planning your future and making decisions',
     icon: MessageCircle,
-    color: 'bg-purple-50 hover:bg-purple-100'
+    color: 'bg-white hover:bg-purple-50 border border-purple-100'
   },
   {
     id: 'listen' as HelpCategory,
     title: 'Just Need Someone to Listen',
     description: 'A safe space to express your thoughts',
     icon: Heart,
-    color: 'bg-amber-50 hover:bg-amber-100'
+    color: 'bg-white hover:bg-purple-50 border border-purple-100'
   }
 ];
 
@@ -628,12 +628,12 @@ export default function MentalHealth() {
 
   if (chatActive) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25 p-4" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
         <div className="max-w-4xl mx-auto">
           {/* Chat Header */}
           <div className="bg-white rounded-t-lg border p-4 flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -648,7 +648,7 @@ export default function MentalHealth() {
                     variant="outline" 
                     size="sm" 
                     onClick={startVideoCall}
-                    className="bg-green-50 hover:bg-green-100"
+                    className="bg-indigo-600 text-white hover:bg-indigo-700 border-0"
                   >
                     <Video className="w-4 h-4 mr-1" />
                     Video Call
@@ -657,7 +657,7 @@ export default function MentalHealth() {
                     variant="outline" 
                     size="sm" 
                     onClick={startVoiceCall}
-                    className="bg-blue-50 hover:bg-blue-100"
+                    className="bg-purple-600 text-white hover:bg-purple-700 border-0"
                   >
                     <PhoneCall className="w-4 h-4 mr-1" />
                     Voice Call
@@ -749,7 +749,7 @@ export default function MentalHealth() {
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         message.type === 'student'
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-purple-600 text-white'
                           : 'bg-gray-100 text-gray-800'
                       }`}
                     >
@@ -827,7 +827,7 @@ export default function MentalHealth() {
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center space-x-2">
-                  <Shield className="w-5 h-5 text-blue-500" />
+                  <Shield className="w-5 h-5 text-purple-600" />
                   <span>Privacy & Data Storage</span>
                 </DialogTitle>
                 <DialogDescription>
@@ -872,14 +872,14 @@ export default function MentalHealth() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25 p-4" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8">
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1">
               <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center space-x-3">
-                <Brain className="w-8 h-8 text-blue-500" />
+                <Brain className="w-8 h-8 text-purple-600" />
                 <span>Mental Health Support</span>
               </h1>
               <p className="text-lg text-muted-foreground">
@@ -1102,15 +1102,15 @@ export default function MentalHealth() {
               return (
                 <Card
                   key={category.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${category.color}`}
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${category.color} rounded-2xl`}
                   onClick={() => startChat(category.id)}
                 >
                   <CardHeader className="text-center">
-                    <CardTitle className="flex items-center justify-center space-x-2">
-                      <IconComponent className="w-6 h-6" />
-                      <span>{category.title}</span>
-                    </CardTitle>
-                    <CardDescription>{category.description}</CardDescription>
+                    <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <IconComponent className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <CardTitle className="text-gray-800 mb-2">{category.title}</CardTitle>
+                    <CardDescription className="text-gray-600">{category.description}</CardDescription>
                   </CardHeader>
                 </Card>
               );
@@ -1146,7 +1146,7 @@ export default function MentalHealth() {
           
           <Card className="text-center">
             <CardHeader>
-              <Phone className="w-8 h-8 mx-auto text-blue-500 mb-2" />
+              <Phone className="w-8 h-8 mx-auto text-purple-600 mb-2" />
               <CardTitle>Crisis Support</CardTitle>
             </CardHeader>
             <CardContent>
@@ -1165,27 +1165,27 @@ export default function MentalHealth() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
               <div className="space-y-2">
-                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto font-semibold">1</div>
+                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">1</div>
                 <h4 className="font-medium">Choose Category</h4>
                 <p className="text-xs text-muted-foreground">Select what you want to talk about</p>
               </div>
               <div className="space-y-2">
-                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto font-semibold">2</div>
+                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">2</div>
                 <h4 className="font-medium">Get Anonymous ID</h4>
                 <p className="text-xs text-muted-foreground">Receive a friendly fake identity</p>
               </div>
               <div className="space-y-2">
-                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto font-semibold">3</div>
+                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">3</div>
                 <h4 className="font-medium">Chat Safely</h4>
                 <p className="text-xs text-muted-foreground">Talk openly with a caring mentor</p>
               </div>
               <div className="space-y-2">
-                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto font-semibold">4</div>
+                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">4</div>
                 <h4 className="font-medium">Get Support</h4>
                 <p className="text-xs text-muted-foreground">Receive guidance and resources</p>
               </div>
               <div className="space-y-2">
-                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto font-semibold">5</div>
+                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">5</div>
                 <h4 className="font-medium">Choose Next Steps</h4>
                 <p className="text-xs text-muted-foreground">Save code or exit completely</p>
               </div>
