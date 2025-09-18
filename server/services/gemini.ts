@@ -467,6 +467,115 @@ Important: This analysis is for informational purposes only and should not repla
     // This should never be reached due to the throw above, but TypeScript requires it
     throw new Error('Analysis failed after all retry attempts');
   }
+
+  async generateMentorChatResponse(
+    message: string, 
+    category: string,
+    mentorName: string,
+    studentId: string
+  ): Promise<string> {
+    if (!this.genAI) {
+      return this.getFallbackMentorResponse(message, category);
+    }
+
+    const categoryContext = {
+      loneliness: 'feelings of isolation, loneliness, and emotional support',
+      study: 'academic pressure, exam stress, and study-related anxiety',
+      confidence: 'self-esteem issues, social anxiety, and building confidence',
+      career: 'future planning, career uncertainty, and life direction',
+      listen: 'emotional venting, active listening, and providing a safe space'
+    };
+
+    const systemPrompt = `You are ${mentorName}, a compassionate and experienced mental health mentor specializing in ${categoryContext[category as keyof typeof categoryContext] || 'general mental health support'}. You provide anonymous support to students who need emotional guidance.
+
+**Your Mentor Tone & Style:**
+- 🤗 **Warm & Approachable**: Use a friendly, non-judgmental tone that makes students feel safe
+- 👂 **Active Listener**: Show that you've heard and understood their concerns
+- 💪 **Empowering**: Help them discover their own strengths and solutions
+- 🎯 **Solution-Focused**: Offer practical coping strategies and actionable advice
+- 🌱 **Growth-Oriented**: Frame challenges as opportunities for personal growth
+
+**Response Guidelines:**
+1. **Validate their feelings** - Acknowledge that their emotions are completely normal and valid
+2. **Ask thoughtful questions** - Help them explore their feelings and thoughts deeper
+3. **Share relatable insights** - Use phrases like "Many students feel this way" to normalize their experience
+4. **Offer practical strategies** - Give specific techniques they can use right away
+5. **End with encouragement** - Always leave them feeling hopeful and supported
+
+**Sample Mentor Phrases to Use:**
+- "I hear you, and what you're experiencing sounds really tough..."
+- "It takes courage to reach out, and that shows real strength..."
+- "Many students I've worked with have felt exactly like this..."
+- "Let's explore what might help you feel more supported..."
+- "You're not alone in this - we'll work through it together..."
+
+**For ${category} specifically:**
+${category === 'loneliness' ? '- Focus on connection strategies, self-compassion, and building social confidence\n- Help them identify small steps to reach out to others\n- Validate that loneliness is especially common in student life' : ''}
+${category === 'study' ? '- Provide stress management techniques and study strategies\n- Help them set realistic goals and manage perfectionism\n- Discuss healthy work-life balance' : ''}
+${category === 'confidence' ? '- Help them identify their strengths and past successes\n- Provide techniques for positive self-talk\n- Focus on building self-acceptance and resilience' : ''}
+${category === 'career' ? '- Help them explore their interests and values\n- Discuss the normalcy of uncertainty about the future\n- Break down overwhelming decisions into smaller steps' : ''}
+${category === 'listen' ? '- Practice pure active listening without trying to fix everything\n- Validate their need to express emotions\n- Create a safe, non-judgmental space' : ''}
+
+**Important:**
+- Never diagnose mental health conditions
+- If they mention self-harm or suicidal thoughts, gently encourage professional help
+- Keep responses conversational but professional
+- Use their anonymous student ID (${studentId}) to personalize when appropriate
+- Maintain confidentiality and anonymity always
+
+Remember: Your goal is to be the supportive mentor they need right now, helping them feel heard, understood, and empowered to take positive steps forward.`;
+
+    const prompt = `${systemPrompt}
+
+Student (${studentId}) shared: "${message}"
+
+Respond as ${mentorName} with warmth, empathy, and practical support. Keep your response conversational, under 200 words, and focused on their immediate emotional needs.`;
+
+    try {
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: prompt
+      });
+      return response.text || this.getFallbackMentorResponse(message, category);
+    } catch (error) {
+      console.error('Error generating mentor response:', error);
+      return this.getFallbackMentorResponse(message, category);
+    }
+  }
+
+  private getFallbackMentorResponse(message: string, category: string): string {
+    const responses = {
+      loneliness: [
+        "I hear you, and what you're feeling is completely valid. Loneliness can be really tough, especially as a student. You're not alone in feeling this way - many students experience these same feelings. Can you tell me a bit more about what's been making you feel most isolated lately? Sometimes just talking about it can help us figure out small steps to feel more connected.",
+        "It takes real courage to reach out when you're feeling lonely, and that shows more strength than you might realize right now. What you're experiencing is so common among students - you're definitely not the only one feeling this way. What would feeling more connected look like for you? Even small steps toward connection can make a big difference.",
+        "Thank you for trusting me with how you're feeling. Loneliness can feel overwhelming, but I want you to know that this feeling isn't permanent. Many students I've talked with have felt exactly like you do right now. What's one small thing that usually helps you feel even a little bit better when you're feeling down?"
+      ],
+      study: [
+        "Academic pressure can feel incredibly overwhelming - you're definitely not alone in feeling stressed about studies. It sounds like you're putting a lot of pressure on yourself. Remember, your worth isn't determined by grades or exam results. What's the biggest source of stress in your studies right now? Let's see if we can break it down into more manageable pieces.",
+        "I can hear how much stress you're carrying about your studies. That kind of pressure is exhausting, and it's completely understandable that you're feeling overwhelmed. Many students struggle with this exact same thing. What would it look like if you were just 10% less stressed about studying? Sometimes small changes can make a big difference.",
+        "Study stress is so real and can feel suffocating sometimes. You're handling so much, and it makes complete sense that you're feeling this way. What's been your biggest challenge with studying lately? Let's talk about some strategies that might help you feel more in control of your academic life."
+      ],
+      confidence: [
+        "Building confidence is such a journey, and it's okay to have ups and downs along the way. What you're feeling about yourself is something many students experience. You took a big step by reaching out today - that actually shows more courage than you might realize. What situations make you feel most uncertain about yourself?",
+        "I want you to know that self-doubt is something almost every student deals with. You're not broken or lacking - you're human, and you're growing. What would feeling more confident mean to you? Sometimes it helps to start by recognizing the small things you do well, even if they seem minor.",
+        "Thank you for being so honest about how you're feeling about yourself. Those kinds of thoughts can be really heavy to carry. You're worthy of feeling good about yourself just as you are. What's one thing you've done recently, even something small, that you can feel good about?"
+      ],
+      career: [
+        "Thinking about the future can feel both exciting and terrifying at the same time - that's completely normal. It's okay not to have everything figured out. Most successful people changed directions multiple times before finding their path. What aspects of your future feel most unclear or overwhelming right now?",
+        "Career decisions can feel like such huge pressure, but I want you to know that there's no single 'right' path for anyone. You don't have to have it all figured out right now. What are you curious about or interested in, even if it seems small or unimportant? Sometimes our interests can guide us more than we realize.",
+        "It's so normal to feel uncertain about your career path - you're definitely not behind or failing in any way. The future can feel overwhelming when we try to figure it all out at once. What's one small step you could take toward exploring something that interests you? Even tiny steps count."
+      ],
+      listen: [
+        "I'm here and I'm listening. Sometimes we just need someone to hear us without trying to fix everything, and that's completely valid. Take your time - there's no rush to say anything specific. What's been weighing on your heart lately?",
+        "Thank you for trusting me with whatever you're going through. I'm here to listen for as long as you need. You don't have to carry everything alone. What would it feel like to just let some of these feelings out?",
+        "I can sense you have a lot on your mind, and I want you to know this is a safe space to share whatever you're comfortable sharing. Sometimes just being heard can make a difference. What's been the hardest part of your day or week?"
+      ]
+    };
+    
+    const categoryResponses = responses[category as keyof typeof responses] || responses.listen;
+    return categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
+  }
+
   private getFallbackDocumentAnalysis(
     documentType: string,
     language: string

@@ -7,7 +7,6 @@ import cors from "cors";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
-import { randomUUID } from "crypto";
 import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
 import { hospitalsRouter } from "./routes/hospitals";
@@ -777,6 +776,37 @@ Please respond in JSON format with:
     } catch (error) {
       console.error('Chat error:', error);
       res.status(500).json({ error: "Failed to generate chat response" });
+    }
+  });
+
+  // Mental Health Mentor Chat endpoint - for anonymous mental health support
+  app.post("/api/chat/mentor", async (req, res) => {
+    try {
+      const { message, category, mentorName, studentId } = req.body;
+      
+      if (!message || !category) {
+        return res.status(400).json({ error: "Message and category are required" });
+      }
+
+      console.log('Mentor chat request received:', { 
+        message: message?.substring(0, 50), 
+        category, 
+        mentorName, 
+        studentId 
+      });
+
+      const response = await geminiHealthService.generateMentorChatResponse(
+        message,
+        category,
+        mentorName || 'Mental Health Mentor',
+        studentId || 'Student'
+      );
+      
+      console.log('Mentor response generated:', response.substring(0, 100));
+      res.json({ success: true, response });
+    } catch (error) {
+      console.error('Mentor chat error:', error);
+      res.status(500).json({ error: "Failed to generate mentor response" });
     }
   });
 
