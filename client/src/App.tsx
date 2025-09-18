@@ -19,6 +19,7 @@ import { ReportsPage } from "@/pages/reports";
 import { MedicinesPage } from "@/pages/medicines";
 import { AIDoctorPage } from "@/pages/ai-doctor";
 import { SettingsPage } from "@/pages/settings";
+import MentalHealthPage from "@/pages/mental-health";
 import NotFound from "@/pages/not-found";
 import i18n from "@/lib/i18n";
 
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/doctors" component={DoctorsPage} />
       <Route path="/donations" component={DonationsPage} />
+      <Route path="/mental-health" component={MentalHealthPage} />
       <Route component={NotFound} />
     </Switch>
   );
