@@ -131,8 +131,6 @@ export function LandingPage() {
               );
             })}
           </div>
-        </div>
-      </section>
 
           {/* Promotional Banner */}
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 py-8 px-6 rounded-3xl mb-12 shadow-xl">
