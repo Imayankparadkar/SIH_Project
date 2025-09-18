@@ -35,7 +35,7 @@ export function Footer() {
           
           {/* Content */}
           <div className="relative z-20 max-w-7xl mx-auto px-4 py-16 text-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {/* Health Services Column */}
               <div>
                 <h3 className="text-lg font-semibold mb-6">Health</h3>
@@ -68,6 +68,18 @@ export function Footer() {
                   <li><Link href="/privacy" className="text-gray-100 hover:text-white transition-colors text-sm">Privacy Policy</Link></li>
                   <li><Link href="/grievance" className="text-gray-100 hover:text-white transition-colors text-sm">Grievance Redressal</Link></li>
                 </ul>
+              </div>
+
+              {/* Logo Column - Rightmost */}
+              <div className="flex justify-end items-start">
+                <div className="flex flex-col items-center space-y-4">
+                  <img 
+                    src="/sehatify-logo.png" 
+                    alt="Sehatify Logo" 
+                    className="w-16 h-16 object-contain"
+                  />
+                  <span className="text-white text-lg font-semibold">Sehatify</span>
+                </div>
               </div>
             </div>
           </div>

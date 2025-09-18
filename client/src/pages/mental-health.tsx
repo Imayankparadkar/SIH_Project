@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { VideoCall } from '@/components/ui/video-call';
 
 type HelpCategory = 'loneliness' | 'study' | 'confidence' | 'career' | 'listen';
 
@@ -170,6 +171,7 @@ export default function MentalHealth() {
     isVideoMuted: false,
     callDuration: 0
   });
+  const [showVideoCall, setShowVideoCall] = useState(false);
   const [mentorRegistration, setMentorRegistration] = useState({
     name: '',
     email: '',
@@ -393,6 +395,24 @@ export default function MentalHealth() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              <Button 
+                onClick={() => setShowVideoCall(true)} 
+                variant="outline" 
+                size="sm"
+                className="text-purple-600 hover:bg-purple-50"
+              >
+                <Video className="w-4 h-4 mr-1" />
+                Video
+              </Button>
+              <Button 
+                onClick={() => setShowVideoCall(true)} 
+                variant="outline" 
+                size="sm"
+                className="text-green-600 hover:bg-green-50"
+              >
+                <Phone className="w-4 h-4 mr-1" />
+                Voice
+              </Button>
               <Button onClick={saveSession} variant="outline" size="sm">
                 Save Session
               </Button>
@@ -429,6 +449,17 @@ export default function MentalHealth() {
               </div>
             </ScrollArea>
           </div>
+
+          {/* Video Call Interface */}
+          {showVideoCall && (
+            <div className="bg-white border-x border-b p-4">
+              <VideoCall 
+                mentorName={mentorName}
+                roomId={`${anonymousId}-${selectedCategory}`}
+                onEndCall={() => setShowVideoCall(false)}
+              />
+            </div>
+          )}
 
           <div className="bg-white rounded-b-lg border p-4">
             <div className="flex space-x-2">

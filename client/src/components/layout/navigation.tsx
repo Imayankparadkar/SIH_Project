@@ -25,10 +25,12 @@ export function Navigation() {
           {/* Logo - Sehatify Style */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="flex items-center space-x-3">
-              {/* Sehatify-style diamond logo */}
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-md flex items-center justify-center transform rotate-45">
-                <div className="w-3 h-3 bg-white rounded-sm transform -rotate-45"></div>
-              </div>
+              {/* New Sehatify logo */}
+              <img 
+                src="/sehatify-logo.png" 
+                alt="Sehatify Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <span className="text-xl font-semibold text-gray-800">Sehatify</span>
             </div>
           </Link>
