@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
-import { Heart, Menu, X, Globe, Phone, Users, MessageCircle, Brain, UserPlus, Stethoscope } from 'lucide-react';
+import { Menu, X, Users, UserCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -19,45 +19,47 @@ export function Navigation() {
   const { user, logout } = useAuth();
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo - MediBuddy Style */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
-                <Stethoscope className="text-white w-5 h-5" />
+            <div className="flex items-center space-x-3">
+              {/* MediBuddy-style diamond logo */}
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-md flex items-center justify-center transform rotate-45">
+                <div className="w-3 h-3 bg-white rounded-sm transform -rotate-45"></div>
               </div>
-              <span className="text-xl font-bold text-blue-600">MediBuddy</span>
+              <span className="text-xl font-semibold text-gray-800">MediBuddy</span>
             </div>
           </Link>
 
-          {/* Desktop Navigation - MediBuddy Style Menu */}
+          {/* Desktop Navigation - Clean MediBuddy Style */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/doctors" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/doctors' ? 'text-blue-600' : ''}`}>
-              Doctors
+            <Link href="/doctors" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/doctors' ? 'text-purple-600' : ''}`}>
+              Talk to Doctor
             </Link>
-            <Link href="/medicines" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/medicines' ? 'text-blue-600' : ''}`}>
+            <Link href="/medicines" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/medicines' ? 'text-purple-600' : ''}`}>
               Medicines
             </Link>
-            <Link href="/vitals" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-blue-600' : ''}`}>
-              Lab Test & Diagnostic
+            <Link href="/vitals" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-purple-600' : ''}`}>
+              Book an Appointment
             </Link>
-            <Link href="/doctors" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm`}>
-              Hospitals
+            <Link href="/reports" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/reports' ? 'text-purple-600' : ''}`}>
+              Lab Test & 
+              Diagnostic
             </Link>
-            <Link href="/ai-doctor" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/ai-doctor' ? 'text-blue-600' : ''}`}>
-              Surgery
+            <Link href="/ai-doctor" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/ai-doctor' ? 'text-purple-600' : ''}`}>
+              AI Doctor
             </Link>
-            <Link href="/mental-health" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/mental-health' ? 'text-blue-600' : ''}`}>
-              Healthcare
+            <Link href="/mental-health" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/mental-health' ? 'text-purple-600' : ''}`}>
+              Mental Health
             </Link>
           </div>
 
-          {/* Right Side Actions - MediBuddy Style */}
-          <div className="flex items-center space-x-4">
+          {/* Right Side Actions - Clean MediBuddy Style */}
+          <div className="flex items-center space-x-6">
             {/* About Us Link */}
-            <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 font-medium transition-colors hidden md:block">
+            <Link href="/" className="text-gray-600 hover:text-purple-600 font-medium transition-colors hidden md:block text-sm">
               About Us
             </Link>
 
@@ -65,13 +67,13 @@ export function Navigation() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center space-x-2 border-blue-600 text-blue-600" data-testid="button-profile">
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-medium">
+                  <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-profile">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
                         {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </span>
                     </div>
-                    <span className="hidden md:inline">{user.name || 'User'}</span>
+                    <span className="hidden md:inline text-gray-700 font-medium">{user.name || 'User'}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -82,10 +84,14 @@ export function Navigation() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">Profile</Link>
+                    <Link href="/profile" className="flex items-center">
+                      <UserCircle className="w-4 h-4 mr-2" />
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                  <DropdownMenuItem onClick={logout} className="text-red-600 flex items-center">
+                    <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -93,13 +99,8 @@ export function Navigation() {
             ) : (
               <div className="flex items-center space-x-3">
                 <Link href="/login">
-                  <Button variant="ghost" className="text-blue-600 font-medium hover:bg-blue-50" data-testid="button-login">
+                  <Button variant="ghost" className="text-purple-600 font-medium hover:bg-purple-50 text-sm" data-testid="button-login">
                     Login
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6" data-testid="button-register">
-                    Signup
                   </Button>
                 </Link>
               </div>
@@ -109,8 +110,11 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden text-gray-700"
+              className="md:hidden text-gray-600"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-menu"
               data-testid="button-mobile-menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -120,29 +124,34 @@ export function Navigation() {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
+          <div id="mobile-menu" className="md:hidden border-t border-gray-100 bg-white">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
-                Doctors
+              <Link href="/doctors" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/doctors' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                Talk to Doctor
               </Link>
-              <Link href="/medicines" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
+              <Link href="/medicines" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/medicines' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 Medicines
               </Link>
-              <Link href="/vitals" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
-                Lab Test &amp; Diagnostic
+              <Link href="/vitals" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/vitals' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                Book an Appointment
               </Link>
-              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
-                Hospitals
+              <Link href="/reports" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/reports' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                Lab Test & Diagnostic
               </Link>
-              <Link href="/ai-doctor" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
-                Surgery
+              <Link href="/ai-doctor" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/ai-doctor' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                AI Doctor
               </Link>
-              <Link href="/mental-health" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
-                Healthcare
+              <Link href="/mental-health" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/mental-health' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                Mental Health
               </Link>
-              <Link href="/dashboard" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
+              <Link href="/" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 About Us
               </Link>
+              {!user && (
+                <Link href="/login" className="block px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-md font-medium">
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         )}
