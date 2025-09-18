@@ -297,7 +297,7 @@ export const medicineSchema = z.object({
   genericName: z.string(),
   manufacturer: z.string(),
   composition: z.string(),
-  dosageForm: z.enum(['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops']),
+  dosageForm: z.enum(['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops', 'inhaler']),
   strength: z.string(),
   price: z.number(),
   prescriptionRequired: z.boolean()
