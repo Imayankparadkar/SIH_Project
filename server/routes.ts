@@ -809,6 +809,54 @@ Please respond in JSON format with:
     }
   });
 
+  // Get user's order history
+  app.get("/api/medicines/orders", authMiddleware, async (req, res) => {
+    try {
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const rawOrders = await storage.getOrdersByUserId(userId);
+      
+      // Transform orders to match frontend expectations
+      const formattedOrders = rawOrders.map(order => ({
+        id: order.id,
+        medicines: order.orderItems.map(item => ({
+          medicine: {
+            id: item.medicineId,
+            name: 'Medicine', // Will be populated by frontend from search
+            genericName: '',
+            description: '',
+            price: item.price,
+            discountedPrice: Math.round(item.price * 0.85),
+            discount: 15,
+            availability: true,
+            prescription: item.prescriptionRequired,
+            manufacturer: '',
+            category: '',
+            dosage: '',
+            packaging: '1 unit'
+          },
+          quantity: item.quantity
+        })),
+        totalAmount: order.totalAmount,
+        discountAmount: order.discount,
+        status: order.orderStatus === 'placed' ? 'pending' : 
+                order.orderStatus === 'shipped' ? 'shipped' : 
+                order.orderStatus === 'delivered' ? 'delivered' : 'confirmed',
+        orderDate: order.orderedAt,
+        estimatedDelivery: order.estimatedDelivery,
+        trackingNumber: undefined
+      }));
+      
+      res.json({ orders: formattedOrders });
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+      res.status(500).json({ error: "Failed to fetch order history" });
+    }
+  });
+
   // AI Chat endpoints - Allow without strict authentication for now
   app.post("/api/chat/doctor", async (req, res) => {
     try {

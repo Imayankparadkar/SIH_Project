@@ -18,7 +18,7 @@ export async function authMiddleware(
     // In development mode, skip auth and use demo user
     if (process.env.NODE_ENV === 'development') {
       req.user = {
-        uid: 'demo-user-1',
+        uid: 'fe8145c0-9b03-47d4-8a44-40fbd4a0caa2',
         email: 'demo@sehatify.com',
         name: 'Demo User'
       };

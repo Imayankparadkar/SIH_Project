@@ -63,8 +63,11 @@ export function MedicinesPage() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
 
   useEffect(() => {
-    loadMedicinesFromAPI();
-    loadSampleOrders();
+    const initializeData = async () => {
+      await loadMedicinesFromAPI();
+      loadOrdersFromAPI(); // Load orders after medicines are loaded
+    };
+    initializeData();
   }, []);
 
   const loadMedicinesFromAPI = async () => {
@@ -87,6 +90,36 @@ export function MedicinesPage() {
       setMedicines([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadOrdersFromAPI = async () => {
+    try {
+      const response = await fetch('/api/medicines/orders', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        const processedOrders = (data.orders || []).map((order: any) => ({
+          ...order,
+          orderDate: new Date(order.orderDate),
+          estimatedDelivery: new Date(order.estimatedDelivery),
+          medicines: order.medicines.map((item: any) => {
+            // Find real medicine details from our medicines list
+            const realMedicine = medicines.find(med => med.id === item.medicine.id);
+            return {
+              ...item,
+              medicine: realMedicine || item.medicine
+            };
+          })
+        }));
+        setOrders(processedOrders);
+        console.log(`Loaded ${processedOrders.length} orders from database with proper dates and medicine details`);
+      } else {
+        console.error('Failed to load orders, using sample data');
+        loadSampleOrders();
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      loadSampleOrders();
     }
   };
 
@@ -192,7 +225,7 @@ export function MedicinesPage() {
             sum + (item.medicine.price - item.medicine.discountedPrice) * item.quantity, 0),
           status: 'pending',
           orderDate: new Date(),
-          estimatedDelivery: data.estimatedDelivery
+          estimatedDelivery: new Date(data.estimatedDelivery)
         };
         setOrders(prev => [newOrder, ...prev]);
         setCart([]);
