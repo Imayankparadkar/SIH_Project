@@ -761,16 +761,13 @@ Please respond in JSON format with:
       const { medicines, deliveryAddress } = req.body;
       const userId = (req as any).user?.uid;
       
-      // Get the demo user ID if not authenticated
-      let actualUserId = userId;
-      if (!userId) {
-        const demoUser = await storage.getUserByEmail('demo@sehatify.com');
-        if (demoUser) {
-          actualUserId = demoUser.id;
-        } else {
-          return res.status(401).json({ error: "User not authenticated" });
-        }
+      // Always use the demo user for development
+      const demoUser = await storage.getUserByEmail('demo@sehatify.com');
+      if (!demoUser) {
+        return res.status(401).json({ error: "Demo user not found in database" });
       }
+      
+      const actualUserId = demoUser.id;
       
       // Calculate totals
       const totalAmount = medicines.reduce((sum: number, med: any) => sum + med.price * med.quantity, 0);
