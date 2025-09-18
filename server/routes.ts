@@ -9,6 +9,9 @@ import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
 import { hospitalsRouter } from "./routes/hospitals";
 import { appointmentsRouter } from "./routes/appointments";
+import mentorRoutes from "./routes/mentors";
+import studentRoutes from "./routes/students";
+import messageRoutes from "./routes/messages";
 import { storage } from "./storage";
 import { predictiveHealthService } from "./services/predictive-health";
 import { geminiHealthService } from "./services/gemini";
@@ -48,6 +51,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Appointment routes
   app.use("/api/appointments", appointmentsRouter);
+
+  // Mentor-Student routes
+  app.use("/api/mentors", mentorRoutes);
+
+  // Student routes
+  app.use("/api/students", studentRoutes);
+
+  // Message routes
+  app.use("/api/messages", messageRoutes);
 
   // Medical File Upload endpoints - Use optional auth in development mode
   const uploadAuthMiddleware = process.env.NODE_ENV === 'development' ? optionalAuth : authMiddleware;

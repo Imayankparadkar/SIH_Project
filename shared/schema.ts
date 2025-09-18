@@ -1076,3 +1076,441 @@ export const doctorRatingsTable = pgTable("doctor_ratings", {
   helpful: integer("helpful").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Mentor-Student System Tables
+export const mentorProfilesTable = pgTable("mentor_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => userProfilesTable.id), // Can be null for external mentors
+  email: varchar("email").notNull().unique(),
+  name: varchar("name").notNull(),
+  age: integer("age").notNull(),
+  gender: varchar("gender").notNull(),
+  phone: varchar("phone").notNull(),
+  mentorType: varchar("mentor_type").notNull(), // 'college_senior', 'professional', 'psychologist', 'counselor'
+  specialization: jsonb("specialization").$type<string[]>().notNull(), // ['academic_stress', 'career_guidance', 'emotional_wellbeing', etc.]
+  qualifications: jsonb("qualifications").$type<{degree: string; institution: string; year: number; certification?: string}[]>().notNull(),
+  experience: integer("experience").notNull(), // years
+  bio: text("bio").notNull(),
+  languages: jsonb("languages").$type<string[]>().notNull().default(['en']),
+  availability: jsonb("availability").$type<{day: string; startTime: string; endTime: string; timezone: string}[]>().notNull(),
+  verificationStatus: varchar("verification_status").notNull().default('pending'), // 'pending', 'verified', 'rejected'
+  verificationDocuments: jsonb("verification_documents").$type<{type: string; url: string; uploadedAt: string}[]>().default([]),
+  rating: real("rating").default(0),
+  totalSessions: integer("total_sessions").default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  isOnline: boolean("is_online").default(false),
+  lastActiveAt: timestamp("last_active_at"),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const studentProfilesTable = pgTable("student_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => userProfilesTable.id), // Can be null for anonymous students
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
+  displayName: varchar("display_name"), // For anonymous students
+  email: varchar("email"), // Optional for anonymous
+  age: integer("age"),
+  gender: varchar("gender"),
+  grade: varchar("grade"), // '11th', '12th', 'college_1st_year', etc.
+  school: varchar("school"),
+  city: varchar("city"),
+  state: varchar("state"),
+  interests: jsonb("interests").$type<string[]>().default([]),
+  concernAreas: jsonb("concern_areas").$type<string[]>().notNull(), // Areas where student needs guidance
+  privacyLevel: varchar("privacy_level").notNull().default('moderate'), // 'minimal', 'moderate', 'high'
+  parentalConsent: boolean("parental_consent").default(false),
+  emergencyContact: jsonb("emergency_contact").$type<{name?: string; phone?: string; relation?: string}>(),
+  isActive: boolean("is_active").notNull().default(true),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const guidanceCategoriesTable = pgTable("guidance_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description").notNull(),
+  icon: varchar("icon").notNull(), // Icon name for UI
+  color: varchar("color").notNull(), // Color code for UI
+  keywords: jsonb("keywords").$type<string[]>().notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const mentorStudentSessionsTable = pgTable("mentor_student_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => studentProfilesTable.id),
+  mentorId: varchar("mentor_id").notNull().references(() => mentorProfilesTable.id),
+  categoryId: varchar("category_id").references(() => guidanceCategoriesTable.id),
+  sessionType: varchar("session_type").notNull(), // 'chat', 'voice_call', 'video_call'
+  status: varchar("status").notNull().default('active'), // 'active', 'completed', 'terminated', 'escalated'
+  priority: varchar("priority").notNull().default('normal'), // 'low', 'normal', 'high', 'urgent'
+  sessionTitle: varchar("session_title"),
+  initialConcern: text("initial_concern"),
+  mentorNotes: text("mentor_notes"),
+  summary: text("summary"),
+  outcome: varchar("outcome"), // 'resolved', 'ongoing', 'referral_needed', 'emergency'
+  rating: integer("rating"), // Student's rating of the session
+  feedback: text("feedback"), // Student's feedback
+  duration: integer("duration"), // Session duration in minutes
+  scheduledAt: timestamp("scheduled_at"),
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const mentorStudentMessagesTable = pgTable("mentor_student_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull().references(() => mentorStudentSessionsTable.id),
+  senderId: varchar("sender_id").notNull(), // Can be student or mentor ID
+  senderType: varchar("sender_type").notNull(), // 'student' or 'mentor'
+  messageType: varchar("message_type").notNull().default('text'), // 'text', 'image', 'file', 'voice', 'system'
+  content: text("content"),
+  attachments: jsonb("attachments").$type<{type: string; url: string; name: string; size?: number}[]>().default([]),
+  isEncrypted: boolean("is_encrypted").notNull().default(true),
+  readAt: timestamp("read_at"),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+});
+
+export const mentorResourcesTable = pgTable("mentor_resources", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  mentorId: varchar("mentor_id").notNull().references(() => mentorProfilesTable.id),
+  categoryId: varchar("category_id").references(() => guidanceCategoriesTable.id),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  resourceType: varchar("resource_type").notNull(), // 'article', 'video', 'pdf', 'exercise', 'tip'
+  content: text("content"), // For articles/tips
+  attachments: jsonb("attachments").$type<{type: string; url: string; name: string; description?: string}[]>().default([]),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  targetAge: jsonb("target_age").$type<{min: number; max: number}>(),
+  isApproved: boolean("is_approved").notNull().default(false),
+  views: integer("views").default(0),
+  likes: integer("likes").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const emergencyEscalationsTable = pgTable("emergency_escalations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull().references(() => mentorStudentSessionsTable.id),
+  studentId: varchar("student_id").notNull().references(() => studentProfilesTable.id),
+  mentorId: varchar("mentor_id").notNull().references(() => mentorStudentSessionsTable.id),
+  escalationType: varchar("escalation_type").notNull(), // 'depression', 'suicidal_ideation', 'self_harm', 'abuse', 'immediate_danger'
+  severity: varchar("severity").notNull(), // 'medium', 'high', 'critical'
+  triggerKeywords: jsonb("trigger_keywords").$type<string[]>().default([]),
+  detectedAt: timestamp("detected_at").notNull(),
+  mentorResponse: text("mentor_response"),
+  actionTaken: varchar("action_taken"), // 'counselor_referral', 'emergency_contact', 'crisis_helpline', 'parent_notified'
+  professionalContacted: jsonb("professional_contacted").$type<{name?: string; phone?: string; type?: string; contactedAt?: string}>(),
+  followUpRequired: boolean("follow_up_required").default(true),
+  followUpAt: timestamp("follow_up_at"),
+  status: varchar("status").notNull().default('open'), // 'open', 'handled', 'resolved'
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const mentorRatingsTable = pgTable("mentor_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().references(() => studentProfilesTable.id),
+  mentorId: varchar("mentor_id").notNull().references(() => mentorProfilesTable.id),
+  sessionId: varchar("session_id").references(() => mentorStudentSessionsTable.id),
+  rating: integer("rating").notNull(),
+  review: text("review"),
+  categories: jsonb("categories").$type<{helpfulness: number; communication: number; expertise: number; empathy: number}>(),
+  wouldRecommend: boolean("would_recommend").default(true),
+  isAnonymous: boolean("is_anonymous").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const reportedContentTable = pgTable("reported_content", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reporterId: varchar("reporter_id"), // Can be student or mentor
+  reporterType: varchar("reporter_type").notNull(), // 'student' or 'mentor'
+  contentType: varchar("content_type").notNull(), // 'message', 'session', 'resource'
+  contentId: varchar("content_id").notNull(), // ID of the reported content
+  reason: varchar("reason").notNull(), // 'inappropriate', 'harassment', 'privacy_violation', 'other'
+  description: text("description"),
+  status: varchar("status").notNull().default('pending'), // 'pending', 'under_review', 'resolved', 'dismissed'
+  reviewedBy: varchar("reviewed_by"), // Admin/moderator ID
+  reviewNotes: text("review_notes"),
+  actionTaken: varchar("action_taken"), // 'warning', 'content_removed', 'user_suspended', 'no_action'
+  reportedAt: timestamp("reported_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+// Mentor-Student System Zod Schemas
+export const mentorProfileSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(),
+  email: z.string().email(),
+  name: z.string(),
+  age: z.number().min(18).max(65),
+  gender: z.enum(['male', 'female', 'other']),
+  phone: z.string(),
+  mentorType: z.enum(['college_senior', 'professional', 'psychologist', 'counselor']),
+  specialization: z.array(z.string()),
+  qualifications: z.array(z.object({
+    degree: z.string(),
+    institution: z.string(),
+    year: z.number(),
+    certification: z.string().optional()
+  })),
+  experience: z.number().min(0).max(50),
+  bio: z.string().max(1000),
+  languages: z.array(z.string()).default(['en']),
+  availability: z.array(z.object({
+    day: z.string(),
+    startTime: z.string(),
+    endTime: z.string(),
+    timezone: z.string()
+  })),
+  verificationStatus: z.enum(['pending', 'verified', 'rejected']).default('pending'),
+  verificationDocuments: z.array(z.object({
+    type: z.string(),
+    url: z.string(),
+    uploadedAt: z.string()
+  })).default([]),
+  rating: z.number().min(0).max(5).default(0),
+  totalSessions: z.number().default(0),
+  isActive: z.boolean().default(true),
+  isOnline: z.boolean().default(false),
+  lastActiveAt: z.coerce.date().optional(),
+  joinedAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+export const studentProfileSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(),
+  isAnonymous: z.boolean().default(false),
+  displayName: z.string().optional(),
+  email: z.string().email().optional(),
+  age: z.number().min(13).max(25).optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  grade: z.string().optional(),
+  school: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  interests: z.array(z.string()).default([]),
+  concernAreas: z.array(z.string()),
+  privacyLevel: z.enum(['minimal', 'moderate', 'high']).default('moderate'),
+  parentalConsent: z.boolean().default(false),
+  emergencyContact: z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    relation: z.string().optional()
+  }).optional(),
+  isActive: z.boolean().default(true),
+  joinedAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+export const guidanceCategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  icon: z.string(),
+  color: z.string(),
+  keywords: z.array(z.string()),
+  isActive: z.boolean().default(true),
+  createdAt: z.coerce.date()
+});
+
+export const mentorStudentSessionSchema = z.object({
+  id: z.string(),
+  studentId: z.string(),
+  mentorId: z.string(),
+  categoryId: z.string().optional(),
+  sessionType: z.enum(['chat', 'voice_call', 'video_call']),
+  status: z.enum(['active', 'completed', 'terminated', 'escalated']).default('active'),
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
+  sessionTitle: z.string().optional(),
+  initialConcern: z.string().optional(),
+  mentorNotes: z.string().optional(),
+  summary: z.string().optional(),
+  outcome: z.enum(['resolved', 'ongoing', 'referral_needed', 'emergency']).optional(),
+  rating: z.number().min(1).max(5).optional(),
+  feedback: z.string().optional(),
+  duration: z.number().min(0).optional(),
+  scheduledAt: z.coerce.date().optional(),
+  startedAt: z.coerce.date().optional(),
+  endedAt: z.coerce.date().optional(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+export const mentorStudentMessageSchema = z.object({
+  id: z.string(),
+  sessionId: z.string(),
+  senderId: z.string(),
+  senderType: z.enum(['student', 'mentor']),
+  messageType: z.enum(['text', 'image', 'file', 'voice', 'system']).default('text'),
+  content: z.string().optional(),
+  attachments: z.array(z.object({
+    type: z.string(),
+    url: z.string(),
+    name: z.string(),
+    size: z.number().optional()
+  })).default([]),
+  isEncrypted: z.boolean().default(true),
+  readAt: z.coerce.date().optional(),
+  sentAt: z.coerce.date()
+});
+
+export const mentorResourceSchema = z.object({
+  id: z.string(),
+  mentorId: z.string(),
+  categoryId: z.string().optional(),
+  title: z.string().max(200),
+  description: z.string().max(1000),
+  resourceType: z.enum(['article', 'video', 'pdf', 'exercise', 'tip']),
+  content: z.string().optional(),
+  attachments: z.array(z.object({
+    type: z.string(),
+    url: z.string(),
+    name: z.string(),
+    description: z.string().optional()
+  })).default([]),
+  tags: z.array(z.string()).default([]),
+  targetAge: z.object({
+    min: z.number(),
+    max: z.number()
+  }).optional(),
+  isApproved: z.boolean().default(false),
+  views: z.number().default(0),
+  likes: z.number().default(0),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+export const emergencyEscalationSchema = z.object({
+  id: z.string(),
+  sessionId: z.string(),
+  studentId: z.string(),
+  mentorId: z.string(),
+  escalationType: z.enum(['depression', 'suicidal_ideation', 'self_harm', 'abuse', 'immediate_danger']),
+  severity: z.enum(['medium', 'high', 'critical']),
+  triggerKeywords: z.array(z.string()).default([]),
+  detectedAt: z.coerce.date(),
+  mentorResponse: z.string().optional(),
+  actionTaken: z.enum(['counselor_referral', 'emergency_contact', 'crisis_helpline', 'parent_notified']).optional(),
+  professionalContacted: z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    type: z.string().optional(),
+    contactedAt: z.string().optional()
+  }).optional(),
+  followUpRequired: z.boolean().default(true),
+  followUpAt: z.coerce.date().optional(),
+  status: z.enum(['open', 'handled', 'resolved']).default('open'),
+  notes: z.string().optional(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+export const mentorRatingSchema = z.object({
+  id: z.string(),
+  studentId: z.string(),
+  mentorId: z.string(),
+  sessionId: z.string().optional(),
+  rating: z.number().min(1).max(5),
+  review: z.string().optional(),
+  categories: z.object({
+    helpfulness: z.number().min(1).max(5),
+    communication: z.number().min(1).max(5),
+    expertise: z.number().min(1).max(5),
+    empathy: z.number().min(1).max(5)
+  }).optional(),
+  wouldRecommend: z.boolean().default(true),
+  isAnonymous: z.boolean().default(true),
+  createdAt: z.coerce.date()
+});
+
+export const reportedContentSchema = z.object({
+  id: z.string(),
+  reporterId: z.string().optional(),
+  reporterType: z.enum(['student', 'mentor']),
+  contentType: z.enum(['message', 'session', 'resource']),
+  contentId: z.string(),
+  reason: z.enum(['inappropriate', 'harassment', 'privacy_violation', 'other']),
+  description: z.string().optional(),
+  status: z.enum(['pending', 'under_review', 'resolved', 'dismissed']).default('pending'),
+  reviewedBy: z.string().optional(),
+  reviewNotes: z.string().optional(),
+  actionTaken: z.enum(['warning', 'content_removed', 'user_suspended', 'no_action']).optional(),
+  reportedAt: z.coerce.date(),
+  reviewedAt: z.coerce.date().optional()
+});
+
+// Insert schemas for mentor-student system
+export const insertMentorProfileSchema = mentorProfileSchema.omit({
+  id: true,
+  joinedAt: true,
+  updatedAt: true
+});
+
+export const insertStudentProfileSchema = studentProfileSchema.omit({
+  id: true,
+  joinedAt: true,
+  updatedAt: true
+});
+
+export const insertGuidanceCategorySchema = guidanceCategorySchema.omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertMentorStudentSessionSchema = mentorStudentSessionSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertMentorStudentMessageSchema = mentorStudentMessageSchema.omit({
+  id: true,
+  sentAt: true
+});
+
+export const insertMentorResourceSchema = mentorResourceSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertEmergencyEscalationSchema = emergencyEscalationSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertMentorRatingSchema = mentorRatingSchema.omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertReportedContentSchema = reportedContentSchema.omit({
+  id: true,
+  reportedAt: true
+});
+
+// Type exports for mentor-student system
+export type MentorProfile = z.infer<typeof mentorProfileSchema>;
+export type InsertMentorProfile = z.infer<typeof insertMentorProfileSchema>;
+export type StudentProfile = z.infer<typeof studentProfileSchema>;
+export type InsertStudentProfile = z.infer<typeof insertStudentProfileSchema>;
+export type GuidanceCategory = z.infer<typeof guidanceCategorySchema>;
+export type InsertGuidanceCategory = z.infer<typeof insertGuidanceCategorySchema>;
+export type MentorStudentSession = z.infer<typeof mentorStudentSessionSchema>;
+export type InsertMentorStudentSession = z.infer<typeof insertMentorStudentSessionSchema>;
+export type MentorStudentMessage = z.infer<typeof mentorStudentMessageSchema>;
+export type InsertMentorStudentMessage = z.infer<typeof insertMentorStudentMessageSchema>;
+export type MentorResource = z.infer<typeof mentorResourceSchema>;
+export type InsertMentorResource = z.infer<typeof insertMentorResourceSchema>;
+export type EmergencyEscalation = z.infer<typeof emergencyEscalationSchema>;
+export type InsertEmergencyEscalation = z.infer<typeof insertEmergencyEscalationSchema>;
+export type MentorRating = z.infer<typeof mentorRatingSchema>;
+export type InsertMentorRating = z.infer<typeof insertMentorRatingSchema>;
+export type ReportedContent = z.infer<typeof reportedContentSchema>;
+export type InsertReportedContent = z.infer<typeof insertReportedContentSchema>;

@@ -36,7 +36,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const sql_conn = neon(process.env.DATABASE_URL);
-const db = drizzle(sql_conn);
+export const db = drizzle(sql_conn);
 
 // Type conversion utilities
 function convertNullToUndefined<T extends Record<string, any>>(obj: T): T {
