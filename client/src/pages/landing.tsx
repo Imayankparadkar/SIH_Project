@@ -85,7 +85,7 @@ export function LandingPage() {
             {services.map((service, index) => {
               const Icon = service.icon;
               return (
-                <Link key={index} href={index === 0 ? "/doctors" : index === 1 ? "/dashboard/medicines" : index === 2 ? "/doctors" : index === 3 ? "/dashboard/vitals" : index === 4 ? "/dashboard/ai-doctor" : "/mental-health"}>
+                <Link key={index} href={index === 0 ? "/doctors" : index === 1 ? "/medicines" : index === 2 ? "/doctors" : index === 3 ? "/vitals" : index === 4 ? "/ai-doctor" : "/mental-health"}>
                   <div className={`${service.bgColor} p-6 rounded-xl text-center cursor-pointer transition-all duration-200 hover:shadow-lg border border-gray-100`}>
                     <div className="flex justify-center mb-4">
                       <div className={`w-16 h-16 ${service.color} bg-white rounded-full flex items-center justify-center shadow-sm`}>

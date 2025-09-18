@@ -37,16 +37,16 @@ export function Navigation() {
             <Link href="/doctors" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/doctors') ? 'text-primary' : ''}`}>
               Doctors
             </Link>
-            <Link href="/dashboard/medicines" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/medicines') ? 'text-primary' : ''}`}>
+            <Link href="/medicines" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/medicines') ? 'text-primary' : ''}`}>
               Medicines
             </Link>
-            <Link href="/dashboard/vitals" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/vitals') ? 'text-primary' : ''}`}>
+            <Link href="/vitals" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/vitals') ? 'text-primary' : ''}`}>
               Lab Test &amp; Diagnostic
             </Link>
-            <Link href="/donations" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/donations') ? 'text-primary' : ''}`}>
+            <Link href="/doctors" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/hospitals') ? 'text-primary' : ''}`}>
               Hospitals
             </Link>
-            <Link href="/dashboard/ai-doctor" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/ai-doctor') ? 'text-primary' : ''}`}>
+            <Link href="/ai-doctor" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/ai-doctor') ? 'text-primary' : ''}`}>
               Surgery
             </Link>
             <Link href="/mental-health" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/mental-health') ? 'text-primary' : ''}`}>
@@ -125,16 +125,16 @@ export function Navigation() {
               <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
                 Doctors
               </Link>
-              <Link href="/dashboard/medicines" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/medicines" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
                 Medicines
               </Link>
-              <Link href="/dashboard/vitals" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/vitals" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
                 Lab Test &amp; Diagnostic
               </Link>
-              <Link href="/donations" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
                 Hospitals
               </Link>
-              <Link href="/dashboard/ai-doctor" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/ai-doctor" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
                 Surgery
               </Link>
               <Link href="/mental-health" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">

@@ -59,12 +59,10 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">DOWNLOAD APP</h3>
             <div className="space-y-4 mb-8">
-              <a href="#" className="inline-block">
-                <img src="https://via.placeholder.com/150x45/000000/FFFFFF?text=Download+App" alt="Download on Play Store" className="h-10" />
-              </a>
-              <a href="#" className="inline-block">
-                <img src="https://via.placeholder.com/150x45/000000/FFFFFF?text=App+Store" alt="Download on App Store" className="h-10" />
-              </a>
+              <div className="bg-white/20 rounded-lg px-4 py-2 text-center">
+                <p className="text-sm">Download our mobile app</p>
+                <p className="text-xs opacity-80">Coming Soon</p>
+              </div>
             </div>
             
             <h4 className="text-sm font-medium mb-3">FOLLOW US</h4>
