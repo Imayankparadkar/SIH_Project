@@ -92,16 +92,16 @@
     background: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(280, 75%, 60%) 35%, hsl(330, 85%, 65%) 100%);
   }
 
-  .medibuddy-gradient {
+  .sehatify-gradient {
     background: linear-gradient(135deg, hsl(262, 83%, 50%) 0%, hsl(280, 75%, 55%) 35%, hsl(330, 85%, 60%) 100%);
   }
 
-  .medibuddy-gradient-overlay {
+  .sehatify-gradient-overlay {
     background: linear-gradient(135deg, hsl(262, 83%, 50%) 0%, hsl(280, 75%, 55%) 35%, hsl(330, 85%, 60%) 100%);
     position: relative;
   }
 
-  .medibuddy-gradient-overlay::before {
+  .sehatify-gradient-overlay::before {
     content: '';
     position: absolute;
     top: 0;
@@ -112,7 +112,7 @@
     z-index: 1;
   }
 
-  .medibuddy-gradient-overlay > * {
+  .sehatify-gradient-overlay > * {
     position: relative;
     z-index: 2;
   }
@@ -203,16 +203,16 @@
   background: hsl(var(--primary));
 }
 
-/* MediBuddy specific styles */
-.medibuddy-card {
+/* Sehatify specific styles */
+.sehatify-card {
   @apply bg-white rounded-2xl shadow-lg border-0 p-6;
 }
 
-.medibuddy-btn-primary {
+.sehatify-btn-primary {
   @apply bg-gradient-to-r from-purple-700 to-pink-700 hover:from-purple-800 hover:to-pink-800 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200;
 }
 
-.medibuddy-btn-secondary {
+.sehatify-btn-secondary {
   @apply bg-white text-purple-600 border border-purple-200 hover:bg-purple-50 font-medium px-6 py-3 rounded-lg transition-all duration-200;
 }
 

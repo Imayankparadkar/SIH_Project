@@ -22,6 +22,16 @@ import { AIDoctorPage } from "@/pages/ai-doctor";
 import { SettingsPage } from "@/pages/settings";
 import MentalHealthPage from "@/pages/mental-health";
 import NotFound from "@/pages/not-found";
+import { PartnershipPage } from "@/pages/partnership";
+import { FAQsPage } from "@/pages/faqs";
+import { OverviewPage } from "@/pages/overview";
+import { HospitalizationPage } from "@/pages/hospitalization";
+import { LocateHospitalPage } from "@/pages/locate-hospital";
+import { BeliefsPage } from "@/pages/beliefs";
+import { BlogPage } from "@/pages/blog";
+import { TermsPage } from "@/pages/terms";
+import { PrivacyPage } from "@/pages/privacy";
+import { GrievancePage } from "@/pages/grievance";
 import i18n from "@/lib/i18n";
 
 function Router() {
@@ -43,6 +53,16 @@ function Router() {
       <Route path="/ai-doctor" component={AIDoctorPage} />
       <Route path="/donations" component={DonationsPage} />
       <Route path="/mental-health" component={MentalHealthPage} />
+      <Route path="/partnership" component={PartnershipPage} />
+      <Route path="/faqs" component={FAQsPage} />
+      <Route path="/overview" component={OverviewPage} />
+      <Route path="/hospitalization" component={HospitalizationPage} />
+      <Route path="/locate-hospital" component={LocateHospitalPage} />
+      <Route path="/beliefs" component={BeliefsPage} />
+      <Route path="/blog" component={BlogPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/grievance" component={GrievancePage} />
       <Route component={NotFound} />
     </Switch>
   );

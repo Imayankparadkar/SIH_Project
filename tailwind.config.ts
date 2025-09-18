@@ -134,8 +134,8 @@ export default {
         "slide-in-right": "slide-in-right 0.6s ease-out",
       },
       backgroundImage: {
-        'medibuddy-gradient': 'linear-gradient(135deg, hsl(262, 83%, 50%) 0%, hsl(280, 75%, 55%) 35%, hsl(330, 85%, 60%) 100%)',
-        'medibuddy-card': 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,1) 100%)',
+        'sehatify-gradient': 'linear-gradient(135deg, hsl(262, 83%, 50%) 0%, hsl(280, 75%, 55%) 35%, hsl(330, 85%, 60%) 100%)',
+        'sehatify-card': 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,1) 100%)',
       },
     },
   },

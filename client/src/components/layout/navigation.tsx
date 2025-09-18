@@ -22,18 +22,18 @@ export function Navigation() {
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo - MediBuddy Style */}
+          {/* Logo - Sehatify Style */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="flex items-center space-x-3">
-              {/* MediBuddy-style diamond logo */}
+              {/* Sehatify-style diamond logo */}
               <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-md flex items-center justify-center transform rotate-45">
                 <div className="w-3 h-3 bg-white rounded-sm transform -rotate-45"></div>
               </div>
-              <span className="text-xl font-semibold text-gray-800">MediBuddy</span>
+              <span className="text-xl font-semibold text-gray-800">Sehatify</span>
             </div>
           </Link>
 
-          {/* Desktop Navigation - Clean MediBuddy Style */}
+          {/* Desktop Navigation - Clean Sehatify Style */}
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/doctors" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/doctors' ? 'text-purple-600' : ''}`}>
               Talk to Doctor
@@ -56,7 +56,7 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Right Side Actions - Clean MediBuddy Style */}
+          {/* Right Side Actions - Clean Sehatify Style */}
           <div className="flex items-center space-x-6">
             {/* About Us Link */}
             <Link href="/" className="text-gray-600 hover:text-purple-600 font-medium transition-colors hidden md:block text-sm">

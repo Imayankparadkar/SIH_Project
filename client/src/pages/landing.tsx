@@ -53,7 +53,7 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
       {/* Hero Section - Modern Professional Style */}
       <section className="relative py-20 px-4 overflow-hidden">
         {/* Background Pattern */}
@@ -128,7 +128,7 @@ export function LandingPage() {
         <div className="absolute bottom-20 left-20 w-12 h-12 bg-purple-300 rounded-full opacity-20 animate-pulse delay-150"></div>
       </section>
 
-      {/* Services Grid - MediBuddy Style */}
+      {/* Services Grid - Sehatify Style */}
       <section className="py-16 px-4 bg-gradient-to-br from-purple-50 to-indigo-100">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -232,7 +232,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Insurance Section - MediBuddy Style */}
+      {/* Insurance Section - Sehatify Style */}
       <section className="py-20 px-4 bg-gradient-to-br from-purple-50 to-indigo-100">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -310,11 +310,11 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-medibuddy-gradient text-white">
+      <section className="py-20 px-4 bg-sehatify-gradient text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to get started?</h2>
           <p className="text-xl mb-10 opacity-90 max-w-2xl mx-auto">
-            Join millions of users who trust MediBuddy for their healthcare needs and experience the future of medicine
+            Join millions of users who trust Sehatify for their healthcare needs and experience the future of medicine
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/register">
