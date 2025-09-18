@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/auth-context";
 import { HealthProvider } from "@/context/health-context";
 import { Navigation } from "@/components/layout/navigation";
+import { Footer } from "@/components/layout/footer";
 import { LandingPage } from "@/pages/landing";
 import { LoginForm } from "@/components/auth/login-form";
 import { RegisterForm } from "@/components/auth/register-form";
@@ -46,9 +47,12 @@ function Router() {
 
 function AppContent() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation />
-      <Router />
+      <main className="flex-grow">
+        <Router />
+      </main>
+      <Footer />
     </div>
   );
 }
