@@ -1,0 +1,730 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Search, 
+  MapPin, 
+  Layers, 
+  Filter, 
+  Play, 
+  Pause, 
+  Calendar, 
+  AlertTriangle,
+  TrendingUp,
+  Users,
+  Activity,
+  Shield,
+  Info,
+  ChevronDown,
+  ChevronRight,
+  Settings,
+  Download,
+  Share,
+  Bell,
+  Plus
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Toggle } from '@/components/ui/toggle';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
+import 'leaflet/dist/leaflet.css';
+
+// Import Leaflet CSS and fix default marker icons
+import L from 'leaflet';
+
+// Fix default markers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Heatmap Effect Component using Circles
+function HeatmapEffect({ diseaseData, opacity }: { diseaseData: DiseaseData[], opacity: number }) {
+  return (
+    <>
+      {diseaseData.map((disease) => (
+        <Circle
+          key={`heatmap-${disease.id}`}
+          center={[disease.latitude, disease.longitude]}
+          radius={Math.sqrt(disease.cases) * 50} // Scale radius based on cases
+          pathOptions={{
+            fillColor: disease.color,
+            color: disease.color,
+            weight: 2,
+            opacity: opacity,
+            fillOpacity: opacity * 0.3,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+interface DiseaseData {
+  id: string;
+  name: string;
+  cases: number;
+  incidenceRate: number;
+  change7d: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  color: string;
+  latitude: number;
+  longitude: number;
+  lastUpdated: string;
+  sources: Array<{
+    type: 'hospital' | 'lab' | 'user_report' | 'official';
+    confidence: number;
+    count: number;
+  }>;
+  symptoms: string[];
+}
+
+interface MapLayerConfig {
+  id: string;
+  name: string;
+  type: 'choropleth' | 'heatmap' | 'pins';
+  enabled: boolean;
+  opacity: number;
+}
+
+export function DiseaseMapPage() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  
+  // Fetch disease data from backend
+  const { data: diseaseResponse, isLoading, error, refetch } = useQuery({
+    queryKey: ['/api/disease-surveillance/data'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Extract disease data and summary from response
+  const backendDiseaseData = diseaseResponse?.data || [];
+  const summary = diseaseResponse?.summary || {
+    totalCases: 0,
+    newToday: 0,
+    activeHotspots: 0,
+    lastUpdated: new Date().toISOString()
+  };
+  const [selectedDiseases, setSelectedDiseases] = useState<string[]>(['covid19', 'dengue']);
+  const [timeRange, setTimeRange] = useState<string>('last_7_days');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [selectedArea, setSelectedArea] = useState<DiseaseData | null>(null);
+  
+  const [mapLayers, setMapLayers] = useState<MapLayerConfig[]>([
+    { id: 'choropleth', name: 'Area Rates', type: 'choropleth', enabled: true, opacity: 0.7 },
+    { id: 'heatmap', name: 'Density Heatmap', type: 'heatmap', enabled: true, opacity: 0.6 },
+    { id: 'pins', name: 'Individual Reports', type: 'pins', enabled: true, opacity: 1.0 },
+  ]);
+
+  // Use backend data or fallback to empty array
+  const diseaseData = backendDiseaseData;
+
+  // Debounced search query
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Search API integration with debouncing
+  const { data: searchResponse } = useQuery({
+    queryKey: ['/api/disease-surveillance/search', { q: debouncedSearchQuery }],
+    enabled: debouncedSearchQuery.length > 2, // Only search if query is longer than 2 characters
+  });
+
+  // Update search results when searchResponse changes
+  useEffect(() => {
+    if (searchResponse && debouncedSearchQuery.length > 2) {
+      setSearchResults(searchResponse.diseases || []);
+      setShowSearchResults(true);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  }, [searchResponse, debouncedSearchQuery]);
+
+  const availableDiseases = [
+    { id: 'covid19', name: 'COVID-19', color: '#dc2626' },
+    { id: 'dengue', name: 'Dengue Fever', color: '#f59e0b' },
+    { id: 'malaria', name: 'Malaria', color: '#059669' },
+    { id: 'typhoid', name: 'Typhoid', color: '#7c3aed' },
+    { id: 'chikungunya', name: 'Chikungunya', color: '#e11d48' },
+  ];
+
+  // Get user location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          toast({
+            title: "Location Found",
+            description: "Your location has been detected successfully.",
+          });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Default to Delhi, India if location access denied
+          setUserLocation({ lat: 28.6139, lng: 77.2090 });
+        }
+      );
+    }
+  }, []);
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'low': return 'text-green-600 bg-green-100';
+      case 'medium': return 'text-yellow-600 bg-yellow-100';
+      case 'high': return 'text-orange-600 bg-orange-100';
+      case 'critical': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getSourceIcon = (type: string) => {
+    switch (type) {
+      case 'hospital': return '🏥';
+      case 'lab': return '🔬';
+      case 'official': return '🏛️';
+      case 'user_report': return '👤';
+      default: return '📊';
+    }
+  };
+
+  const toggleDiseaseSelection = (diseaseId: string) => {
+    setSelectedDiseases(prev => 
+      prev.includes(diseaseId) 
+        ? prev.filter(id => id !== diseaseId)
+        : [...prev, diseaseId]
+    );
+  };
+
+  const toggleLayerVisibility = (layerId: string) => {
+    setMapLayers(prev => 
+      prev.map(layer => 
+        layer.id === layerId 
+          ? { ...layer, enabled: !layer.enabled }
+          : layer
+      )
+    );
+  };
+
+  const updateLayerOpacity = (layerId: string, opacity: number) => {
+    setMapLayers(prev => 
+      prev.map(layer => 
+        layer.id === layerId 
+          ? { ...layer, opacity: opacity / 100 }
+          : layer
+      )
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25">
+      {/* Top Navigation Bar */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Left Section - Disease Selector */}
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-semibold text-gray-800">Disease Surveillance Map</h1>
+              <Separator orientation="vertical" className="h-6" />
+              <div className="flex flex-wrap gap-2">
+                {availableDiseases.map((disease) => (
+                  <Toggle
+                    key={disease.id}
+                    pressed={selectedDiseases.includes(disease.id)}
+                    onPressedChange={() => toggleDiseaseSelection(disease.id)}
+                    className="data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full mr-2"
+                      style={{ backgroundColor: disease.color }}
+                    />
+                    {disease.name}
+                  </Toggle>
+                ))}
+              </div>
+            </div>
+
+            {/* Center Section - Search */}
+            <div className="flex-1 max-w-md mx-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search by disease, symptom, or location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+                />
+                
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {searchResults.map((result) => (
+                      <div
+                        key={result.id}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        onClick={() => {
+                          // Focus on the disease location on map
+                          const matchingDisease = diseaseData.find(d => d.id === result.id);
+                          if (matchingDisease) {
+                            setUserLocation({
+                              lat: matchingDisease.latitude,
+                              lng: matchingDisease.longitude
+                            });
+                          }
+                          setSearchQuery('');
+                          setShowSearchResults(false);
+                          toast({
+                            title: "Focused on location",
+                            description: `Map centered on ${result.name} in ${result.area}`,
+                          });
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">{result.name}</div>
+                            <div className="text-sm text-gray-600">{result.area}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">{result.cases} cases</div>
+                            <Badge variant={
+                              result.severity === 'critical' ? 'destructive' :
+                              result.severity === 'high' ? 'secondary' : 'outline'
+                            }>
+                              {result.severity}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Section - Time Range & Actions */}
+            <div className="flex items-center space-x-3">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-32">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="last_24h">Last 24h</SelectItem>
+                  <SelectItem value="last_7_days">Last 7 days</SelectItem>
+                  <SelectItem value="last_30_days">Last 30 days</SelectItem>
+                  <SelectItem value="last_3_months">Last 3 months</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-10 h-10 p-0"
+              >
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Alerts
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Alert Settings</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">New hotspot alerts</span>
+                        <Toggle size="sm" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Case increase alerts</span>
+                        <Toggle size="sm" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Risk level changes</span>
+                        <Toggle size="sm" />
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex h-[calc(100vh-80px)]">
+        {/* Left Sidebar */}
+        <div className={`${leftPanelCollapsed ? 'w-16' : 'w-96'} transition-all duration-300 bg-white border-r border-gray-200 shadow-sm`}>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              {!leftPanelCollapsed && <h3 className="font-semibold text-gray-800">Disease Overview</h3>}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+                className="h-8 w-8 p-0"
+              >
+                {leftPanelCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {!leftPanelCollapsed && (
+              <div className="space-y-4">
+                {/* Quick Stats */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-gray-600">Quick Stats</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Total Cases</span>
+                        <span className="font-semibold text-purple-600">2,526</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">New Today</span>
+                        <span className="font-semibold text-green-600">+23</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Active Hotspots</span>
+                        <span className="font-semibold text-orange-600">7</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Layer Controls */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-gray-600">Map Layers</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {mapLayers.map((layer) => (
+                        <div key={layer.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Toggle
+                              pressed={layer.enabled}
+                              onPressedChange={() => toggleLayerVisibility(layer.id)}
+                              size="sm"
+                              className="text-xs"
+                            >
+                              {layer.name}
+                            </Toggle>
+                          </div>
+                          {layer.enabled && (
+                            <div className="ml-2">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs text-gray-500">Opacity</span>
+                                <Slider
+                                  value={[layer.opacity * 100]}
+                                  onValueChange={(value) => updateLayerOpacity(layer.id, value[0])}
+                                  max={100}
+                                  step={10}
+                                  className="flex-1"
+                                />
+                                <span className="text-xs text-gray-500 w-8">
+                                  {Math.round(layer.opacity * 100)}%
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Disease Data */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-gray-600">Active Diseases</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {diseaseData.filter(d => selectedDiseases.includes(d.id)).map((disease) => (
+                        <div
+                          key={disease.id}
+                          className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                          onClick={() => setSelectedArea(disease)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: disease.color }}
+                              />
+                              <span className="font-medium text-sm">{disease.name}</span>
+                            </div>
+                            <Badge className={getSeverityColor(disease.severity)}>
+                              {disease.severity}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">Cases</span>
+                              <span className="font-medium">{disease.cases.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">Rate per 1K</span>
+                              <span className="font-medium">{disease.incidenceRate}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-600">7-day change</span>
+                              <span className={`font-medium ${disease.change7d >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                {disease.change7d >= 0 ? '+' : ''}{disease.change7d}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Report Case Button */}
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Report a Case
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Main Map Container */}
+        <div className="flex-1 relative">
+          {userLocation && (
+            <MapContainer
+              center={[userLocation.lat, userLocation.lng]}
+              zoom={10}
+              className="w-full h-full"
+              zoomControl={false}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              {/* Disease Pins Layer */}
+              {mapLayers.find(l => l.id === 'pins')?.enabled && diseaseData.map((disease) => (
+                <Marker
+                  key={disease.id}
+                  position={[disease.latitude, disease.longitude]}
+                >
+                  <Popup>
+                    <div className="p-2 min-w-64">
+                      <h3 className="font-semibold text-lg mb-2">{disease.name}</h3>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Cases:</strong> {disease.cases.toLocaleString()}</p>
+                        <p><strong>Incidence Rate:</strong> {disease.incidenceRate} per 1000</p>
+                        <p><strong>Severity:</strong> 
+                          <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                            disease.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                            disease.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                            disease.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {disease.severity}
+                          </span>
+                        </p>
+                        <p><strong>7-day Change:</strong> 
+                          <span className={`ml-1 ${disease.change7d >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {disease.change7d >= 0 ? '+' : ''}{disease.change7d}%
+                          </span>
+                        </p>
+                        <div className="mt-2">
+                          <p className="font-medium">Common Symptoms:</p>
+                          <p className="text-gray-600">{disease.symptoms.join(', ')}</p>
+                        </div>
+                        <div className="mt-2">
+                          <p className="font-medium">Data Sources:</p>
+                          {disease.sources.map((source, idx) => (
+                            <p key={idx} className="text-xs text-gray-600">
+                              {source.type}: {source.count} reports (confidence: {(source.confidence * 100).toFixed(0)}%)
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+              {/* Simple Heatmap Layer using Circles */}
+              {mapLayers.find(l => l.id === 'heatmap')?.enabled && (
+                <HeatmapEffect diseaseData={diseaseData} opacity={mapLayers.find(l => l.id === 'heatmap')?.opacity || 0.6} />
+              )}
+            </MapContainer>
+          )}
+
+          {/* Map Controls */}
+          <div className="absolute top-4 right-4 space-y-2 z-[1000]">
+            <Card className="p-2">
+              <div className="flex flex-col space-y-1">
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                  <Layers className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                  <Settings className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                  <Share className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          {/* Time Slider (when playing animation) */}
+          {isPlaying && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
+              <Card className="p-4 min-w-96">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsPlaying(false)}
+                    className="w-8 h-8 p-0"
+                  >
+                    <Pause className="w-4 h-4" />
+                  </Button>
+                  <Slider
+                    value={[50]}
+                    max={100}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium">
+                    {currentTime.toLocaleDateString()}
+                  </span>
+                </div>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Selected Area Modal */}
+      {selectedArea && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
+          <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: selectedArea.color }}
+                  />
+                  <CardTitle>{selectedArea.name} Details</CardTitle>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedArea(null)}
+                  className="w-8 h-8 p-0"
+                >
+                  ×
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Key Metrics */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="font-semibold text-lg text-purple-600">{selectedArea.cases}</div>
+                    <div className="text-sm text-gray-600">Total Cases</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="font-semibold text-lg text-purple-600">{selectedArea.incidenceRate}</div>
+                    <div className="text-sm text-gray-600">Per 1,000 people</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className={`font-semibold text-lg ${selectedArea.change7d >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {selectedArea.change7d >= 0 ? '+' : ''}{selectedArea.change7d}%
+                    </div>
+                    <div className="text-sm text-gray-600">7-day change</div>
+                  </div>
+                </div>
+
+                {/* Symptoms */}
+                <div>
+                  <h4 className="font-medium mb-2">Common Symptoms</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedArea.symptoms.map((symptom) => (
+                      <Badge key={symptom} variant="secondary">{symptom}</Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sources & Confidence */}
+                <div>
+                  <h4 className="font-medium mb-2">Data Sources & Confidence</h4>
+                  <div className="space-y-2">
+                    {selectedArea.sources.map((source, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div className="flex items-center space-x-2">
+                          <span>{getSourceIcon(source.type)}</span>
+                          <span className="text-sm capitalize">{source.type.replace('_', ' ')}</span>
+                          <Badge variant="outline">{source.count} reports</Badge>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${source.confidence > 0.9 ? 'bg-green-500' : source.confidence > 0.8 ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                          <span className="text-sm font-medium">{Math.round(source.confidence * 100)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex space-x-2">
+                  <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Report Case Here
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Set Alert
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -21,6 +21,7 @@ import { geminiHealthService } from "./services/gemini";
 import { firebaseStorageService } from "./services/firebase-storage";
 import { HealthAnalysisRequestSchema, ChatRequestSchema, MedicalFileUploadSchema, FileAccessParamsSchema, ReportIdParamsSchema } from "./validation/health";
 import { insertMedicalReportSchema, insertLabBookingSchema } from "@shared/schema";
+import { getDiseaseData, getDiseaseDetails, reportDiseaseCase, searchDiseases, getAlertSettings, updateAlertSettings } from "./routes/disease-surveillance";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -68,6 +69,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Message routes
   app.use("/api/messages", messageRoutes);
+
+  // Disease surveillance routes
+  app.get("/api/disease-surveillance/data", optionalAuth, getDiseaseData);
+  app.get("/api/disease-surveillance/details/:id", optionalAuth, getDiseaseDetails);
+  app.post("/api/disease-surveillance/report", authMiddleware, reportDiseaseCase);
+  app.get("/api/disease-surveillance/search", optionalAuth, searchDiseases);
+  app.get("/api/disease-surveillance/alerts", authMiddleware, getAlertSettings);
+  app.put("/api/disease-surveillance/alerts", authMiddleware, updateAlertSettings);
 
   // Medical File Upload endpoints - Use optional auth in development mode
   const uploadAuthMiddleware = process.env.NODE_ENV === 'development' ? optionalAuth : authMiddleware;
