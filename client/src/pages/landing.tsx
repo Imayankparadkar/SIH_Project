@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
-import { Stethoscope, Pill, Calendar, TestTube, Scissors, HeartHandshake, Search, ArrowRight, Star, Shield, Clock, Users } from 'lucide-react';
+import { Stethoscope, Pill, Calendar, TestTube, Scissors, HeartHandshake, ArrowRight, Star, Shield, Clock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 
 export function LandingPage() {
   const { t } = useTranslation();
@@ -54,51 +53,25 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      {/* Hero Section - MediBuddy Style */}
-      <section className="bg-medibuddy-gradient py-20 px-4">
+    <div className="min-h-screen bg-white">
+      {/* Hero Section - Clean MediBuddy Style */}
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
-          {/* Main Headline and CTA */}
-          <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Consult with Top Doctors Online, <span className="text-yellow-300">24x7</span>
+          {/* Main Title */}
+          <div className="text-center mb-12">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8 leading-tight">
+              Consult with Top Doctors Online, <span className="text-purple-600">24x7</span>
             </h1>
-            <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
-              Get expert medical advice from certified doctors anytime, anywhere. Your health is our priority.
-            </p>
+            
+            {/* Start Consultation Button */}
             <div className="mb-8">
               <Link href="/doctors">
-                <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-50 px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                  Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base rounded-lg">
+                  Start Consultation <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </div>
           </div>
-
-          {/* Search Section */}
-          <div className="text-center mb-16">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
-                Search for your nearest <span className="text-yellow-300">Doctor</span> to plan and avail a cashless hospitalization
-              </h2>
-              <div className="max-w-2xl mx-auto mt-8">
-                <div className="flex gap-3">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      type="text"
-                      placeholder="Search your area, pincode, street name..."
-                      className="pl-12 h-14 text-lg border-2 border-white/30 focus:border-white/60 rounded-xl bg-white/90 backdrop-blur-sm"
-                    />
-                  </div>
-                  <Button className="h-14 px-6 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm border border-white/30" onClick={() => alert('Location feature coming soon!')}>
-                    Use current location
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </section>
 
