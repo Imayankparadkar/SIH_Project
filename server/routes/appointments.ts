@@ -33,9 +33,37 @@ router.post('/', async (req, res) => {
     
     const appointmentData = validationResult.data;
     
-    // Check if doctor exists
-    const doctors = await dbStorage.getDoctors();
-    const doctor = doctors.find(d => d.id === appointmentData.doctorId);
+    // Check if doctor exists (using same mock data as /api/doctors)
+    const mockDoctors = [
+      {
+        id: "doc1",
+        name: "Dr. Sarah Johnson",
+        specialization: "Cardiology",
+        rating: 4.9,
+        experience: "15 years",
+        hospitalAffiliation: "City General Hospital",
+        consultationFee: 800
+      },
+      {
+        id: "doc2",
+        name: "Dr. Rajesh Patel",
+        specialization: "Internal Medicine",
+        rating: 4.7,
+        experience: "12 years",
+        hospitalAffiliation: "Metro Health Center",
+        consultationFee: 600
+      },
+      {
+        id: "doc3",
+        name: "Dr. Priya Sharma",
+        specialization: "Endocrinology",
+        rating: 4.8,
+        experience: "18 years",
+        hospitalAffiliation: "Advanced Medical Institute",
+        consultationFee: 900
+      }
+    ];
+    const doctor = mockDoctors.find(d => d.id === appointmentData.doctorId);
     
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
@@ -43,7 +71,7 @@ router.post('/', async (req, res) => {
     
     // Create appointment
     const appointment = {
-      userId: 'demo-user-id', // In production, get from authenticated user
+      userId: 'demo-user-1', // In production, get from authenticated user
       doctorId: appointmentData.doctorId,
       appointmentType: appointmentData.appointmentType,
       scheduledDateTime: new Date(appointmentData.scheduledDateTime),
