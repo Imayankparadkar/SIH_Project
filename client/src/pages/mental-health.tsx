@@ -275,7 +275,7 @@ export default function MentalHealth() {
     
     setSavedSessions(updatedSessions);
     localStorage.setItem('mentalHealthSessions', JSON.stringify(updatedSessions));
-    alert(`Session saved: ${anonymousId}. Use this code to continue with ${mentorName}.`);
+    alert(`Session saved: ${anonymousId}. Find this session in 'Your Saved Sessions' on this device to continue with ${mentorName}.`);
   };
   
   const handlePrivacyConsent = (consent: boolean) => {
@@ -436,7 +436,7 @@ export default function MentalHealth() {
                     <li>• Data includes messages, anonymous ID, and mentor name</li>
                     <li>• No real personal information is stored</li>
                     <li>• On shared devices, others may access this data</li>
-                    <li>• You can delete saved sessions anytime</li>
+                    <li>• You can delete saved sessions from the main page anytime</li>
                   </ul>
                 </div>
                 <div className="flex space-x-2">
@@ -520,21 +520,57 @@ export default function MentalHealth() {
           {/* Saved Sessions Section */}
           {savedSessions.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Your Saved Sessions</h3>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Your Saved Sessions</h3>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => {
+                    if (confirm('Delete all saved sessions? This cannot be undone.')) {
+                      setSavedSessions([]);
+                      localStorage.removeItem('mentalHealthSessions');
+                    }
+                  }}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {savedSessions.map((session, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadSavedSession(session)}
-                    className="flex flex-col p-3 h-auto"
-                  >
-                    <span className="font-medium">{session.code}</span>
-                    <span className="text-xs text-muted-foreground">
-                      with {session.mentorName} • {helpCategories.find(c => c.id === session.category)?.title}
-                    </span>
-                  </Button>
+                  <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm">{session.code}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updatedSessions = savedSessions.filter((_, i) => i !== index);
+                            setSavedSessions(updatedSessions);
+                            localStorage.setItem('mentalHealthSessions', JSON.stringify(updatedSessions));
+                          }}
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        with {session.mentorName} • {helpCategories.find(c => c.id === session.category)?.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-3">
+                        {session.messages.length} messages • {new Date(session.lastUsed).toLocaleDateString()}
+                      </div>
+                      <Button 
+                        onClick={() => loadSavedSession(session)}
+                        size="sm" 
+                        className="w-full"
+                      >
+                        Continue Session
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </div>
