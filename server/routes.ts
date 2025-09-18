@@ -769,21 +769,48 @@ Please respond in JSON format with:
       
       const actualUserId = demoUser.id;
       
-      // Calculate totals
-      const totalAmount = medicines.reduce((sum: number, med: any) => sum + med.price * med.quantity, 0);
-      const discount = medicines.reduce((sum: number, med: any) => sum + (med.price - med.discountedPrice) * med.quantity, 0);
+      // Fetch medicines from database to get authoritative pricing
+      const medicineIds = medicines.map((med: any) => med.id);
+      const dbMedicines = await storage.getMedicinesByIds(medicineIds);
+      
+      if (dbMedicines.length !== medicineIds.length) {
+        return res.status(400).json({ error: "Some medicines not found in database" });
+      }
+      
+      // Calculate totals server-side using database prices (security: ignore client pricing)
+      let totalAmount = 0;
+      let discount = 0;
+      const validatedMedicines = [];
+      
+      for (const clientMedicine of medicines) {
+        const dbMedicine = dbMedicines.find(db => db.id === clientMedicine.id);
+        if (!dbMedicine) {
+          return res.status(400).json({ error: `Medicine ${clientMedicine.id} not found` });
+        }
+        
+        // Server-side price calculation (ignore client prices)
+        const serverPrice = dbMedicine.price;
+        const serverDiscountedPrice = Math.round(serverPrice * 0.85); // 15% discount
+        const quantity = clientMedicine.quantity || 1;
+        
+        totalAmount += serverPrice * quantity;
+        discount += (serverPrice - serverDiscountedPrice) * quantity;
+        
+        validatedMedicines.push({
+          medicineId: dbMedicine.id,
+          quantity: quantity,
+          price: serverPrice,
+          prescriptionRequired: dbMedicine.prescriptionRequired || false
+        });
+      }
+      
       const finalAmount = totalAmount - discount;
       
       // Create order in database
       const order = await storage.createOrder({
         userId: actualUserId,
         pharmacyId: 'default-pharmacy',
-        orderItems: medicines.map((med: any) => ({
-          medicineId: med.id,
-          quantity: med.quantity,
-          price: med.price,
-          prescriptionRequired: med.prescription || false
-        })),
+        orderItems: validatedMedicines,
         deliveryAddress: {
           name: 'User Name',
           phone: '+91-9876543210',

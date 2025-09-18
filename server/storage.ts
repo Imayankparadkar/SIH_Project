@@ -66,6 +66,7 @@ export interface IStorage {
   // Medicine operations
   getMedicine(id: string): Promise<Medicine | undefined>;
   getMedicines(filters?: { name?: string; prescriptionRequired?: boolean }): Promise<Medicine[]>;
+  getMedicinesByIds(ids: string[]): Promise<Medicine[]>;
   createMedicine(medicine: InsertMedicine): Promise<Medicine>;
 
   // Order operations

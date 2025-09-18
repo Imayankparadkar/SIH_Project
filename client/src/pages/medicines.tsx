@@ -93,8 +93,11 @@ export function MedicinesPage() {
     }
   };
 
+  const [orderLoadError, setOrderLoadError] = useState<string | null>(null);
+
   const loadOrdersFromAPI = async () => {
     try {
+      setOrderLoadError(null);
       const response = await fetch('/api/medicines/orders', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
@@ -114,33 +117,19 @@ export function MedicinesPage() {
         setOrders(processedOrders);
         console.log(`Loaded ${processedOrders.length} orders from database with proper dates and medicine details`);
       } else {
-        console.error('Failed to load orders, using sample data');
-        loadSampleOrders();
+        const errorMsg = `Failed to load orders: ${response.status} ${response.statusText}`;
+        console.error(errorMsg);
+        setOrderLoadError(errorMsg);
+        setOrders([]);
       }
     } catch (error) {
-      console.error('Error loading orders:', error);
-      loadSampleOrders();
+      const errorMsg = `Error loading orders: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error(errorMsg);
+      setOrderLoadError(errorMsg);
+      setOrders([]);
     }
   };
 
-  const loadSampleOrders = () => {
-    const sampleOrders: Order[] = [
-      {
-        id: 'ORD-001',
-        medicines: [
-          { medicine: medicines[0], quantity: 2 },
-          { medicine: medicines[3], quantity: 1 }
-        ],
-        totalAmount: 244,
-        discountAmount: 36,
-        status: 'shipped',
-        orderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        estimatedDelivery: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-        trackingNumber: 'TRK123456789'
-      }
-    ];
-    setOrders(sampleOrders);
-  };
 
   const searchMedicines = async () => {
     if (!searchQuery.trim()) {

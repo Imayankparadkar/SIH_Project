@@ -419,6 +419,16 @@ export class DbStorage implements IStorage {
     return result.map(convertDbResultToMedicine);
   }
 
+  async getMedicinesByIds(ids: string[]): Promise<Medicine[]> {
+    if (ids.length === 0) return [];
+    
+    const result = await db.select()
+      .from(medicinesTable)
+      .where(sql`${medicinesTable.id} IN (${sql.raw(ids.map(() => '?').join(', '))})`, ...ids);
+    
+    return result.map(convertDbResultToMedicine);
+  }
+
   async createMedicine(insertMedicine: InsertMedicine): Promise<Medicine> {
     const result = await db.insert(medicinesTable).values(insertMedicine).returning();
     return convertDbResultToMedicine(result[0]);
