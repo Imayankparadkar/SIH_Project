@@ -59,6 +59,9 @@ export function Navigation() {
             <Link href="/disease-map" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/disease-map' ? 'text-purple-600' : ''}`}>
               Disease Map
             </Link>
+            <Link href="/insurance-hub" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/insurance-hub' ? 'text-purple-600' : ''}`}>
+              Insurance Hub
+            </Link>
           </div>
 
           {/* Right Side Actions - Clean Sehatify Style */}
@@ -151,6 +154,9 @@ export function Navigation() {
               </Link>
               <Link href="/disease-map" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/disease-map' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 Disease Map
+              </Link>
+              <Link href="/insurance-hub" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/insurance-hub' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                Insurance Hub
               </Link>
               <Link href="/" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 About Us

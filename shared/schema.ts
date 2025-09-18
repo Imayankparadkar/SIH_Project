@@ -1240,6 +1240,130 @@ export const reportedContentTable = pgTable("reported_content", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
+// Comprehensive Insurance Hub Tables
+export const insurancePoliciesTable = pgTable("insurance_policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  type: varchar("type").notNull(), // 'government' | 'private'
+  provider: varchar("provider").notNull(),
+  sumInsured: integer("sum_insured").notNull(),
+  premium: integer("premium"), // Null for government schemes
+  currency: varchar("currency").notNull().default('INR'),
+  coverageType: varchar("coverage_type").notNull(), // 'individual' | 'family_floater' | 'family'
+  category: varchar("category").notNull().default('health'), // 'health' | 'life' | 'accident' | 'critical_illness'
+  eligibility: jsonb("eligibility").notNull(),
+  coverage: jsonb("coverage").notNull(),
+  waitingPeriods: jsonb("waiting_periods").notNull(),
+  exclusions: jsonb("exclusions").notNull().default('[]'),
+  claimProcess: jsonb("claim_process").notNull(),
+  networkInfo: jsonb("network_info").notNull(),
+  regulatoryInfo: jsonb("regulatory_info").notNull(),
+  pricingFactors: jsonb("pricing_factors"),
+  addOns: jsonb("add_ons"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+export const governmentSchemesTable = pgTable("government_schemes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  schemeType: varchar("scheme_type").notNull(), // 'central' | 'state' | 'joint'
+  implementingAgency: varchar("implementing_agency").notNull(),
+  eligibilityDatabase: jsonb("eligibility_database").notNull(),
+  beneficiaryManagement: jsonb("beneficiary_management").notNull(),
+  fundingDetails: jsonb("funding_details").notNull(),
+  applicationProcess: jsonb("application_process").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+export const policyApplicationsTable = pgTable("policy_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  applicationType: varchar("application_type").notNull(), // 'new' | 'renewal' | 'modification'
+  applicationData: jsonb("application_data").notNull(),
+  documentsSubmitted: jsonb("documents_submitted").notNull().default('[]'),
+  premiumCalculation: jsonb("premium_calculation"),
+  status: varchar("status").notNull(), // 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'payment_pending' | 'active'
+  reviewNotes: text("review_notes"),
+  rejectionReason: text("rejection_reason"),
+  paymentDetails: jsonb("payment_details"),
+  policyDetails: jsonb("policy_details"),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+export const comprehensiveInsuranceClaimsTable = pgTable("comprehensive_insurance_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  applicationId: varchar("application_id").references(() => policyApplicationsTable.id),
+  claimType: varchar("claim_type").notNull(), // 'cashless' | 'reimbursement' | 'emergency'
+  treatmentType: varchar("treatment_type").notNull(), // 'hospitalization' | 'outpatient' | 'emergency' | 'maternity' | 'dental' | 'other'
+  medicalDetails: jsonb("medical_details").notNull(),
+  supportingDocuments: jsonb("supporting_documents").notNull().default('[]'),
+  preAuthorization: jsonb("pre_authorization"),
+  claimStatus: varchar("claim_status").notNull(), // 'initiated' | 'documents_submitted' | 'under_investigation' | 'approved' | 'rejected' | 'settled' | 'closed'
+  investigationRequired: boolean("investigation_required").notNull().default(false),
+  investigationNotes: text("investigation_notes"),
+  settlementDetails: jsonb("settlement_details"),
+  fraudCheckStatus: varchar("fraud_check_status").notNull().default('pending'), // 'pending' | 'cleared' | 'flagged'
+  riskScore: real("risk_score"),
+  claimNumber: varchar("claim_number").notNull(),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+export const premiumQuotesTable = pgTable("premium_quotes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => userProfilesTable.id),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  quoteInputs: jsonb("quote_inputs").notNull(),
+  premiumBreakdown: jsonb("premium_breakdown").notNull(),
+  validUntil: timestamp("valid_until").notNull(),
+  termsAndConditions: text("terms_and_conditions").notNull(),
+  quoteReference: varchar("quote_reference").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+
+export const eligibilityChecksTable = pgTable("eligibility_checks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => userProfilesTable.id),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  checkInputs: jsonb("check_inputs").notNull(),
+  eligibilityResult: jsonb("eligibility_result").notNull(),
+  verificationStatus: varchar("verification_status").notNull(), // 'pending' | 'verified' | 'failed'
+  verificationSource: varchar("verification_source"),
+  checkedAt: timestamp("checked_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull()
+});
+
+export const policyTermsSummariesTable = pgTable("policy_terms_summaries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  originalTerms: jsonb("original_terms").notNull(),
+  aiSummary: jsonb("ai_summary").notNull(),
+  aiModel: varchar("ai_model").notNull(),
+  confidenceScore: real("confidence_score").notNull(),
+  humanReviewed: boolean("human_reviewed").notNull().default(false),
+  reviewedBy: varchar("reviewed_by").references(() => userProfilesTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+export const networkHospitalsTable = pgTable("network_hospitals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => insurancePoliciesTable.id),
+  hospitalInfo: jsonb("hospital_info").notNull(),
+  services: jsonb("services").notNull(),
+  networkDetails: jsonb("network_details").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
 // Mentor-Student System Zod Schemas
 export const mentorProfileSchema = z.object({
   id: z.string(),
@@ -1494,6 +1618,642 @@ export const insertReportedContentSchema = reportedContentSchema.omit({
   id: true,
   reportedAt: true
 });
+
+// Insurance Hub schemas for comprehensive insurance functionality
+
+// Core Insurance Policy schema (both government and private)
+export const insurancePolicySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['government', 'private']),
+  provider: z.string(),
+  sumInsured: z.number(),
+  premium: z.number().optional(), // Government schemes are typically free
+  currency: z.string().default('INR'),
+  coverageType: z.enum(['individual', 'family_floater', 'family']),
+  category: z.enum(['health', 'life', 'accident', 'critical_illness']).default('health'),
+  
+  // Eligibility criteria
+  eligibility: z.object({
+    minAge: z.number().optional(),
+    maxAge: z.number().optional(),
+    incomeRange: z.object({
+      min: z.number().optional(),
+      max: z.number().optional()
+    }).optional(),
+    geographicRestrictions: z.array(z.string()).optional(), // States/regions
+    occupationalRestrictions: z.array(z.string()).optional(),
+    medicalRequirements: z.array(z.string()).optional(),
+    customCriteria: z.record(z.any()).optional()
+  }),
+  
+  // Coverage details
+  coverage: z.object({
+    hospitalization: z.boolean().default(true),
+    outpatient: z.boolean().default(false),
+    maternity: z.boolean().default(false),
+    dental: z.boolean().default(false),
+    mentalHealth: z.boolean().default(false),
+    alternativeMedicine: z.boolean().default(false),
+    emergencyAmbulance: z.boolean().default(true),
+    healthCheckup: z.boolean().default(false),
+    
+    // Sub-limits and caps
+    roomRentLimit: z.number().optional(), // Per day room rent limit
+    maternityLimit: z.number().optional(),
+    dentalLimit: z.number().optional(),
+    outpatientLimit: z.number().optional()
+  }),
+  
+  // Waiting periods and exclusions
+  waitingPeriods: z.object({
+    initial: z.number().default(30), // days
+    preExistingDiseases: z.number().default(24), // months
+    maternity: z.number().default(9), // months
+    specificTreatments: z.record(z.number()).optional() // treatment -> months
+  }),
+  
+  exclusions: z.array(z.string()).default([]),
+  
+  // Claims and settlements
+  claimProcess: z.object({
+    cashlessAvailable: z.boolean().default(true),
+    reimbursementAvailable: z.boolean().default(true),
+    claimSettlementRatio: z.number().min(0).max(100).optional(), // percentage
+    averageSettlementTime: z.number().optional(), // days
+    requirementsDocuments: z.array(z.string()).default([])
+  }),
+  
+  // Network and partnerships
+  networkInfo: z.object({
+    totalHospitals: z.number(),
+    stateWiseCoverage: z.record(z.number()).optional(), // state -> hospital count
+    specializedCenters: z.array(z.string()).optional(),
+    emergencyServices: z.boolean().default(true)
+  }),
+  
+  // Regulatory compliance
+  regulatoryInfo: z.object({
+    irdaiLicense: z.string().optional(),
+    irdaiCategory: z.string().optional(),
+    lastRenewalDate: z.coerce.date().optional(),
+    complianceStatus: z.enum(['active', 'suspended', 'cancelled']).default('active')
+  }),
+  
+  // Pricing and add-ons
+  pricingFactors: z.array(z.string()).optional(), // age, location, family size, etc.
+  addOns: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    additionalPremium: z.number(),
+    coverage: z.string()
+  })).optional(),
+  
+  isActive: z.boolean().default(true),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+// Government scheme specific details
+export const governmentSchemeSchema = z.object({
+  id: z.string(),
+  policyId: z.string(), // Reference to insurancePolicySchema
+  schemeType: z.enum(['central', 'state', 'joint']),
+  implementingAgency: z.string(),
+  
+  // Government-specific eligibility (e.g., SECC, BPL, etc.)
+  eligibilityDatabase: z.object({
+    seccRequired: z.boolean().default(false),
+    bplRequired: z.boolean().default(false),
+    aadharRequired: z.boolean().default(true),
+    rationCardRequired: z.boolean().default(false),
+    customDatabaseRequired: z.string().optional()
+  }),
+  
+  // Beneficiary management
+  beneficiaryManagement: z.object({
+    familyBasedEnrollment: z.boolean().default(true),
+    maxFamilySize: z.number().optional(),
+    dependentDefinition: z.string().optional(),
+    seniorCitizenSpecialBenefits: z.boolean().default(false)
+  }),
+  
+  // Government funding and budget
+  fundingDetails: z.object({
+    centralShare: z.number().optional(), // percentage
+    stateShare: z.number().optional(), // percentage
+    annualBudget: z.number().optional(),
+    utilizationRate: z.number().optional() // percentage
+  }),
+  
+  applicationProcess: z.object({
+    onlineApplicationAvailable: z.boolean().default(true),
+    offlineApplicationAvailable: z.boolean().default(true),
+    documentsRequired: z.array(z.string()).default([]),
+    verificationProcess: z.string(),
+    approvalTimeframe: z.string(), // e.g., "7-15 days"
+    cardIssuanceTime: z.string().optional()
+  }),
+  
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+// Policy applications and enrollments
+export const policyApplicationSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  policyId: z.string(),
+  applicationType: z.enum(['new', 'renewal', 'modification']),
+  
+  // Application details
+  applicationData: z.object({
+    primaryInsured: z.object({
+      name: z.string(),
+      age: z.number(),
+      gender: z.string(),
+      occupation: z.string(),
+      annualIncome: z.number().optional(),
+      smokingStatus: z.boolean().default(false),
+      alcoholConsumption: z.enum(['none', 'occasional', 'regular']).default('none')
+    }),
+    dependents: z.array(z.object({
+      name: z.string(),
+      age: z.number(),
+      gender: z.string(),
+      relation: z.string(),
+      preExistingConditions: z.array(z.string()).optional()
+    })).optional(),
+    
+    // Medical information
+    medicalHistory: z.object({
+      preExistingConditions: z.array(z.string()).optional(),
+      currentMedications: z.array(z.string()).optional(),
+      recentHospitalizations: z.array(z.object({
+        reason: z.string(),
+        date: z.coerce.date(),
+        hospital: z.string(),
+        claimAmount: z.number().optional()
+      })).optional(),
+      familyMedicalHistory: z.array(z.string()).optional()
+    }).optional(),
+    
+    // Financial information
+    financialInfo: z.object({
+      annualIncome: z.number(),
+      incomeProof: z.string().optional(), // document reference
+      existingInsurancePolicies: z.array(z.object({
+        provider: z.string(),
+        sumInsured: z.number(),
+        premium: z.number()
+      })).optional()
+    }).optional()
+  }),
+  
+  // Documents and verification
+  documentsSubmitted: z.array(z.object({
+    type: z.string(),
+    fileName: z.string(),
+    documentId: z.string(),
+    verified: z.boolean().default(false),
+    remarks: z.string().optional()
+  })).default([]),
+  
+  // Calculated premium (for private insurance)
+  premiumCalculation: z.object({
+    basePremium: z.number(),
+    ageLoadings: z.number().default(0),
+    locationLoadings: z.number().default(0),
+    occupationLoadings: z.number().default(0),
+    addOnPremiums: z.number().default(0),
+    discounts: z.number().default(0),
+    taxes: z.number().default(0),
+    finalPremium: z.number()
+  }).optional(),
+  
+  // Application status and workflow
+  status: z.enum(['draft', 'submitted', 'under_review', 'approved', 'rejected', 'payment_pending', 'active']),
+  reviewNotes: z.string().optional(),
+  rejectionReason: z.string().optional(),
+  
+  // Payment information
+  paymentDetails: z.object({
+    amount: z.number(),
+    paymentMethod: z.enum(['credit_card', 'debit_card', 'upi', 'net_banking', 'wallet']),
+    paymentId: z.string().optional(),
+    paymentStatus: z.enum(['pending', 'completed', 'failed', 'refunded']).default('pending'),
+    paymentDate: z.coerce.date().optional()
+  }).optional(),
+  
+  // Policy issuance
+  policyDetails: z.object({
+    policyNumber: z.string().optional(),
+    issueDate: z.coerce.date().optional(),
+    effectiveDate: z.coerce.date().optional(),
+    expiryDate: z.coerce.date().optional(),
+    cardNumber: z.string().optional() // For government schemes
+  }).optional(),
+  
+  submittedAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+// Comprehensive claims management
+export const comprehensiveInsuranceClaimSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  policyId: z.string(),
+  applicationId: z.string().optional(), // Reference to policy application
+  
+  claimType: z.enum(['cashless', 'reimbursement', 'emergency']),
+  treatmentType: z.enum(['hospitalization', 'outpatient', 'emergency', 'maternity', 'dental', 'other']),
+  
+  // Medical details
+  medicalDetails: z.object({
+    diagnosis: z.string(),
+    treatmentDescription: z.string(),
+    hospitalName: z.string(),
+    hospitalId: z.string().optional(),
+    doctorName: z.string(),
+    admissionDate: z.coerce.date().optional(),
+    dischargeDate: z.coerce.date().optional(),
+    isEmergency: z.boolean().default(false),
+    
+    // Bills and estimates
+    estimatedAmount: z.number(),
+    finalBillAmount: z.number().optional(),
+    approvedAmount: z.number().optional(),
+    deductibles: z.number().default(0),
+    coPayAmount: z.number().default(0)
+  }),
+  
+  // Documents
+  supportingDocuments: z.array(z.object({
+    type: z.enum(['hospital_bills', 'discharge_summary', 'diagnostic_reports', 'prescription', 'identity_proof', 'other']),
+    fileName: z.string(),
+    documentId: z.string(),
+    uploadedAt: z.coerce.date()
+  })).default([]),
+  
+  // Pre-authorization (for cashless claims)
+  preAuthorization: z.object({
+    requestId: z.string().optional(),
+    requestedAmount: z.number(),
+    approvedAmount: z.number().optional(),
+    validityPeriod: z.number().optional(), // days
+    status: z.enum(['requested', 'approved', 'rejected', 'expired']),
+    approvalDate: z.coerce.date().optional(),
+    remarks: z.string().optional()
+  }).optional(),
+  
+  // Claim processing workflow
+  claimStatus: z.enum(['initiated', 'documents_submitted', 'under_investigation', 'approved', 'rejected', 'settled', 'closed']),
+  investigationRequired: z.boolean().default(false),
+  investigationNotes: z.string().optional(),
+  
+  // Settlement details
+  settlementDetails: z.object({
+    approvedAmount: z.number(),
+    deductedAmount: z.number().default(0),
+    deductionReasons: z.array(z.string()).optional(),
+    settlementDate: z.coerce.date().optional(),
+    paymentMethod: z.string().optional(),
+    paymentReference: z.string().optional()
+  }).optional(),
+  
+  // Fraud detection
+  fraudCheckStatus: z.enum(['pending', 'cleared', 'flagged']).default('pending'),
+  riskScore: z.number().min(0).max(100).optional(),
+  
+  claimNumber: z.string(),
+  submittedAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+// Premium calculation and quote generation
+export const premiumQuoteSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(),
+  policyId: z.string(),
+  
+  // Input parameters
+  quoteInputs: z.object({
+    age: z.number(),
+    gender: z.string(),
+    location: z.object({
+      city: z.string(),
+      state: z.string(),
+      pincode: z.string()
+    }),
+    familyMembers: z.array(z.object({
+      age: z.number(),
+      gender: z.string(),
+      relation: z.string()
+    })),
+    sumInsured: z.number(),
+    occupation: z.string(),
+    smokingStatus: z.boolean(),
+    preExistingConditions: z.array(z.string()).optional(),
+    addOns: z.array(z.string()).optional()
+  }),
+  
+  // Calculated premium breakdown
+  premiumBreakdown: z.object({
+    basePremium: z.number(),
+    
+    // Loadings (increases)
+    ageLoading: z.number().default(0),
+    locationLoading: z.number().default(0),
+    occupationLoading: z.number().default(0),
+    smokingLoading: z.number().default(0),
+    preExistingConditionLoading: z.number().default(0),
+    addOnPremiums: z.number().default(0),
+    
+    // Discounts
+    familyDiscount: z.number().default(0),
+    healthyLifestyleDiscount: z.number().default(0),
+    loyaltyDiscount: z.number().default(0),
+    onlineDiscount: z.number().default(0),
+    
+    // Taxes and fees
+    serviceTax: z.number().default(0),
+    gst: z.number().default(0),
+    
+    totalPremium: z.number()
+  }),
+  
+  // Quote validity and terms
+  validUntil: z.coerce.date(),
+  termsAndConditions: z.string(),
+  quoteReference: z.string(),
+  
+  createdAt: z.coerce.date()
+});
+
+// Eligibility verification
+export const eligibilityCheckSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  policyId: z.string(),
+  
+  // Input data for eligibility check
+  checkInputs: z.object({
+    personalInfo: z.object({
+      age: z.number(),
+      gender: z.string(),
+      occupation: z.string(),
+      annualIncome: z.number().optional(),
+      location: z.object({
+        state: z.string(),
+        district: z.string().optional(),
+        pincode: z.string().optional()
+      })
+    }),
+    
+    // Government scheme specific identifiers
+    governmentIds: z.object({
+      aadhar: z.string().optional(),
+      rationCard: z.string().optional(),
+      seccId: z.string().optional(),
+      pmjayId: z.string().optional(),
+      abhaId: z.string().optional()
+    }).optional(),
+    
+    familyDetails: z.array(z.object({
+      relation: z.string(),
+      age: z.number(),
+      gender: z.string()
+    })).optional(),
+    
+    medicalInfo: z.object({
+      preExistingConditions: z.array(z.string()).optional(),
+      currentTreatments: z.array(z.string()).optional(),
+      familyMedicalHistory: z.array(z.string()).optional()
+    }).optional()
+  }),
+  
+  // Eligibility results
+  eligibilityResult: z.object({
+    isEligible: z.boolean(),
+    eligibilityScore: z.number().min(0).max(100),
+    
+    // Detailed breakdown
+    criteriaResults: z.array(z.object({
+      criterion: z.string(),
+      passed: z.boolean(),
+      details: z.string().optional()
+    })),
+    
+    // Reasons for ineligibility
+    ineligibilityReasons: z.array(z.string()).optional(),
+    
+    // Recommendations
+    recommendations: z.array(z.string()).optional(),
+    alternativePolicies: z.array(z.string()).optional() // Policy IDs
+  }),
+  
+  verificationStatus: z.enum(['pending', 'verified', 'failed']),
+  verificationSource: z.string().optional(), // API or database used for verification
+  
+  checkedAt: z.coerce.date(),
+  expiresAt: z.coerce.date()
+});
+
+// AI-powered terms and conditions summarizer
+export const policyTermsSummarySchema = z.object({
+  id: z.string(),
+  policyId: z.string(),
+  
+  // Original terms and conditions
+  originalTerms: z.object({
+    fullText: z.string(),
+    documentUrl: z.string().optional(),
+    version: z.string(),
+    lastUpdated: z.coerce.date()
+  }),
+  
+  // AI-generated summary
+  aiSummary: z.object({
+    keyHighlights: z.array(z.string()),
+    coverageDetails: z.array(z.object({
+      category: z.string(),
+      description: z.string(),
+      coverage: z.boolean(),
+      limitations: z.string().optional()
+    })),
+    
+    exclusions: z.array(z.object({
+      type: z.string(),
+      description: z.string(),
+      impact: z.enum(['high', 'medium', 'low'])
+    })),
+    
+    waitingPeriods: z.array(z.object({
+      condition: z.string(),
+      period: z.string(),
+      description: z.string()
+    })),
+    
+    claimProcess: z.object({
+      steps: z.array(z.string()),
+      documentsRequired: z.array(z.string()),
+      timeline: z.string(),
+      keyPoints: z.array(z.string())
+    }),
+    
+    importantClauses: z.array(z.object({
+      title: z.string(),
+      summary: z.string(),
+      fullClause: z.string(),
+      importance: z.enum(['critical', 'important', 'informational'])
+    }))
+  }),
+  
+  // Metadata
+  aiModel: z.string(),
+  confidenceScore: z.number().min(0).max(1),
+  humanReviewed: z.boolean().default(false),
+  reviewedBy: z.string().optional(),
+  
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+// Network hospitals and healthcare providers
+export const networkHospitalSchema = z.object({
+  id: z.string(),
+  policyId: z.string(),
+  
+  // Hospital details
+  hospitalInfo: z.object({
+    name: z.string(),
+    registrationNumber: z.string(),
+    type: z.enum(['government', 'private', 'trust']),
+    category: z.enum(['hospital', 'clinic', 'diagnostic_center', 'pharmacy']),
+    
+    // Location details
+    address: z.object({
+      street: z.string(),
+      city: z.string(),
+      state: z.string(),
+      pincode: z.string(),
+      coordinates: z.object({
+        latitude: z.number(),
+        longitude: z.number()
+      }).optional()
+    }),
+    
+    contact: z.object({
+      phone: z.string(),
+      email: z.string().email().optional(),
+      website: z.string().optional(),
+      emergencyContact: z.string().optional()
+    })
+  }),
+  
+  // Specializations and services
+  services: z.object({
+    specializations: z.array(z.string()),
+    emergencyServices: z.boolean().default(false),
+    iCUAvailable: z.boolean().default(false),
+    diagnosticServices: z.array(z.string()).optional(),
+    surgicalProcedures: z.array(z.string()).optional(),
+    bedCapacity: z.number().optional(),
+    
+    // Room types and facilities
+    roomTypes: z.array(z.object({
+      type: z.string(),
+      available: z.boolean(),
+      dailyRate: z.number().optional()
+    })).optional()
+  }),
+  
+  // Network participation details
+  networkDetails: z.object({
+    cashlessAvailable: z.boolean().default(true),
+    preAuthRequired: z.boolean().default(true),
+    claimProcessingTime: z.string().optional(),
+    
+    // Performance metrics
+    claimApprovalRate: z.number().min(0).max(100).optional(),
+    averageSettlementTime: z.number().optional(), // days
+    patientSatisfactionRating: z.number().min(0).max(5).optional(),
+    
+    // Quality certifications
+    accreditations: z.array(z.string()).optional(), // NABH, NABL, etc.
+    lastInspectionDate: z.coerce.date().optional(),
+    complianceStatus: z.enum(['compliant', 'under_review', 'non_compliant']).default('compliant')
+  }),
+  
+  isActive: z.boolean().default(true),
+  addedAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
+});
+
+// Insert schemas for all insurance-related entities
+export const insertInsurancePolicySchema = insurancePolicySchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertGovernmentSchemeSchema = governmentSchemeSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertPolicyApplicationSchema = policyApplicationSchema.omit({
+  id: true,
+  submittedAt: true,
+  updatedAt: true
+});
+
+export const insertComprehensiveInsuranceClaimSchema = comprehensiveInsuranceClaimSchema.omit({
+  id: true,
+  submittedAt: true,
+  updatedAt: true
+});
+
+export const insertPremiumQuoteSchema = premiumQuoteSchema.omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertEligibilityCheckSchema = eligibilityCheckSchema.omit({
+  id: true,
+  checkedAt: true
+});
+
+export const insertPolicyTermsSummarySchema = policyTermsSummarySchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertNetworkHospitalSchema = networkHospitalSchema.omit({
+  id: true,
+  addedAt: true,
+  updatedAt: true
+});
+
+// Type exports for insurance system
+export type InsurancePolicy = z.infer<typeof insurancePolicySchema>;
+export type InsertInsurancePolicy = z.infer<typeof insertInsurancePolicySchema>;
+export type GovernmentScheme = z.infer<typeof governmentSchemeSchema>;
+export type InsertGovernmentScheme = z.infer<typeof insertGovernmentSchemeSchema>;
+export type PolicyApplication = z.infer<typeof policyApplicationSchema>;
+export type InsertPolicyApplication = z.infer<typeof insertPolicyApplicationSchema>;
+export type ComprehensiveInsuranceClaim = z.infer<typeof comprehensiveInsuranceClaimSchema>;
+export type InsertComprehensiveInsuranceClaim = z.infer<typeof insertComprehensiveInsuranceClaimSchema>;
+export type PremiumQuote = z.infer<typeof premiumQuoteSchema>;
+export type InsertPremiumQuote = z.infer<typeof insertPremiumQuoteSchema>;
+export type EligibilityCheck = z.infer<typeof eligibilityCheckSchema>;
+export type InsertEligibilityCheck = z.infer<typeof insertEligibilityCheckSchema>;
+export type PolicyTermsSummary = z.infer<typeof policyTermsSummarySchema>;
+export type InsertPolicyTermsSummary = z.infer<typeof insertPolicyTermsSummarySchema>;
+export type NetworkHospital = z.infer<typeof networkHospitalSchema>;
+export type InsertNetworkHospital = z.infer<typeof insertNetworkHospitalSchema>;
 
 // Type exports for mentor-student system
 export type MentorProfile = z.infer<typeof mentorProfileSchema>;

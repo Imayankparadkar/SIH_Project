@@ -34,6 +34,7 @@ import { TermsPage } from "@/pages/terms";
 import { PrivacyPage } from "@/pages/privacy";
 import { GrievancePage } from "@/pages/grievance";
 import { DiseaseMapPage } from "@/pages/disease-map";
+import { InsuranceHubPage } from "@/pages/insurance-hub";
 import i18n from "@/lib/i18n";
 
 function Router() {
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/grievance" component={GrievancePage} />
       <Route path="/disease-map" component={DiseaseMapPage} />
+      <Route path="/insurance-hub" component={InsuranceHubPage} />
       <Route component={NotFound} />
     </Switch>
   );
