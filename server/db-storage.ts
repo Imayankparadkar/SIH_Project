@@ -35,7 +35,12 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-const sql_conn = neon(process.env.DATABASE_URL);
+// In development, use the connection without SSL requirements to avoid certificate issues
+const databaseUrl = process.env.NODE_ENV === 'development' 
+  ? process.env.DATABASE_URL.replace('?sslmode=require', '') 
+  : process.env.DATABASE_URL;
+
+const sql_conn = neon(databaseUrl);
 export const db = drizzle(sql_conn);
 
 // Type conversion utilities

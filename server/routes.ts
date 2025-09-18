@@ -9,6 +9,7 @@ import path from "path";
 import fs from "fs/promises";
 import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
+import { initializeDemoUsers } from "./services/dev-auth";
 import { hospitalsRouter } from "./routes/hospitals";
 import { appointmentsRouter } from "./routes/appointments";
 import mentorRoutes from "./routes/mentors";
@@ -23,6 +24,11 @@ import { insertMedicalReportSchema, insertLabBookingSchema } from "@shared/schem
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize demo users in development mode
+  if (process.env.NODE_ENV === 'development') {
+    await initializeDemoUsers();
+  }
+
   // CORS configuration
   app.use(cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5000",
