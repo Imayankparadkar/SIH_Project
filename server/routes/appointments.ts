@@ -69,9 +69,15 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Doctor not found' });
     }
     
+    // Get demo user from database (in production, get from authenticated user)
+    const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
+    if (!demoUser) {
+      return res.status(400).json({ error: 'Demo user not found' });
+    }
+
     // Create appointment
     const appointment = {
-      userId: 'demo-user-1', // In production, get from authenticated user
+      userId: demoUser.id,
       doctorId: appointmentData.doctorId,
       appointmentType: appointmentData.appointmentType,
       scheduledDateTime: new Date(appointmentData.scheduledDateTime),
