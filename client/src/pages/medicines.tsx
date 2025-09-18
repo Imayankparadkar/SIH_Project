@@ -459,7 +459,14 @@ export function MedicinesPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {orders.length === 0 ? (
+                  {orderLoadError ? (
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <AlertDescription className="text-red-700">
+                        Unable to load orders: {orderLoadError}
+                      </AlertDescription>
+                    </Alert>
+                  ) : orders.length === 0 ? (
                     <div className="text-center py-6">
                       <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-muted-foreground text-sm">No orders yet</p>
