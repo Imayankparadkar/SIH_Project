@@ -13,59 +13,62 @@ export function LandingPage() {
       icon: Stethoscope,
       title: 'Talk to Doctor',
       description: 'Consult with top doctors anytime',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      color: 'text-purple-600',
+      bgColor: 'bg-white hover:bg-purple-50'
     },
     {
       icon: Pill,
       title: 'Medicines',
       description: 'Order medicines online',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      color: 'text-purple-600',
+      bgColor: 'bg-white hover:bg-purple-50'
     },
     {
       icon: Calendar,
       title: 'Book Dr. Appointment',
       description: 'Book appointments easily',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      color: 'text-purple-600',
+      bgColor: 'bg-white hover:bg-purple-50'
     },
     {
       icon: TestTube,
       title: 'Lab Test & Diagnostic',
       description: 'Book lab tests at home',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      color: 'text-purple-600',
+      bgColor: 'bg-white hover:bg-purple-50'
     },
     {
       icon: Scissors,
       title: 'Surgery',
       description: 'Plan your surgery',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      color: 'text-purple-600',
+      bgColor: 'bg-white hover:bg-purple-50'
     },
     {
       icon: HeartHandshake,
       title: 'Healthcare',
       description: 'Comprehensive care plans',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      color: 'text-purple-600',
+      bgColor: 'bg-white hover:bg-purple-50'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
       {/* Hero Section - MediBuddy Style */}
-      <section className="bg-white py-16 px-4">
+      <section className="bg-medibuddy-gradient py-20 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Main Headline and CTA */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              Consult with Top Doctors Online, <span className="text-blue-600">24x7</span>
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+              Consult with Top Doctors Online, <span className="text-yellow-300">24x7</span>
             </h1>
+            <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
+              Get expert medical advice from certified doctors anytime, anywhere. Your health is our priority.
+            </p>
             <div className="mb-8">
               <Link href="/doctors">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg rounded-lg">
+                <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-50 px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
                   Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -73,36 +76,51 @@ export function LandingPage() {
           </div>
 
           {/* Search Section */}
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-              Search for your nearest <span className="text-blue-600">Doctor</span> to plan and avail a cashless hospitalization
-            </h2>
-            <div className="max-w-2xl mx-auto mt-8">
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    type="text"
-                    placeholder="Search your area, pincode, street name..."
-                    className="pl-10 h-14 text-lg border-2 border-gray-200 focus:border-blue-600 rounded-lg"
-                  />
+          <div className="text-center mb-16">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+                Search for your nearest <span className="text-yellow-300">Doctor</span> to plan and avail a cashless hospitalization
+              </h2>
+              <div className="max-w-2xl mx-auto mt-8">
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      type="text"
+                      placeholder="Search your area, pincode, street name..."
+                      className="pl-12 h-14 text-lg border-2 border-white/30 focus:border-white/60 rounded-xl bg-white/90 backdrop-blur-sm"
+                    />
+                  </div>
+                  <Button className="h-14 px-6 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm border border-white/30" onClick={() => alert('Location feature coming soon!')}>
+                    Use current location
+                  </Button>
                 </div>
-                <Button className="h-14 px-8 bg-gray-400 hover:bg-gray-500 text-white rounded-lg" onClick={() => alert('Location feature coming soon!')}>
-                  Use current location
-                </Button>
               </div>
             </div>
           </div>
 
-          {/* Services Grid - MediBuddy Style */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-16">
+        </div>
+      </section>
+
+      {/* Services Grid - MediBuddy Style */}
+      <section className="py-16 px-4 bg-gradient-to-br from-purple-50 to-indigo-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+              Healthcare Services at Your <span className="text-purple-600">Fingertips</span>
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Access comprehensive healthcare services from the comfort of your home
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
             {services.map((service, index) => {
               const Icon = service.icon;
               return (
                 <Link key={index} href={index === 0 ? "/doctors" : index === 1 ? "/medicines" : index === 2 ? "/doctors" : index === 3 ? "/vitals" : index === 4 ? "/ai-doctor" : "/mental-health"}>
-                  <div className={`${service.bgColor} p-6 rounded-xl text-center cursor-pointer transition-all duration-200 hover:shadow-lg border border-gray-100`}>
+                  <div className={`${service.bgColor} p-6 rounded-2xl text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 border border-purple-100 shadow-md`}>
                     <div className="flex justify-center mb-4">
-                      <div className={`w-16 h-16 ${service.color} bg-white rounded-full flex items-center justify-center shadow-sm`}>
+                      <div className={`w-16 h-16 ${service.color} bg-purple-50 rounded-full flex items-center justify-center shadow-sm`}>
                         <Icon className="w-8 h-8" />
                       </div>
                     </div>
@@ -116,37 +134,41 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Promotional Banner */}
-      <section className="bg-gradient-to-r from-orange-100 to-yellow-100 py-8 px-4 mx-4 rounded-2xl mb-12">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-              <TestTube className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">Test Early. Stay Ahead. Get tested for COVID-19</h3>
-              <p className="text-gray-600">Book now and get tested at your doorstep</p>
+          {/* Promotional Banner */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 py-8 px-6 rounded-3xl mb-12 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <TestTube className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Test Early. Stay Ahead. Get tested for COVID-19</h3>
+                  <p className="text-purple-100">Book now and get tested at your doorstep</p>
+                </div>
+              </div>
+              <Link href="/vitals">
+                <Button className="bg-white text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-xl shadow-lg">
+                  Book Now <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </div>
           </div>
-          <Link href="/vitals">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6">
-              Book Now <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
         </div>
       </section>
 
       {/* Consultation Section */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-white">
         <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">
-            Consult with Top Doctors Online, 24x7
-          </h2>
-          <p className="text-lg text-gray-600 mb-8">Start Consultation</p>
-          
-          <div className="flex justify-center mb-12">
+          <div className="mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+              Consult with Top Doctors Online, <span className="text-purple-600">24x7</span>
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              Connect with experienced doctors instantly for personalized healthcare advice
+            </p>
+            
             <Link href="/doctors">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg">
+              <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
                 Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -154,106 +176,108 @@ export function LandingPage() {
 
           {/* Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-blue-600" />
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-2xl text-center hover:shadow-lg transition-all duration-300">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">Safe & Secure</h3>
-              <p className="text-gray-600">Your privacy is protected</p>
+              <h3 className="font-semibold text-gray-800 mb-3">Safe & Secure</h3>
+              <p className="text-gray-600">Your privacy is protected with end-to-end encryption</p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-blue-600" />
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-2xl text-center hover:shadow-lg transition-all duration-300">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-8 h-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">24x7 Available</h3>
-              <p className="text-gray-600">Consult anytime, anywhere</p>
+              <h3 className="font-semibold text-gray-800 mb-3">24x7 Available</h3>
+              <p className="text-gray-600">Consult anytime, anywhere with instant access</p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-blue-600" />
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-2xl text-center hover:shadow-lg transition-all duration-300">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">Top Doctors</h3>
-              <p className="text-gray-600">Verified & experienced</p>
+              <h3 className="font-semibold text-gray-800 mb-3">Top Doctors</h3>
+              <p className="text-gray-600">Verified & experienced medical professionals</p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-blue-600" />
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-2xl text-center hover:shadow-lg transition-all duration-300">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 mb-2">Trusted by Millions</h3>
-              <p className="text-gray-600">Over 10M+ consultations</p>
+              <h3 className="font-semibold text-gray-800 mb-3">Trusted by Millions</h3>
+              <p className="text-gray-600">Over 10M+ successful consultations completed</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Insurance Section - Exact MediBuddy Style */}
-      <section className="py-16 px-4 bg-white">
+      {/* Insurance Section - MediBuddy Style */}
+      <section className="py-20 px-4 bg-gradient-to-br from-purple-50 to-indigo-100">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">Insurance</h2>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+              <span className="text-purple-600">Insurance</span> Services
+            </h2>
             <p className="text-lg text-gray-600 max-w-4xl mx-auto">
               Get access to all your Health insurance services - View Policy, Initiate and Track Claims, 
               Go Cashless with network hospitals and intimate Hospitalization
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* E-Card */}
             <Link href="/dashboard">
-              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+              <Card className="p-8 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white hover:scale-105 rounded-2xl">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-10 h-10 bg-purple-600 rounded-lg text-white text-sm flex items-center justify-center font-bold">
                       EC
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">E-Card</h3>
-                  <p className="text-gray-600 text-sm">Get e-cards for you and your family members</p>
+                  <h3 className="font-semibold text-gray-800 mb-3 text-lg">E-Card</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Get e-cards for you and your family members</p>
                 </div>
               </Card>
             </Link>
 
             {/* Claims */}
             <Link href="/dashboard">
-              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+              <Card className="p-8 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white hover:scale-105 rounded-2xl">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-10 h-10 bg-purple-600 rounded-lg text-white text-sm flex items-center justify-center font-bold">
                       CL
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Claims</h3>
-                  <p className="text-gray-600 text-sm">Track your claims in real-time</p>
+                  <h3 className="font-semibold text-gray-800 mb-3 text-lg">Claims</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Track your claims in real-time</p>
                 </div>
               </Card>
             </Link>
 
             {/* Network Hospitals */}
             <Link href="/doctors">
-              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+              <Card className="p-8 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white hover:scale-105 rounded-2xl">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-10 h-10 bg-purple-600 rounded-lg text-white text-sm flex items-center justify-center font-bold">
                       NH
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Network Hospitals</h3>
-                  <p className="text-gray-600 text-sm">Search for the nearest Network hospital to go cashless</p>
+                  <h3 className="font-semibold text-gray-800 mb-3 text-lg">Network Hospitals</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Search for the nearest Network hospital to go cashless</p>
                 </div>
               </Card>
             </Link>
 
             {/* Empanel Hospitals */}
             <Link href="/doctors">
-              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+              <Card className="p-8 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white hover:scale-105 rounded-2xl">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-10 h-10 bg-purple-600 rounded-lg text-white text-sm flex items-center justify-center font-bold">
                       EH
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Empanel Hospitals</h3>
-                  <p className="text-gray-600 text-sm">Become a part of Network Hospitals</p>
+                  <h3 className="font-semibold text-gray-800 mb-3 text-lg">Empanel Hospitals</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Become a part of Network Hospitals</p>
                 </div>
               </Card>
             </Link>
@@ -262,18 +286,20 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-blue-600 text-white">
+      <section className="py-20 px-4 bg-medibuddy-gradient text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-xl mb-8 opacity-90">Join millions of users who trust MediBuddy for their healthcare needs</p>
-          <div className="flex justify-center gap-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to get started?</h2>
+          <p className="text-xl mb-10 opacity-90 max-w-2xl mx-auto">
+            Join millions of users who trust MediBuddy for their healthcare needs and experience the future of medicine
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/register">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8">
+              <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-50 px-10 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
                 Sign Up Free
               </Button>
             </Link>
             <Link href="/doctors">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8">
+              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-purple-700 px-10 py-4 text-lg rounded-xl">
                 Find Doctors
               </Button>
             </Link>
