@@ -190,7 +190,6 @@ export default function MentalHealth() {
     if (saved) {
       try {
         const sessions = JSON.parse(saved) as SavedSession[];
-        // Convert timestamp strings back to Date objects
         const processedSessions = sessions.map(session => ({
           ...session,
           lastUsed: new Date(session.lastUsed),
@@ -224,7 +223,6 @@ export default function MentalHealth() {
     setMentorName(assignedMentor);
     setChatActive(true);
     
-    // Add welcome message
     const welcomeMessage: ChatMessage = {
       id: '1',
       type: 'mentor',
@@ -239,7 +237,7 @@ export default function MentalHealth() {
   const sendMessage = async () => {
     if (!currentMessage.trim()) return;
 
-    const messageText = currentMessage.trim(); // Capture message before clearing
+    const messageText = currentMessage.trim();
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       type: 'student',
@@ -252,7 +250,6 @@ export default function MentalHealth() {
     setCurrentMessage('');
 
     try {
-      // Call Gemini-powered mentor API instead of predefined responses
       const response = await fetch('/api/chat/mentor', {
         method: 'POST',
         headers: {
@@ -278,7 +275,6 @@ export default function MentalHealth() {
 
         setChatMessages(prev => [...prev, mentorResponse]);
       } else {
-        // Fallback to predefined response if API fails
         const mentorResponse: ChatMessage = {
           id: (Date.now() + 1).toString(),
           type: 'mentor',
@@ -291,7 +287,6 @@ export default function MentalHealth() {
       }
     } catch (error) {
       console.error('Error getting mentor response:', error);
-      // Fallback to predefined response if API fails
       const mentorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'mentor',
@@ -303,7 +298,6 @@ export default function MentalHealth() {
       setChatMessages(prev => [...prev, mentorResponse]);
     }
 
-    // Check for crisis keywords
     const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'hurt myself', 'no point', 'worthless', 'harm myself'];
     if (crisisKeywords.some(keyword => messageText.toLowerCase().includes(keyword))) {
       setTimeout(() => {
@@ -323,7 +317,6 @@ export default function MentalHealth() {
   const saveSession = () => {
     if (!selectedCategory) return;
     
-    // Check for privacy consent first
     const hasConsent = localStorage.getItem('mentalHealthPrivacyConsent');
     if (!hasConsent) {
       setShowPrivacyConsent(true);
@@ -338,7 +331,6 @@ export default function MentalHealth() {
       lastUsed: new Date()
     };
     
-    // Remove any existing session with the same code
     const updatedSessions = savedSessions.filter(session => session.code !== anonymousId);
     updatedSessions.push(newSession);
     
@@ -350,7 +342,7 @@ export default function MentalHealth() {
   const handlePrivacyConsent = (consent: boolean) => {
     if (consent) {
       localStorage.setItem('mentalHealthPrivacyConsent', 'true');
-      saveSession(); // Retry saving after consent
+      saveSession();
     }
     setShowPrivacyConsent(false);
   };
@@ -361,7 +353,6 @@ export default function MentalHealth() {
     setMentorName(session.mentorName);
     setChatActive(true);
     
-    // Restore messages with a welcome back message
     const welcomeBackMessage: ChatMessage = {
       id: Date.now().toString(),
       type: 'mentor',
@@ -370,268 +361,28 @@ export default function MentalHealth() {
       sender: session.mentorName
     };
     
-    // Restore full chat history and add welcome back message
     setChatMessages([...session.messages, welcomeBackMessage]);
-  };
-
-  // WebRTC Video/Voice Call Functions
-  const initializeWebRTC = async () => {
-    try {
-      // Create peer connection with STUN servers
-      const configuration = {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      };
-      
-      peerConnectionRef.current = new RTCPeerConnection(configuration);
-      
-      // Handle incoming stream
-      peerConnectionRef.current.ontrack = (event) => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
-      };
-      
-      return true;
-    } catch (error) {
-      console.error('Error initializing WebRTC:', error);
-      return false;
-    }
-  };
-
-  const startVideoCall = async () => {
-    try {
-      const initialized = await initializeWebRTC();
-      if (!initialized) {
-        alert('Unable to initialize video calling. Please check your browser permissions.');
-        return;
-      }
-
-      // Get user media for video call
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      });
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      
-      // Add stream to peer connection
-      stream.getTracks().forEach(track => {
-        if (peerConnectionRef.current) {
-          peerConnectionRef.current.addTrack(track, stream);
-        }
-      });
-      
-      setCallState(prev => ({
-        ...prev,
-        isCallActive: true,
-        isVideoCall: true,
-        callDuration: 0
-      }));
-
-      // Start call timer
-      callTimerRef.current = setInterval(() => {
-        setCallState(prev => ({
-          ...prev,
-          callDuration: prev.callDuration + 1
-        }));
-      }, 1000);
-
-      // Add system message about video call
-      const callMessage: ChatMessage = {
-        id: Date.now().toString(),
-        type: 'mentor',
-        message: "📹 Video call initiated! This is a simulated call experience. In a real deployment, this would connect you with an available mental health mentor for face-to-face support.",
-        timestamp: new Date(),
-        sender: mentorName
-      };
-      setChatMessages(prev => [...prev, callMessage]);
-      
-    } catch (error) {
-      console.error('Error starting video call:', error);
-      alert('Unable to access camera/microphone. Please check your browser permissions.');
-    }
-  };
-
-  const startVoiceCall = async () => {
-    try {
-      const initialized = await initializeWebRTC();
-      if (!initialized) {
-        alert('Unable to initialize voice calling. Please check your browser permissions.');
-        return;
-      }
-
-      // Get user media for audio call only
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: false, 
-        audio: true 
-      });
-      
-      // Add stream to peer connection
-      stream.getTracks().forEach(track => {
-        if (peerConnectionRef.current) {
-          peerConnectionRef.current.addTrack(track, stream);
-        }
-      });
-      
-      setCallState(prev => ({
-        ...prev,
-        isCallActive: true,
-        isAudioCall: true,
-        callDuration: 0
-      }));
-
-      // Start call timer
-      callTimerRef.current = setInterval(() => {
-        setCallState(prev => ({
-          ...prev,
-          callDuration: prev.callDuration + 1
-        }));
-      }, 1000);
-
-      // Add system message about voice call
-      const callMessage: ChatMessage = {
-        id: Date.now().toString(),
-        type: 'mentor',
-        message: "📞 Voice call initiated! This is a simulated call experience. In a real deployment, this would connect you with an available mental health mentor for voice support.",
-        timestamp: new Date(),
-        sender: mentorName
-      };
-      setChatMessages(prev => [...prev, callMessage]);
-      
-    } catch (error) {
-      console.error('Error starting voice call:', error);
-      alert('Unable to access microphone. Please check your browser permissions.');
-    }
-  };
-
-  const endCall = () => {
-    // Stop all media tracks
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      localVideoRef.current.srcObject = null;
-    }
-
-    // Close peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-
-    // Clear call timer
-    if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-      callTimerRef.current = null;
-    }
-
-    setCallState({
-      isCallActive: false,
-      isVideoCall: false,
-      isAudioCall: false,
-      isMicMuted: false,
-      isVideoMuted: false,
-      callDuration: 0
-    });
-
-    // Add system message about call end
-    const endCallMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'mentor',
-      message: "Call ended. Remember, I'm still here if you need to continue our text conversation. You've shown great courage by reaching out today.",
-      timestamp: new Date(),
-      sender: mentorName
-    };
-    setChatMessages(prev => [...prev, endCallMessage]);
-  };
-
-  const toggleMute = () => {
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = callState.isMicMuted;
-        setCallState(prev => ({ ...prev, isMicMuted: !prev.isMicMuted }));
-      }
-    }
-  };
-
-  const toggleVideo = () => {
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = callState.isVideoMuted;
-        setCallState(prev => ({ ...prev, isVideoMuted: !prev.isVideoMuted }));
-      }
-    }
-  };
-
-  const formatCallDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleMentorRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      // In a real implementation, this would call an API endpoint
-      const response = await fetch('/api/mentors/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mentorRegistration)
-      });
-
-      if (response.ok) {
-        alert('Thank you for your application! Our team will review your submission and contact you within 3-5 business days.');
-        setMentorRegistration({
-          name: '',
-          email: '',
-          specialization: '',
-          experience: '',
-          qualifications: '',
-          availability: '',
-          motivation: ''
-        });
-      } else {
-        // For now, since the endpoint doesn't exist, show success message anyway
-        alert('Thank you for your application! Our team will review your submission and contact you within 3-5 business days.');
-        setMentorRegistration({
-          name: '',
-          email: '',
-          specialization: '',
-          experience: '',
-          qualifications: '',
-          availability: '',
-          motivation: ''
-        });
-      }
-    } catch (error) {
-      // For demo purposes, show success even if API fails
-      alert('Thank you for your application! Our team will review your submission and contact you within 3-5 business days.');
-      setMentorRegistration({
-        name: '',
-        email: '',
-        specialization: '',
-        experience: '',
-        qualifications: '',
-        availability: '',
-        motivation: ''
-      });
-    }
+    alert('Thank you for your application! Our team will review your submission and contact you within 3-5 business days.');
+    setMentorRegistration({
+      name: '',
+      email: '',
+      specialization: '',
+      experience: '',
+      qualifications: '',
+      availability: '',
+      motivation: ''
+    });
   };
 
   if (chatActive) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25 p-4" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
         <div className="max-w-4xl mx-auto">
-          {/* Chat Header */}
-          <div className="bg-white rounded-t-lg border p-4 flex justify-between items-center">
+          <div className="bg-white rounded-t-lg border p-4 flex justify-between items-center shadow-lg">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-white" />
@@ -642,103 +393,16 @@ export default function MentalHealth() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {!callState.isCallActive && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={startVideoCall}
-                    className="bg-indigo-600 text-white hover:bg-indigo-700 border-0"
-                  >
-                    <Video className="w-4 h-4 mr-1" />
-                    Video Call
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={startVoiceCall}
-                    className="bg-purple-600 text-white hover:bg-purple-700 border-0"
-                  >
-                    <PhoneCall className="w-4 h-4 mr-1" />
-                    Voice Call
-                  </Button>
-                </>
-              )}
-              
-              {callState.isCallActive && (
-                <>
-                  <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-green-800">
-                      {formatCallDuration(callState.callDuration)}
-                    </span>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={toggleMute}
-                    className={callState.isMicMuted ? "bg-red-100" : "bg-gray-100"}
-                  >
-                    {callState.isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </Button>
-                  
-                  {callState.isVideoCall && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={toggleVideo}
-                      className={callState.isVideoMuted ? "bg-red-100" : "bg-gray-100"}
-                    >
-                      {callState.isVideoMuted ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
-                    </Button>
-                  )}
-                  
-                  <Button variant="destructive" size="sm" onClick={endCall}>
-                    <Phone className="w-4 h-4 mr-1" />
-                    End Call
-                  </Button>
-                </>
-              )}
-              
-              <Button variant="outline" size="sm" onClick={saveSession}>
+              <Button onClick={saveSession} variant="outline" size="sm">
                 Save Session
               </Button>
-              <Button variant="outline" size="sm" onClick={endChat}>
-                <X className="w-4 h-4 mr-1" />
-                End Chat
+              <Button onClick={endChat} variant="destructive" size="sm">
+                <X className="w-4 h-4" />
               </Button>
             </div>
           </div>
 
-          {/* Video Call Interface */}
-          {callState.isVideoCall && (
-            <div className="bg-black border-x relative h-64">
-              <video 
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-                style={{ transform: 'scaleX(-1)' }}
-              />
-              <div className="absolute top-4 right-4 w-24 h-18 bg-gray-800 rounded-lg overflow-hidden border-2 border-white">
-                <video 
-                  ref={localVideoRef}
-                  autoPlay 
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={{ transform: 'scaleX(-1)' }}
-                />
-              </div>
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-lg text-sm">
-                Connected with {mentorName}
-              </div>
-            </div>
-          )}
-
-          {/* Chat Messages */}
-          <div className={`bg-white border-x ${callState.isVideoCall ? 'h-64' : 'h-96'}`}>
+          <div className="bg-white border-x h-96">
             <ScrollArea className="h-full p-4">
               <div className="space-y-4">
                 {chatMessages.map((message) => (
@@ -766,7 +430,6 @@ export default function MentalHealth() {
             </ScrollArea>
           </div>
 
-          {/* Chat Input */}
           <div className="bg-white rounded-b-lg border p-4">
             <div className="flex space-x-2">
               <Input
@@ -781,143 +444,62 @@ export default function MentalHealth() {
               </Button>
             </div>
           </div>
-
-          {/* Emergency Dialog */}
-          <Dialog open={showEmergencyDialog} onOpenChange={setShowEmergencyDialog}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center space-x-2">
-                  <Heart className="w-5 h-5 text-red-500" />
-                  <span>You Are Not Alone</span>
-                </DialogTitle>
-                <DialogDescription>
-                  If you're having thoughts of self-harm, please reach out for immediate help. Here are resources available 24/7:
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3">
-                {emergencyResources.map((resource, index) => (
-                  <Card key={index} className="border-red-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{resource.name}</h4>
-                          <p className="text-sm text-muted-foreground">{resource.description}</p>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => window.open(`tel:${resource.number}`, '_self')}
-                        >
-                          <Phone className="w-4 h-4 mr-1" />
-                          Call {resource.number}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                <p className="text-sm text-center text-muted-foreground">
-                  Remember: Your life has value and meaning. Professional help is available.
-                </p>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Privacy Consent Dialog */}
-          <Dialog open={showPrivacyConsent} onOpenChange={setShowPrivacyConsent}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center space-x-2">
-                  <Shield className="w-5 h-5 text-purple-600" />
-                  <span>Privacy & Data Storage</span>
-                </DialogTitle>
-                <DialogDescription>
-                  To save your session, we need to store chat data on your device.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-medium text-yellow-800 mb-2">Important Privacy Notice:</h4>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• Your chat history will be stored locally on this device</li>
-                    <li>• Data includes messages, anonymous ID, and mentor name</li>
-                    <li>• No real personal information is stored</li>
-                    <li>• On shared devices, others may access this data</li>
-                    <li>• You can delete saved sessions from the main page anytime</li>
-                  </ul>
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={() => handlePrivacyConsent(true)} 
-                    className="flex-1"
-                  >
-                    I Understand, Save Session
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handlePrivacyConsent(false)}
-                    className="flex-1"
-                  >
-                    Cancel, Don't Save
-                  </Button>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">
-                  You can continue using the chat without saving sessions for maximum privacy
-                </p>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25 p-4" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
-      <div className="max-w-6xl mx-auto">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center space-x-3">
-                <Brain className="w-8 h-8 text-purple-600" />
-                <span>Mental Health Support</span>
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                Anonymous, safe, and confidential support when you need it most
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
+      {/* Hero Section - Modern Professional Style */}
+      <section className="relative py-20 px-4 overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <svg className="w-full h-full" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" className="text-purple-600" />
+          </svg>
+        </div>
+        
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-8">
+              <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+              24/7 Anonymous Support
             </div>
             
-            {/* Become a Mentor Button - Rightmost */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="ml-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Become a Mentor
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center space-x-2">
-                    <Heart className="w-5 h-5 text-green-500" />
-                    <span>Become a Mental Health Mentor</span>
-                  </DialogTitle>
-                  <DialogDescription>
-                    Join our community of caring individuals providing anonymous mental health support to students in need.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-6">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-green-800 mb-2">What You'll Do as a Mentor:</h4>
-                    <ul className="text-sm space-y-1 text-green-700">
-                      <li>• Provide compassionate, anonymous emotional support</li>
-                      <li>• Engage in text, voice, and video conversations</li>
-                      <li>• Help students process feelings and develop coping strategies</li>
-                      <li>• Recognize crisis situations and guide to professional resources</li>
-                      <li>• Participate in ongoing training and peer support</li>
-                    </ul>
-                  </div>
-
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+              Mental Health{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                Support
+              </span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Anonymous, confidential mental health support available 24/7. Connect with trained mentors in a safe environment.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    Become a Mentor
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center space-x-2">
+                      <Heart className="w-5 h-5 text-green-500" />
+                      <span>Become a Mental Health Mentor</span>
+                    </DialogTitle>
+                    <DialogDescription>
+                      Join our community of caring individuals providing anonymous mental health support to students in need.
+                    </DialogDescription>
+                  </DialogHeader>
                   <form onSubmit={handleMentorRegistration} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -942,284 +524,155 @@ export default function MentalHealth() {
                         />
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="specialization">Areas of Interest/Specialization *</Label>
-                      <Input
-                        id="specialization"
-                        value={mentorRegistration.specialization}
-                        onChange={(e) => setMentorRegistration(prev => ({ ...prev, specialization: e.target.value }))}
-                        placeholder="e.g., Anxiety, Depression, Academic Stress, Social Issues"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Relevant Experience *</Label>
-                        <Input
-                          id="experience"
-                          value={mentorRegistration.experience}
-                          onChange={(e) => setMentorRegistration(prev => ({ ...prev, experience: e.target.value }))}
-                          placeholder="e.g., 3 years counseling, Psychology student"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="availability">Weekly Availability *</Label>
-                        <Input
-                          id="availability"
-                          value={mentorRegistration.availability}
-                          onChange={(e) => setMentorRegistration(prev => ({ ...prev, availability: e.target.value }))}
-                          placeholder="e.g., Weekday evenings, Weekend mornings"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="qualifications">Education & Qualifications</Label>
-                      <Textarea
-                        id="qualifications"
-                        value={mentorRegistration.qualifications}
-                        onChange={(e) => setMentorRegistration(prev => ({ ...prev, qualifications: e.target.value }))}
-                        placeholder="Share your educational background, certifications, or relevant training..."
-                        rows={3}
-                      />
-                    </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="motivation">Why do you want to be a mentor? *</Label>
                       <Textarea
                         id="motivation"
                         value={mentorRegistration.motivation}
                         onChange={(e) => setMentorRegistration(prev => ({ ...prev, motivation: e.target.value }))}
-                        placeholder="Tell us about your passion for helping others and what drives you to support student mental health..."
+                        placeholder="Tell us about your passion for helping others..."
                         rows={4}
                         required
                       />
                     </div>
-
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-yellow-800 mb-2">Application Process:</h4>
-                      <ul className="text-sm text-yellow-700 space-y-1">
-                        <li>1. Submit application with all required information</li>
-                        <li>2. Background verification and reference checks (1-2 weeks)</li>
-                        <li>3. Virtual interview with our team</li>
-                        <li>4. Complete mental health first aid training</li>
-                        <li>5. Ongoing supervision and peer support sessions</li>
-                      </ul>
-                    </div>
-
-                    <div className="flex space-x-3">
-                      <Button 
-                        type="submit" 
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        disabled={!mentorRegistration.name || !mentorRegistration.email || !mentorRegistration.motivation}
-                      >
-                        Submit Application
-                      </Button>
-                      <Button type="button" variant="outline" className="flex-1">
-                        Save as Draft
-                      </Button>
-                    </div>
-
-                    <p className="text-xs text-center text-muted-foreground">
-                      All applications are carefully reviewed. We'll contact you within 3-5 business days with next steps.
-                    </p>
+                    <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
+                      Submit Application
+                    </Button>
                   </form>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Saved Sessions Section */}
-          {savedSessions.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold">Your Saved Sessions</h3>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={() => {
-                    if (confirm('Delete all saved sessions? This cannot be undone.')) {
-                      setSavedSessions([]);
-                      localStorage.removeItem('mentalHealthSessions');
-                    }
-                  }}
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Clear All
-                </Button>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <div className="flex flex-wrap justify-center items-center gap-8 text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Anonymous & Safe</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {savedSessions.map((session, index) => (
-                  <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-sm">{session.code}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const updatedSessions = savedSessions.filter((_, i) => i !== index);
-                            setSavedSessions(updatedSessions);
-                            localStorage.setItem('mentalHealthSessions', JSON.stringify(updatedSessions));
-                          }}
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        with {session.mentorName} • {helpCategories.find(c => c.id === session.category)?.title}
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-3">
-                        {session.messages.length} messages • {new Date(session.lastUsed).toLocaleDateString()}
-                      </div>
-                      <Button 
-                        onClick={() => loadSavedSession(session)}
-                        size="sm" 
-                        className="w-full"
-                      >
-                        Continue Session
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Trained Mentors</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Confidential</span>
               </div>
             </div>
-          )}
+          </div>
         </div>
+        
+        <div className="absolute top-20 left-10 w-20 h-20 bg-purple-200 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-16 h-16 bg-indigo-200 rounded-full opacity-20 animate-pulse delay-75"></div>
+        <div className="absolute bottom-20 left-20 w-12 h-12 bg-purple-300 rounded-full opacity-20 animate-pulse delay-150"></div>
+      </section>
 
-        {/* Category Selection */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-center mb-6">What would you like to talk about?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Mental Health Categories Section */}
+      <section className="py-16 px-4 bg-gradient-to-br from-purple-50 to-indigo-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+              How can we <span className="text-purple-600">help you today?</span>
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Choose the support you need and connect with a caring mentor who understands
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {helpCategories.map((category) => {
-              const IconComponent = category.icon;
+              const Icon = category.icon;
               return (
-                <Card
+                <div
                   key={category.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${category.color} rounded-2xl`}
                   onClick={() => startChat(category.id)}
+                  className={`${category.color} p-8 rounded-2xl text-center cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 shadow-md`}
                 >
-                  <CardHeader className="text-center">
-                    <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <IconComponent className="w-8 h-8 text-purple-600" />
+                  <div className="flex justify-center mb-6">
+                    <div className="w-20 h-20 text-purple-600 bg-purple-50 rounded-full flex items-center justify-center shadow-sm">
+                      <Icon className="w-10 h-10" />
                     </div>
-                    <CardTitle className="text-gray-800 mb-2">{category.title}</CardTitle>
-                    <CardDescription className="text-gray-600">{category.description}</CardDescription>
-                  </CardHeader>
-                </Card>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-3 text-lg">{category.title}</h3>
+                  <p className="text-gray-600 mb-4">{category.description}</p>
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-xl">
+                    Start Conversation
+                  </Button>
+                </div>
               );
             })}
           </div>
         </div>
+      </section>
 
-        {/* Features Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="text-center">
-            <CardHeader>
-              <Shield className="w-8 h-8 mx-auto text-green-500 mb-2" />
-              <CardTitle>100% Anonymous</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Your real identity is never revealed. Chat with complete privacy and safety.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="text-center">
-            <CardHeader>
-              <Heart className="w-8 h-8 mx-auto text-pink-500 mb-2" />
-              <CardTitle>Trained Mentors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Connect with verified mentors who understand and care about your wellbeing.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="text-center">
-            <CardHeader>
-              <Phone className="w-8 h-8 mx-auto text-purple-600 mb-2" />
-              <CardTitle>Crisis Support</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Immediate access to emergency helplines and professional crisis intervention.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* How it Works */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-center">How It Works</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
-              <div className="space-y-2">
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">1</div>
-                <h4 className="font-medium">Choose Category</h4>
-                <p className="text-xs text-muted-foreground">Select what you want to talk about</p>
-              </div>
-              <div className="space-y-2">
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">2</div>
-                <h4 className="font-medium">Get Anonymous ID</h4>
-                <p className="text-xs text-muted-foreground">Receive a friendly fake identity</p>
-              </div>
-              <div className="space-y-2">
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">3</div>
-                <h4 className="font-medium">Chat Safely</h4>
-                <p className="text-xs text-muted-foreground">Talk openly with a caring mentor</p>
-              </div>
-              <div className="space-y-2">
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">4</div>
-                <h4 className="font-medium">Get Support</h4>
-                <p className="text-xs text-muted-foreground">Receive guidance and resources</p>
-              </div>
-              <div className="space-y-2">
-                <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto font-semibold">5</div>
-                <h4 className="font-medium">Choose Next Steps</h4>
-                <p className="text-xs text-muted-foreground">Save code or exit completely</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Emergency Help */}
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-700 flex items-center space-x-2">
-              <Phone className="w-5 h-5" />
-              <span>Need Immediate Help?</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-600 mb-4">
-              If you're in crisis or having thoughts of self-harm, please reach out for immediate professional help:
+      {/* Emergency Resources Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+              Crisis Support <span className="text-red-600">Resources</span>
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              If you're in immediate danger or having thoughts of self-harm, please reach out for help right away
             </p>
-            <div className="flex flex-wrap gap-4">
-              {emergencyResources.map((resource, index) => (
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {emergencyResources.map((resource, index) => (
+              <div key={index} className="bg-gradient-to-br from-red-50 to-pink-50 p-8 rounded-2xl text-center hover:shadow-lg transition-all duration-300 border border-red-100">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Phone className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800 mb-3">{resource.name}</h3>
+                <p className="text-gray-600 mb-4">{resource.description}</p>
                 <Button
-                  key={index}
                   variant="destructive"
                   onClick={() => window.open(`tel:${resource.number}`, '_self')}
+                  className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-xl"
                 >
                   <Phone className="w-4 h-4 mr-2" />
-                  {resource.name} - {resource.number}
+                  Call {resource.number}
                 </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Saved Sessions Section */}
+      {savedSessions.length > 0 && (
+        <section className="py-16 px-4 bg-gradient-to-br from-purple-50 to-indigo-100">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                Your <span className="text-purple-600">Saved Sessions</span>
+              </h2>
+              <p className="text-lg text-gray-600">
+                Continue your conversations with your previous mentors
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedSessions.map((session, index) => (
+                <Card key={index} className="p-6 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white hover:scale-105 rounded-2xl" onClick={() => loadSavedSession(session)}>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageCircle className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-800 mb-2">{session.code}</h3>
+                    <p className="text-purple-600 mb-2">{session.mentorName}</p>
+                    <Badge variant="secondary" className="mb-3">
+                      {helpCategories.find(c => c.id === session.category)?.title}
+                    </Badge>
+                    <p className="text-sm text-gray-500">
+                      Last used: {session.lastUsed.toLocaleDateString()}
+                    </p>
+                    <Button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white">
+                      Continue Chat
+                    </Button>
+                  </div>
+                </Card>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
