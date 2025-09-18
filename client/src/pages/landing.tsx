@@ -166,7 +166,7 @@ export function LandingPage() {
                   <TestTube className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Test Early. Stay Ahead. Get tested for COVID-19</h3>
+                  <h3 className="text-xl font-bold text-white">Test Early. Stay Ahead.</h3>
                   <p className="text-purple-100">Book now and get tested at your doorstep</p>
                 </div>
               </div>
@@ -323,7 +323,7 @@ export function LandingPage() {
               </Button>
             </Link>
             <Link href="/doctors">
-              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-purple-700 px-10 py-4 text-lg rounded-xl">
+              <Button size="lg" variant="outline" className="border-2 border-white text-purple-700 hover:bg-white hover:text-purple-700 px-10 py-4 text-lg rounded-xl">
                 Find Doctors
               </Button>
             </Link>

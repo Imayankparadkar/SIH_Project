@@ -7,7 +7,7 @@ export function Footer() {
       <div className="relative">
         {/* Top wave */}
         <svg 
-          className="absolute top-0 left-0 w-full h-24 -translate-y-1 z-10"
+          className="absolute top-0 left-0 w-full h-10 -translate-y-1 z-10"
           xmlns="http://www.w3.org/2000/svg" 
           viewBox="0 0 1200 120" 
           preserveAspectRatio="none"
@@ -46,7 +46,6 @@ export function Footer() {
                   <li><Link href="/partnership" className="text-gray-100 hover:text-white transition-colors text-sm">Partner with Sehatify</Link></li>
                   <li><Link href="/hospitalization" className="text-gray-100 hover:text-white transition-colors text-sm">Hospitalization</Link></li>
                   <li><Link href="/locate-hospital" className="text-gray-100 hover:text-white transition-colors text-sm">Locate hospital</Link></li>
-                  <li><Link href="/faqs" className="text-gray-100 hover:text-white transition-colors text-sm">FAQs</Link></li>
                 </ul>
               </div>
 
@@ -57,6 +56,7 @@ export function Footer() {
                   <li><Link href="/overview" className="text-gray-100 hover:text-white transition-colors text-sm">Overview</Link></li>
                   <li><Link href="/blog" className="text-gray-100 hover:text-white transition-colors text-sm">Blog</Link></li>
                   <li><Link href="/beliefs" className="text-gray-100 hover:text-white transition-colors text-sm">Sehatify Beliefs</Link></li>
+                  <li><Link href="/faqs" className="text-gray-100 hover:text-white transition-colors text-sm">FAQs</Link></li>
                 </ul>
               </div>
 
@@ -72,13 +72,13 @@ export function Footer() {
 
               {/* Logo Column - Rightmost */}
               <div className="flex justify-end items-start">
-                <div className="flex flex-col items-center space-y-4">
+                <div className="flex flex-col items-center space-y-0">
                   <img 
                     src="/sehatify-logo.png" 
                     alt="Sehatify Logo" 
-                    className="w-16 h-16 object-contain"
+                    className="w-80 h-80 object-contain"
                   />
-                  <span className="text-white text-lg font-semibold">Sehatify</span>
+                  {/* <span className="text-white text-lg font-semibold">Sehatify</span> */}
                 </div>
               </div>
             </div>

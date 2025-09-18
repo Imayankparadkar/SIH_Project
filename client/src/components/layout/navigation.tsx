@@ -29,7 +29,7 @@ export function Navigation() {
               <img 
                 src="/sehatify-logo.png" 
                 alt="Sehatify Logo" 
-                className="w-10 h-10 object-contain"
+                className="w-20 h-20 object-contain"
               />
               <span className="text-xl font-semibold text-gray-800">Sehatify</span>
             </div>
@@ -43,9 +43,9 @@ export function Navigation() {
             <Link href="/medicines" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/medicines' ? 'text-purple-600' : ''}`}>
               Medicines
             </Link>
-            <Link href="/vitals" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-purple-600' : ''}`}>
+            {/* <Link href="/vitals" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-purple-600' : ''}`}>
               Book an Appointment
-            </Link>
+            </Link> */}
             <Link href="/lab-tests" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/lab-tests' ? 'text-purple-600' : ''}`}>
               Lab Test & 
               Diagnostic
@@ -67,9 +67,9 @@ export function Navigation() {
           {/* Right Side Actions - Clean Sehatify Style */}
           <div className="flex items-center space-x-6">
             {/* About Us Link */}
-            <Link href="/" className="text-gray-600 hover:text-purple-600 font-medium transition-colors hidden md:block text-sm">
+            {/* <Link href="/" className="text-gray-600 hover:text-purple-600 font-medium transition-colors hidden md:block text-sm">
               About Us
-            </Link>
+            </Link> */}
 
             {/* Auth Buttons / User Profile */}
             {user ? (
