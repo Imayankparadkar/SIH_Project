@@ -25,31 +25,31 @@ export function Navigation() {
           {/* Logo - MediBuddy Style */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
                 <Stethoscope className="text-white w-5 h-5" />
               </div>
-              <span className="text-xl font-bold text-primary">SehatBuddy</span>
+              <span className="text-xl font-bold text-blue-600">MediBuddy</span>
             </div>
           </Link>
 
           {/* Desktop Navigation - MediBuddy Style Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/doctors" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/doctors') ? 'text-primary' : ''}`}>
+            <Link href="/doctors" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/doctors' ? 'text-blue-600' : ''}`}>
               Doctors
             </Link>
-            <Link href="/medicines" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/medicines') ? 'text-primary' : ''}`}>
+            <Link href="/medicines" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/medicines' ? 'text-blue-600' : ''}`}>
               Medicines
             </Link>
-            <Link href="/vitals" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/vitals') ? 'text-primary' : ''}`}>
-              Lab Test &amp; Diagnostic
+            <Link href="/vitals" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-blue-600' : ''}`}>
+              Lab Test & Diagnostic
             </Link>
-            <Link href="/doctors" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/hospitals') ? 'text-primary' : ''}`}>
+            <Link href="/doctors" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm`}>
               Hospitals
             </Link>
-            <Link href="/ai-doctor" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/ai-doctor') ? 'text-primary' : ''}`}>
+            <Link href="/ai-doctor" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/ai-doctor' ? 'text-blue-600' : ''}`}>
               Surgery
             </Link>
-            <Link href="/mental-health" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/mental-health') ? 'text-primary' : ''}`}>
+            <Link href="/mental-health" className={`text-gray-700 hover:text-blue-600 font-medium transition-colors text-sm ${location === '/mental-health' ? 'text-blue-600' : ''}`}>
               Healthcare
             </Link>
           </div>
@@ -57,7 +57,7 @@ export function Navigation() {
           {/* Right Side Actions - MediBuddy Style */}
           <div className="flex items-center space-x-4">
             {/* About Us Link */}
-            <Link href="#" className="text-gray-700 hover:text-primary font-medium transition-colors hidden md:block">
+            <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 font-medium transition-colors hidden md:block">
               About Us
             </Link>
 
@@ -65,8 +65,8 @@ export function Navigation() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center space-x-2 border-primary text-primary" data-testid="button-profile">
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <Button variant="outline" className="flex items-center space-x-2 border-blue-600 text-blue-600" data-testid="button-profile">
+                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-medium">
                         {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </span>
@@ -93,12 +93,12 @@ export function Navigation() {
             ) : (
               <div className="flex items-center space-x-3">
                 <Link href="/login">
-                  <Button variant="ghost" className="text-primary font-medium hover:bg-primary/10" data-testid="button-login">
+                  <Button variant="ghost" className="text-blue-600 font-medium hover:bg-blue-50" data-testid="button-login">
                     Login
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-primary hover:bg-primary/90 text-white font-medium px-6" data-testid="button-register">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6" data-testid="button-register">
                     Signup
                   </Button>
                 </Link>
@@ -122,25 +122,25 @@ export function Navigation() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 bg-white">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 Doctors
               </Link>
-              <Link href="/medicines" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/medicines" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 Medicines
               </Link>
-              <Link href="/vitals" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/vitals" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 Lab Test &amp; Diagnostic
               </Link>
-              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 Hospitals
               </Link>
-              <Link href="/ai-doctor" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/ai-doctor" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 Surgery
               </Link>
-              <Link href="/mental-health" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/mental-health" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 Healthcare
               </Link>
-              <Link href="#" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+              <Link href="/dashboard" className="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md">
                 About Us
               </Link>
             </div>

@@ -20,49 +20,63 @@ export function LandingPage() {
       icon: Pill,
       title: 'Medicines',
       description: 'Order medicines online',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 hover:bg-green-100'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     },
     {
       icon: Calendar,
       title: 'Book Dr. Appointment',
       description: 'Book appointments easily',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 hover:bg-purple-100'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     },
     {
       icon: TestTube,
       title: 'Lab Test & Diagnostic',
       description: 'Book lab tests at home',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50 hover:bg-red-100'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     },
     {
       icon: Scissors,
       title: 'Surgery',
       description: 'Plan your surgery',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50 hover:bg-orange-100'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     },
     {
       icon: HeartHandshake,
       title: 'Healthcare',
       description: 'Comprehensive care plans',
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-50 hover:bg-pink-100'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     }
   ];
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section - MediBuddy Style */}
-      <section className="bg-white py-12 px-4">
+      <section className="bg-white py-16 px-4">
         <div className="max-w-7xl mx-auto">
+          {/* Main Headline and CTA */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              Consult with Top Doctors Online, <span className="text-blue-600">24x7</span>
+            </h1>
+            <div className="mb-8">
+              <Link href="/doctors">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg rounded-lg">
+                  Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
           {/* Search Section */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-              Search for your nearest <span className="text-primary">Doctor</span> to plan and avail a cashless hospitalization
-            </h1>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+              Search for your nearest <span className="text-blue-600">Doctor</span> to plan and avail a cashless hospitalization
+            </h2>
             <div className="max-w-2xl mx-auto mt-8">
               <div className="flex gap-2">
                 <div className="flex-1 relative">
@@ -70,10 +84,10 @@ export function LandingPage() {
                   <Input
                     type="text"
                     placeholder="Search your area, pincode, street name..."
-                    className="pl-10 h-14 text-lg border-2 border-gray-200 focus:border-primary rounded-lg"
+                    className="pl-10 h-14 text-lg border-2 border-gray-200 focus:border-blue-600 rounded-lg"
                   />
                 </div>
-                <Button className="h-14 px-8 bg-gray-400 hover:bg-gray-500 text-white rounded-lg">
+                <Button className="h-14 px-8 bg-gray-400 hover:bg-gray-500 text-white rounded-lg" onClick={() => alert('Location feature coming soon!')}>
                   Use current location
                 </Button>
               </div>
@@ -107,16 +121,18 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-              <TestTube className="w-8 h-8 text-primary" />
+              <TestTube className="w-8 h-8 text-blue-600" />
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-800">Test Early. Stay Ahead. Get tested for COVID-19</h3>
               <p className="text-gray-600">Book now and get tested at your doorstep</p>
             </div>
           </div>
-          <Button className="bg-primary hover:bg-primary/90 text-white px-6">
-            Book Now <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          <Link href="/vitals">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6">
+              Book Now <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -129,37 +145,39 @@ export function LandingPage() {
           <p className="text-lg text-gray-600 mb-8">Start Consultation</p>
           
           <div className="flex justify-center mb-12">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg">
-              Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+            <Link href="/doctors">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg">
+                Start Consultation <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
           </div>
 
           {/* Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Safe & Secure</h3>
               <p className="text-gray-600">Your privacy is protected</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-8 h-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">24x7 Available</h3>
               <p className="text-gray-600">Consult anytime, anywhere</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Top Doctors</h3>
               <p className="text-gray-600">Verified & experienced</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Trusted by Millions</h3>
               <p className="text-gray-600">Over 10M+ consultations</p>
@@ -168,49 +186,94 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Insurance Section */}
+      {/* Insurance Section - Exact MediBuddy Style */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-800 mb-4">Insurance</h2>
-            <p className="text-lg text-gray-600">
-              Get access to all our health insurance services – View Policy, Initiate and Track Claims. 
-              Go Cashless with network hospitals and ultimate hospitalization
+            <p className="text-lg text-gray-600 max-w-4xl mx-auto">
+              Get access to all your Health insurance services - View Policy, Initiate and Track Claims, 
+              Go Cashless with network hospitals and intimate Hospitalization
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { title: 'E-Card', desc: 'Easy access to your digital insurance card', icon: '💳' },
-              { title: 'Claims', desc: 'Track your claims online', icon: '📋' },
-              { title: 'Network Hospitals', desc: 'Find cashless hospitals near you', icon: '🏥' },
-              { title: 'Hospital Package Rates', desc: 'Compare treatment costs', icon: '💰' }
-            ].map((item, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow border border-gray-200">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* E-Card */}
+            <Link href="/dashboard">
+              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
                 <div className="text-center">
-                  <div className="text-4xl mb-4">{item.icon}</div>
-                  <h3 className="font-semibold text-gray-800 mb-2">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.desc}</p>
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                      EC
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2">E-Card</h3>
+                  <p className="text-gray-600 text-sm">Get e-cards for you and your family members</p>
                 </div>
               </Card>
-            ))}
+            </Link>
+
+            {/* Claims */}
+            <Link href="/dashboard">
+              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                      CL
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Claims</h3>
+                  <p className="text-gray-600 text-sm">Track your claims in real-time</p>
+                </div>
+              </Card>
+            </Link>
+
+            {/* Network Hospitals */}
+            <Link href="/doctors">
+              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                      NH
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Network Hospitals</h3>
+                  <p className="text-gray-600 text-sm">Search for the nearest Network hospital to go cashless</p>
+                </div>
+              </Card>
+            </Link>
+
+            {/* Empanel Hospitals */}
+            <Link href="/doctors">
+              <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-gray-100 hover:border-blue-200">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-8 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                      EH
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2">Empanel Hospitals</h3>
+                  <p className="text-gray-600 text-sm">Become a part of Network Hospitals</p>
+                </div>
+              </Card>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-primary text-white">
+      <section className="py-16 px-4 bg-blue-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-xl mb-8 opacity-90">Join millions of users who trust SehatBuddy for their healthcare needs</p>
+          <p className="text-xl mb-8 opacity-90">Join millions of users who trust MediBuddy for their healthcare needs</p>
           <div className="flex justify-center gap-4">
             <Link href="/register">
-              <Button size="lg" className="bg-white text-primary hover:bg-gray-100 px-8">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8">
                 Sign Up Free
               </Button>
             </Link>
             <Link href="/doctors">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary px-8">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8">
                 Find Doctors
               </Button>
             </Link>

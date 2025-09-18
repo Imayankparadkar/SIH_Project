@@ -38,6 +38,9 @@ function Router() {
       <Route path="/dashboard/settings" component={SettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/doctors" component={DoctorsPage} />
+      <Route path="/vitals" component={VitalsPage} />
+      <Route path="/medicines" component={MedicinesPage} />
+      <Route path="/ai-doctor" component={AIDoctorPage} />
       <Route path="/donations" component={DonationsPage} />
       <Route path="/mental-health" component={MentalHealthPage} />
       <Route component={NotFound} />
