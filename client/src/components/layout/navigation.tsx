@@ -46,7 +46,7 @@ export function Navigation() {
             <Link href="/vitals" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-purple-600' : ''}`}>
               Book an Appointment
             </Link>
-            <Link href="/reports" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/reports' ? 'text-purple-600' : ''}`}>
+            <Link href="/lab-tests" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/lab-tests' ? 'text-purple-600' : ''}`}>
               Lab Test & 
               Diagnostic
             </Link>
@@ -137,7 +137,7 @@ export function Navigation() {
               <Link href="/vitals" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/vitals' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 Book an Appointment
               </Link>
-              <Link href="/reports" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/reports' ? 'bg-purple-50 text-purple-600' : ''}`}>
+              <Link href="/lab-tests" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/lab-tests' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 Lab Test & Diagnostic
               </Link>
               <Link href="/ai-doctor" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/ai-doctor' ? 'bg-purple-50 text-purple-600' : ''}`}>

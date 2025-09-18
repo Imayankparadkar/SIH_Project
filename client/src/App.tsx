@@ -17,6 +17,7 @@ import { DoctorsPage } from "@/pages/doctors";
 import { DonationsPage } from "@/pages/donations";
 import { VitalsPage } from "@/pages/vitals";
 import { ReportsPage } from "@/pages/reports";
+import { LabTestsPage } from "@/pages/lab-tests";
 import { MedicinesPage } from "@/pages/medicines";
 import { AIDoctorPage } from "@/pages/ai-doctor";
 import { SettingsPage } from "@/pages/settings";
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/vitals" component={VitalsPage} />
       <Route path="/dashboard/reports" component={ReportsPage} />
+      <Route path="/lab-tests" component={LabTestsPage} />
       <Route path="/dashboard/medicines" component={MedicinesPage} />
       <Route path="/dashboard/ai-doctor" component={AIDoctorPage} />
       <Route path="/dashboard/settings" component={SettingsPage} />
