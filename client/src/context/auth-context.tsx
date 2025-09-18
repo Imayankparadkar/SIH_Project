@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile, InsertUserProfile } from '@shared/schema';
 import { useLocation } from 'wouter';
-import { auth } from '../lib/firebase';
+import { auth, isFirebaseAvailable } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface AuthUser {
@@ -36,8 +36,8 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Firebase Auth API helper functions
 const authApi = {
   async login(email: string, password: string) {
-    // Try development API first if Firebase is not configured
-    if (!auth || import.meta.env.DEV) {
+    // Use development API if Firebase is not available or in development
+    if (!isFirebaseAvailable || import.meta.env.DEV) {
       try {
         const response = await fetch('/api/auth/dev/login', {
           method: 'POST',
@@ -52,14 +52,17 @@ const authApi = {
             user: result.user,
             token: result.token
           };
+        } else {
+          const error = await response.json();
+          throw new Error(error.message || 'Login failed');
         }
       } catch (devError) {
         console.log('Development login failed, trying Firebase:', devError);
       }
     }
 
-    // Fallback to Firebase authentication
-    if (auth) {
+    // Fallback to Firebase authentication only if it's available
+    if (isFirebaseAvailable && auth) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
@@ -87,8 +90,8 @@ const authApi = {
   },
 
   async register(email: string, password: string, profileData: any) {
-    // Try development API first if Firebase is not configured
-    if (!auth || import.meta.env.DEV) {
+    // Use development API if Firebase is not available or in development
+    if (!isFirebaseAvailable || import.meta.env.DEV) {
       try {
         const response = await fetch('/api/auth/dev/register', {
           method: 'POST',
@@ -104,14 +107,17 @@ const authApi = {
             profile: result.user,
             token: result.token
           };
+        } else {
+          const error = await response.json();
+          throw new Error(error.message || 'Registration failed');
         }
       } catch (devError) {
         console.log('Development registration failed, trying Firebase:', devError);
       }
     }
 
-    // Fallback to Firebase authentication
-    if (auth) {
+    // Fallback to Firebase authentication only if it's available
+    if (isFirebaseAvailable && auth) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
@@ -176,7 +182,9 @@ const authApi = {
   },
 
   async logout() {
-    await signOut(auth);
+    if (isFirebaseAvailable && auth) {
+      await signOut(auth);
+    }
     return true;
   }
 };

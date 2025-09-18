@@ -13,7 +13,10 @@ const firebaseConfig = {
 };
 
 // Check if Firebase config is complete
-const isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.projectId;
+const isFirebaseConfigured = firebaseConfig.apiKey && 
+  firebaseConfig.projectId && 
+  firebaseConfig.apiKey !== 'undefined' && 
+  firebaseConfig.projectId !== 'undefined';
 
 // Initialize Firebase app only if it doesn't exist and config is complete
 let app: any = null;
@@ -27,12 +30,21 @@ if (isFirebaseConfigured) {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+    console.log('Firebase initialized successfully');
   } catch (error) {
     console.warn('Firebase initialization failed, running in development mode:', error);
+    // Reset to null if initialization fails
+    auth = null;
+    db = null;
+    storage = null;
+    app = null;
   }
 } else {
   console.log('Firebase not configured, running in development mode with local authentication');
 }
+
+// Export a flag to easily check Firebase availability
+export const isFirebaseAvailable = !!auth;
 
 export { app, auth, db, storage };
 
