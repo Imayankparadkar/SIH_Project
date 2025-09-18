@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
-import { Heart, Menu, X, Globe, Phone, Users, MessageCircle, Brain, UserPlus } from 'lucide-react';
+import { Heart, Menu, X, Globe, Phone, Users, MessageCircle, Brain, UserPlus, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -11,125 +11,96 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 export function Navigation() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  const handleLanguageChange = (language: string) => {
-    i18n.changeLanguage(language);
-  };
-
-  const handleEmergency = () => {
-    // TODO: Implement emergency call functionality
-    if (confirm(t('emergency_description'))) {
-      // Call emergency services or show emergency modal
-      window.open('tel:108', '_self');
-    }
-  };
-
   return (
-    <nav className="bg-white shadow-sm border-b border-border sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          {/* Logo */}
+    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo - MediBuddy Style */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-primary to-pink-500 rounded-lg flex items-center justify-center">
-              <Heart className="text-white w-6 h-6 animate-pulse" />
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+                <Stethoscope className="text-white w-5 h-5" />
+              </div>
+              <span className="text-xl font-bold text-primary">SehatBuddy</span>
             </div>
-            <span className="text-xl font-bold text-foreground">{t('app_name')}</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            <Link href="/" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/' ? 'text-primary font-medium' : ''}`}>
-              {t('nav_home')}
+          {/* Desktop Navigation - MediBuddy Style Menu */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/doctors" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/doctors') ? 'text-primary' : ''}`}>
+              Doctors
             </Link>
-            {user && (
-              <Link href="/dashboard" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/dashboard' ? 'text-primary font-medium' : ''}`}>
-                {t('dashboard')}
-              </Link>
-            )}
-            <Link href="/doctors" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/doctors' ? 'text-primary font-medium' : ''}`}>
-              {t('nav_doctors')}
+            <Link href="/dashboard/medicines" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/medicines') ? 'text-primary' : ''}`}>
+              Medicines
             </Link>
-            <Link href="/donations" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/donations' ? 'text-primary font-medium' : ''}`}>
-              {t('nav_donations')}
+            <Link href="/dashboard/vitals" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/vitals') ? 'text-primary' : ''}`}>
+              Lab Test &amp; Diagnostic
             </Link>
-            <Link href="/mental-health" className={`text-muted-foreground hover:text-primary transition-colors ${location === '/mental-health' ? 'text-primary font-medium' : ''}`}>
-              <Brain className="w-4 h-4 inline mr-1" />
-              Mental Health
+            <Link href="/donations" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/donations') ? 'text-primary' : ''}`}>
+              Hospitals
+            </Link>
+            <Link href="/dashboard/ai-doctor" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/ai-doctor') ? 'text-primary' : ''}`}>
+              Surgery
+            </Link>
+            <Link href="/mental-health" className={`text-gray-700 hover:text-primary font-medium transition-colors ${location.includes('/mental-health') ? 'text-primary' : ''}`}>
+              Healthcare
             </Link>
           </div>
 
-          {/* Right Side Actions */}
+          {/* Right Side Actions - MediBuddy Style */}
           <div className="flex items-center space-x-4">
-            {/* Language Selector */}
-            <Select value={i18n.language} onValueChange={handleLanguageChange}>
-              <SelectTrigger className="w-[140px] border-0 bg-transparent">
-                <Globe className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="hi">हिंदी</SelectItem>
-                <SelectItem value="ta">தமிழ்</SelectItem>
-                <SelectItem value="te">తెలుగు</SelectItem>
-                <SelectItem value="bn">বাংলা</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Emergency SOS */}
-            <Button 
-              onClick={handleEmergency}
-              variant="destructive" 
-              size="sm"
-              className="animate-pulse"
-              data-testid="button-emergency"
-            >
-              <Phone className="w-4 h-4 mr-2" />
-              {t('emergency_sos')}
-            </Button>
+            {/* About Us Link */}
+            <Link href="#" className="text-gray-700 hover:text-primary font-medium transition-colors hidden md:block">
+              About Us
+            </Link>
 
             {/* Auth Buttons / User Profile */}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center space-x-2" data-testid="button-profile">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
-                        {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                  <Button variant="outline" className="flex items-center space-x-2 border-primary text-primary" data-testid="button-profile">
+                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">
+                        {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </span>
                     </div>
-                    <span className="hidden md:inline">{user.displayName || 'User'}</span>
+                    <span className="hidden md:inline">{user.name || 'User'}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">{t('profile')}</Link>
+                    <Link href="/dashboard" className="flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-destructive">
-                    {t('logout')}
+                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                    Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Link href="/login">
-                  <Button variant="ghost" data-testid="button-login">{t('login')}</Button>
+                  <Button variant="ghost" className="text-primary font-medium hover:bg-primary/10" data-testid="button-login">
+                    Login
+                  </Button>
                 </Link>
                 <Link href="/register">
-                  <Button data-testid="button-register">{t('register')}</Button>
+                  <Button className="bg-primary hover:bg-primary/90 text-white font-medium px-6" data-testid="button-register">
+                    Signup
+                  </Button>
                 </Link>
               </div>
             )}
@@ -138,7 +109,7 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="md:hidden text-gray-700"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -149,25 +120,28 @@ export function Navigation() {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <div className="flex flex-col space-y-2">
-              <Link href="/" className="py-2 text-muted-foreground hover:text-primary">
-                {t('nav_home')}
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <Link href="/doctors" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                Doctors
               </Link>
-              {user && (
-                <Link href="/dashboard" className="py-2 text-muted-foreground hover:text-primary">
-                  {t('dashboard')}
-                </Link>
-              )}
-              <Link href="/doctors" className="py-2 text-muted-foreground hover:text-primary">
-                {t('nav_doctors')}
+              <Link href="/dashboard/medicines" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                Medicines
               </Link>
-              <Link href="/donations" className="py-2 text-muted-foreground hover:text-primary">
-                {t('nav_donations')}
+              <Link href="/dashboard/vitals" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                Lab Test &amp; Diagnostic
               </Link>
-              <Link href="/mental-health" className="py-2 text-muted-foreground hover:text-primary flex items-center">
-                <Brain className="w-4 h-4 mr-2" />
-                Mental Health
+              <Link href="/donations" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                Hospitals
+              </Link>
+              <Link href="/dashboard/ai-doctor" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                Surgery
+              </Link>
+              <Link href="/mental-health" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                Healthcare
+              </Link>
+              <Link href="#" className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary rounded-md">
+                About Us
               </Link>
             </div>
           </div>
