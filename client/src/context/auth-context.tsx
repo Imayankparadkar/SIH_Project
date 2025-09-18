@@ -36,33 +36,41 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Firebase Auth API helper functions
 const authApi = {
   async login(email: string, password: string) {
-    // Use development API if Firebase is not available or in development
-    if (!isFirebaseAvailable || import.meta.env.DEV) {
-      try {
-        const response = await fetch('/api/auth/dev/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
+    // Always try development API first in development or when Firebase credentials aren't properly configured
+    console.log('Attempting login with development API...');
+    try {
+      const response = await fetch('/api/auth/dev/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-        if (response.ok) {
-          const result = await response.json();
-          return {
-            success: true,
-            user: result.user,
-            token: result.token
-          };
-        } else {
-          const error = await response.json();
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Development login successful');
+        return {
+          success: true,
+          user: result.user,
+          token: result.token
+        };
+      } else {
+        const error = await response.json();
+        console.log('Development login failed:', error.message);
+        // Only try Firebase if development login fails and Firebase is available
+        if (!isFirebaseAvailable || import.meta.env.DEV) {
           throw new Error(error.message || 'Login failed');
         }
-      } catch (devError) {
-        console.log('Development login failed, trying Firebase:', devError);
+      }
+    } catch (devError) {
+      console.log('Development login error:', devError);
+      // Only proceed to Firebase if we're not in development mode
+      if (!isFirebaseAvailable || import.meta.env.DEV) {
+        throw devError;
       }
     }
 
-    // Fallback to Firebase authentication only if it's available
-    if (isFirebaseAvailable && auth) {
+    // Fallback to Firebase authentication only if available and not in development
+    if (isFirebaseAvailable && auth && !import.meta.env.DEV) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
@@ -90,34 +98,42 @@ const authApi = {
   },
 
   async register(email: string, password: string, profileData: any) {
-    // Use development API if Firebase is not available or in development
-    if (!isFirebaseAvailable || import.meta.env.DEV) {
-      try {
-        const response = await fetch('/api/auth/dev/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, ...profileData })
-        });
+    // Always try development API first in development or when Firebase credentials aren't properly configured
+    console.log('Attempting registration with development API...');
+    try {
+      const response = await fetch('/api/auth/dev/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, ...profileData })
+      });
 
-        if (response.ok) {
-          const result = await response.json();
-          return {
-            success: true,
-            user: result.user,
-            profile: result.user,
-            token: result.token
-          };
-        } else {
-          const error = await response.json();
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Development registration successful');
+        return {
+          success: true,
+          user: result.user,
+          profile: result.user,
+          token: result.token
+        };
+      } else {
+        const error = await response.json();
+        console.log('Development registration failed:', error.message);
+        // Only try Firebase if development registration fails and Firebase is available
+        if (!isFirebaseAvailable || import.meta.env.DEV) {
           throw new Error(error.message || 'Registration failed');
         }
-      } catch (devError) {
-        console.log('Development registration failed, trying Firebase:', devError);
+      }
+    } catch (devError) {
+      console.log('Development registration error:', devError);
+      // Only proceed to Firebase if we're not in development mode
+      if (!isFirebaseAvailable || import.meta.env.DEV) {
+        throw devError;
       }
     }
 
-    // Fallback to Firebase authentication only if it's available
-    if (isFirebaseAvailable && auth) {
+    // Fallback to Firebase authentication only if available and not in development
+    if (isFirebaseAvailable && auth && !import.meta.env.DEV) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
