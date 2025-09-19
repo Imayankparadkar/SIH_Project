@@ -115,7 +115,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'I apologize, but I encountered an error. Please try again or consult with your healthcare provider for immediate assistance.',
+        content: 'I encountered a technical issue. Please try again or consult with your healthcare provider if you need immediate assistance.',
         isUser: false,
         timestamp: new Date()
       };

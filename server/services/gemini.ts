@@ -268,7 +268,7 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
         model: 'gemini-1.5-flash',
         contents: prompt
       });
-      const responseText = response.text || "I apologize, but I'm having trouble processing your request right now.";
+      const responseText = response.text || "I'm having trouble processing your request right now.";
       
       // Try to parse structured JSON response from Gemini
       let structuredResponse = null;
@@ -296,7 +296,7 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
       const bodyPart = this.detectBodyPart(message);
       
       const fallbackStructured = {
-        summary: "I apologize, but I'm experiencing technical difficulties. For immediate health concerns, please contact your healthcare provider.",
+        summary: "I'm currently experiencing technical difficulties. For immediate health concerns, please contact your healthcare provider.",
         dietPlan: {
           breakfast: ["Consult with a nutritionist for personalized recommendations"],
           lunch: ["Contact your healthcare provider for dietary guidance"],
@@ -315,7 +315,7 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
           {"title": "General Health Tips", "channel": "Health Education", "searchTerm": "general health tips"}
         ],
         lifestyleChanges: ["Consult with healthcare professionals for personalized advice"],
-        response: "I apologize, but I'm experiencing technical difficulties. For immediate health concerns, please contact your healthcare provider or emergency services."
+        response: "I'm currently experiencing technical difficulties. For immediate health concerns, please contact your healthcare provider or emergency services."
       };
       
       return {

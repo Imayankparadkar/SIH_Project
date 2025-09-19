@@ -4,6 +4,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { VitalSigns, HealthAnalysis, InsertVitalSigns, InsertHealthAnalysis } from '@shared/schema';
 import { mockHealthService } from '@/services/mock-health-data';
+import { esp32HealthService } from '@/services/esp32-health-service';
 // Health analysis will be handled server-side
 
 interface HealthContextType {
@@ -25,6 +26,35 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [esp32Data, setEsp32Data] = useState<{heartRate: number; oxygenSaturation: number; bodyTemperature: number; isConnected: boolean} | null>(null);
+
+  // ESP32 data effect
+  useEffect(() => {
+    if (!user || !user.id) {
+      return;
+    }
+
+    console.log('Health Context: Starting ESP32 service for real-time data');
+    
+    // Start ESP32 service
+    esp32HealthService.start();
+
+    // Subscribe to ESP32 data updates
+    const esp32Unsubscribe = esp32HealthService.subscribe((esp32Health) => {
+      console.log('Health Context: Received ESP32 data:', esp32Health);
+      setEsp32Data({
+        heartRate: esp32Health.heartRate,
+        oxygenSaturation: esp32Health.oxygenSaturation,
+        bodyTemperature: esp32Health.bodyTemperature,
+        isConnected: esp32Health.isConnected
+      });
+    });
+
+    return () => {
+      esp32Unsubscribe();
+      esp32HealthService.stop();
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user || !user.id) {
@@ -79,7 +109,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       
       // Subscribe to mock health data updates
       const unsubscribe = mockHealthService.subscribe((mockData) => {
-        // Convert mock data to VitalSigns format
+        // Store the base mock data
         const vitalSigns: VitalSigns = {
           id: mockData.id,
           userId: user.id,
@@ -97,6 +127,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           syncedAt: mockData.syncedAt
         };
         
+        // Set base vitals from mock service (ESP32 overlay will be applied by separate effect)
         setCurrentVitals(vitalSigns);
         
         // Get historical data from mock service
@@ -104,11 +135,11 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         const historicalVitals: VitalSigns[] = mockHistoricalData.map(mock => ({
           id: mock.id,
           userId: user.id,
-          heartRate: mock.heartRate,
+          heartRate: mock.heartRate, // Keep historical data as mock data for trends
           bloodPressureSystolic: mock.bloodPressureSystolic,
           bloodPressureDiastolic: mock.bloodPressureDiastolic,
-          oxygenSaturation: mock.oxygenSaturation,
-          bodyTemperature: mock.bodyTemperature,
+          oxygenSaturation: mock.oxygenSaturation, // Keep historical data as mock data for trends
+          bodyTemperature: mock.bodyTemperature, // Keep historical data as mock data for trends
           ecgData: mock.ecgData,
           steps: mock.steps,
           sleepHours: mock.sleepHours,
@@ -130,11 +161,11 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       const initialVitals: VitalSigns[] = initialHistoricalData.map(mock => ({
         id: mock.id,
         userId: user.id,
-        heartRate: mock.heartRate,
+        heartRate: mock.heartRate, // Keep initial historical data as mock data for trends
         bloodPressureSystolic: mock.bloodPressureSystolic,
         bloodPressureDiastolic: mock.bloodPressureDiastolic,
-        oxygenSaturation: mock.oxygenSaturation,
-        bodyTemperature: mock.bodyTemperature,
+        oxygenSaturation: mock.oxygenSaturation, // Keep initial historical data as mock data for trends
+        bodyTemperature: mock.bodyTemperature, // Keep initial historical data as mock data for trends
         ecgData: mock.ecgData,
         steps: mock.steps,
         sleepHours: mock.sleepHours,
@@ -154,7 +185,30 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       // Return cleanup function
       return unsubscribe;
     }
-  }, [user]);
+  }, [user]); // Remove esp32Data dependency to prevent re-subscriptions
+
+  // Separate effect to update current vitals with ESP32 data when it changes
+  useEffect(() => {
+    if (esp32Data) {
+      setCurrentVitals(current => {
+        if (!current) return current;
+        const updated = {
+          ...current,
+          heartRate: esp32Data.heartRate > 0 ? esp32Data.heartRate : current.heartRate,
+          oxygenSaturation: esp32Data.oxygenSaturation > 0 ? esp32Data.oxygenSaturation : current.oxygenSaturation,
+          bodyTemperature: esp32Data.bodyTemperature > 0 ? esp32Data.bodyTemperature : current.bodyTemperature,
+          timestamp: new Date() // Update timestamp to show real-time data
+        };
+        console.log('HealthContext: Updated currentVitals with ESP32 data:', {
+          heartRate: updated.heartRate,
+          oxygenSaturation: updated.oxygenSaturation, 
+          bodyTemperature: updated.bodyTemperature,
+          isConnected: esp32Data.isConnected
+        });
+        return updated;
+      });
+    }
+  }, [esp32Data]);
 
   const analyzeVitals = async (vitals: VitalSigns) => {
     if (!userProfile) return;

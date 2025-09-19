@@ -86,10 +86,11 @@ router.post('/', async (req, res) => {
       consultationFee: doctor.consultationFee,
       status: 'scheduled' as const,
       paymentStatus: 'pending' as const,
-      symptoms: appointmentData.symptoms,
+      symptoms: appointmentData.symptoms || undefined,
       medicalReports: [],
       followUpRequired: false,
-      bookedAt: new Date()
+      bookedAt: new Date(),
+      completedAt: undefined
     };
     
     const newAppointment = await dbStorage.createAppointment(appointment);
@@ -113,10 +114,13 @@ router.post('/', async (req, res) => {
 // GET /api/appointments - Get user appointments
 router.get('/', async (req, res) => {
   try {
-    // In production, get userId from authenticated session
-    const userId = 'demo-user-id';
+    // Get demo user from database (in production, get from authenticated session)
+    const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
+    if (!demoUser) {
+      return res.status(400).json({ error: 'Demo user not found' });
+    }
     
-    const appointments = await dbStorage.getAppointmentsByUserId(userId);
+    const appointments = await dbStorage.getAppointmentsByUserId(demoUser.id);
     
     // Get doctor details for each appointment
     const doctors = await dbStorage.getDoctors();
