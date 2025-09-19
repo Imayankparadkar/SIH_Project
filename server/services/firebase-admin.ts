@@ -89,10 +89,9 @@ try {
       
       console.log(`Successfully parsed Firebase service account for project: ${credentials.project_id}`);
     } catch (parseError: any) {
-      console.error('Error parsing Firebase service account JSON:', parseError);
-      console.error('Service account length:', serviceAccount.length, 'characters');
-      console.error('First 100 chars of service account:', serviceAccount.substring(0, 100));
-      console.error('Last 100 chars of service account:', serviceAccount.substring(Math.max(0, serviceAccount.length - 100)));
+      console.error('Error parsing Firebase service account JSON:', parseError?.message || 'Unknown parsing error');
+      console.error('Service account content length:', serviceAccount.length, 'characters');
+      console.error('Parse error details: Invalid JSON format or encoding issue');
       throw new Error(`Invalid Firebase service account JSON: ${parseError?.message || 'Unknown parsing error'}`);
     }
 

@@ -36,7 +36,34 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // Firebase Auth API helper functions
 const authApi = {
   async login(email: string, password: string) {
-    // Try Firebase authentication first (if available)
+    // In development, try dev auth first for demo users, then Firebase
+    if (import.meta.env.DEV) {
+      console.log('Development mode: trying dev auth first...');
+      try {
+        const response = await fetch('/api/auth/dev/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Development login successful');
+          return {
+            success: true,
+            user: result.user,
+            token: result.token
+          };
+        } else {
+          const error = await response.json();
+          console.log('Development login failed, trying Firebase...', error.message);
+        }
+      } catch (devError) {
+        console.log('Development login error, trying Firebase...', devError);
+      }
+    }
+
+    // Try Firebase authentication (available or fallback in development)
     if (isFirebaseAvailable && auth) {
       console.log('Attempting login with Firebase...');
       try {
@@ -56,6 +83,7 @@ const authApi = {
         }
 
         const result = await response.json();
+        console.log('Firebase login successful');
         return {
           success: true,
           user: result.user,
@@ -63,44 +91,46 @@ const authApi = {
         };
       } catch (firebaseError: any) {
         console.error('Firebase login error:', firebaseError);
+        
+        // Firebase authentication failed 
+        console.log('Firebase authentication failed:', firebaseError.message);
         throw new Error(firebaseError.message || 'Firebase login failed');
       }
     } else {
-      // Fallback to dev auth if Firebase is not available (development mode)
-      if (import.meta.env.DEV) {
-        console.log('Firebase not available, attempting login with development API...');
-        try {
-          const response = await fetch('/api/auth/dev/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log('Development login successful');
-            return {
-              success: true,
-              user: result.user,
-              token: result.token
-            };
-          } else {
-            const error = await response.json();
-            console.log('Development login failed:', error.message);
-            throw new Error(error.message || 'Login failed');
-          }
-        } catch (devError) {
-          console.log('Development login error:', devError);
-          throw devError;
-        }
-      } else {
-        throw new Error('Authentication not available. Please check your Firebase configuration.');
-      }
+      throw new Error('Authentication not available. Please check your Firebase configuration.');
     }
   },
 
   async register(email: string, password: string, profileData: any) {
-    // Try Firebase authentication first (if available)
+    // In development, try dev auth first for demo users, then Firebase
+    if (import.meta.env.DEV) {
+      console.log('Development mode: trying dev registration first...');
+      try {
+        const response = await fetch('/api/auth/dev/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, ...profileData })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Development registration successful');
+          return {
+            success: true,
+            user: result.user,
+            profile: result.user,
+            token: result.token
+          };
+        } else {
+          const error = await response.json();
+          console.log('Development registration failed, trying Firebase...', error.message);
+        }
+      } catch (devError) {
+        console.log('Development registration error, trying Firebase...', devError);
+      }
+    }
+
+    // Try Firebase authentication (available or fallback in development)
     if (isFirebaseAvailable && auth) {
       console.log('Attempting registration with Firebase...');
       try {
@@ -225,8 +255,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const response = await authApi.getMe(storedToken);
           if (response.success) {
-            setUser(response.user);
-            setUserProfile(response.user.profile);
+            // Normalize to AuthUser format
+            const authUser: AuthUser = {
+              id: response.user.uid || response.user.id,
+              email: response.user.email || '',
+              name: response.user.displayName || response.user.name || '',
+              age: response.user.profile?.age || response.user.age || 0,
+              gender: response.user.profile?.gender || response.user.gender || 'other',
+              phone: response.user.profile?.phone || response.user.phone || '',
+              medicalHistory: response.user.profile?.medicalHistory || response.user.medicalHistory,
+              abhaId: response.user.profile?.abhaId || response.user.abhaId,
+              language: response.user.profile?.language || response.user.language || 'en',
+              country: response.user.profile?.country || response.user.country || 'IN',
+              createdAt: new Date(response.user.createdAt || Date.now()),
+              updatedAt: new Date(response.user.updatedAt || Date.now())
+            };
+            
+            setUser(authUser);
+            setUserProfile(response.user.profile || response.user);
             setToken(storedToken);
           } else {
             // Invalid token, clear it
@@ -249,8 +295,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authApi.login(email, password);
       
       if (response.success) {
-        setUser(response.user);
-        setUserProfile(response.user.profile);
+        // Normalize to AuthUser format for consistency
+        const authUser: AuthUser = {
+          id: response.user.uid || response.user.id,
+          email: response.user.email || '',
+          name: response.user.displayName || response.user.name || '',
+          age: response.user.profile?.age || response.user.age || 0,
+          gender: response.user.profile?.gender || response.user.gender || 'other',
+          phone: response.user.profile?.phone || response.user.phone || '',
+          medicalHistory: response.user.profile?.medicalHistory || response.user.medicalHistory,
+          abhaId: response.user.profile?.abhaId || response.user.abhaId,
+          language: response.user.profile?.language || response.user.language || 'en',
+          country: response.user.profile?.country || response.user.country || 'IN',
+          createdAt: new Date(response.user.createdAt || Date.now()),
+          updatedAt: new Date(response.user.updatedAt || Date.now())
+        };
+        
+        setUser(authUser);
+        setUserProfile(response.user.profile || response.user);
         setToken(response.token);
         
         // Store token in localStorage
@@ -272,20 +334,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authApi.register(email, password, profileData);
       
       if (response.success) {
-        // Convert Firebase User to AuthUser format
+        // Convert to AuthUser format for both Firebase and dev-auth
         const authUser: AuthUser = {
-          id: response.user.uid,
+          id: response.user.uid || response.user.id,
           email: response.user.email || '',
-          name: response.user.displayName || response.profile?.name || '',
-          age: response.profile?.age || 0,
-          gender: response.profile?.gender || 'other',
-          phone: response.profile?.phone || '',
-          medicalHistory: response.profile?.medicalHistory,
-          abhaId: response.profile?.abhaId,
-          language: response.profile?.language || 'en',
-          country: response.profile?.country || 'IN',
-          createdAt: new Date(),
-          updatedAt: new Date()
+          name: response.user.displayName || response.user.name || response.profile?.name || '',
+          age: response.profile?.age || response.user.age || 0,
+          gender: response.profile?.gender || response.user.gender || 'other',
+          phone: response.profile?.phone || response.user.phone || '',
+          medicalHistory: response.profile?.medicalHistory || response.user.medicalHistory,
+          abhaId: response.profile?.abhaId || response.user.abhaId,
+          language: response.profile?.language || response.user.language || 'en',
+          country: response.profile?.country || response.user.country || 'IN',
+          createdAt: new Date(response.user.createdAt || Date.now()),
+          updatedAt: new Date(response.user.updatedAt || Date.now())
         };
         setUser(authUser);
         setUserProfile(response.profile);
@@ -335,8 +397,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authApi.updateProfile(token, data);
       
       if (response.success) {
-        setUser(response.user);
-        setUserProfile(response.user);
+        // Merge updated profile into existing user
+        const updatedUser: AuthUser = {
+          ...user!,
+          ...data,
+          updatedAt: new Date()
+        };
+        
+        setUser(updatedUser);
+        setUserProfile(response.profile || response.user || updatedUser);
       } else {
         throw new Error(response.message || 'Failed to update profile');
       }
