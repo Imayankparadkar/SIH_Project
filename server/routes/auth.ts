@@ -166,6 +166,16 @@ router.put('/profile', async (req, res) => {
   }
 });
 
+// In production, explicitly handle dev endpoints with JSON error
+if (process.env.NODE_ENV === 'production') {
+  router.use('/dev/*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'Development endpoints not available in production. Please use Firebase authentication.'
+    });
+  });
+}
+
 // Development mode login endpoints
 if (process.env.NODE_ENV === 'development') {
   router.post('/dev/login', async (req, res) => {
