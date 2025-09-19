@@ -1,253 +1,86 @@
-# Health Monitoring Platform - System Flowchart
-
-## Main Health Monitoring Flow
+# Health Monitoring Platform - Complete System Flow
 
 ```
-┌─────────────┐   Register/   ┌─────────────┐   Device    ┌─────────────┐   Health Data   ┌─────────────┐   AI Analysis   ┌─────────────┐   Health      ┌─────────────┐
-│    User     │──────Login────│  Platform   │────Pairing──│  Wristband  │─────Streaming───│    Data     │─────Processing──│    AI       │────Insights───│   Doctor/   │
-│             │               │   Gateway   │             │   Device    │                 │ Processing  │                 │  Analysis   │               │  Emergency  │
+┌─────────────┐   Register/   ┌─────────────┐   Device    ┌─────────────┐   Health Data   ┌─────────────┐   AI Analysis   ┌─────────────┐   Medical      ┌─────────────┐
+│    User     │──────Login────│   Health    │────Pairing──│  Smart      │─────Processing──│   Health    │─────& Insights──│   Doctor    │────Services────│  Emergency  │
+│  (Patient)  │               │  Platform   │             │ Wristband   │                 │ Dashboard   │                 │ Consultation│               │  Response   │
 └─────────────┘               └─────────────┘             └─────────────┘                 └─────────────┘                 └─────────────┘               └─────────────┘
-                                     │                                                           │                                 │
-                                     │                                                           ▼                                 │
-                              ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐                │
-                              │                                          Health Data Processing System                                                   │                │
-                              │                                                                                                                          │                │
-                              │   ┌─────────────┐    OCR/     ┌─────────────┐    Real-time   ┌─────────────┐                                         │                │
-                              │   │   Extract   │────Sensor───│   Sensor    │─────Analysis───│  Vitals     │                                         │                │
-                              │   │ Vital Signs │    Data     │  Reading    │                │ Validation  │                                         │                │
-                              │   └─────────────┘             └─────────────┘                └─────────────┘                                         │                │
-                              │                                                                       │                                                │                │
-                              │   ┌─────────────┐                                                    ▼                                                │                │
-                              │   │ Utilization │◄──────────────────────┌─────────────┐    Matches   ┌─────────────┐    ┌─────────────┐           │                │
-                              │   │ of feedback │                       │    Model    │◄─────────────│ AI Pattern  │────│ Emergency   │           │                │
-                              │   │for learning │                       │ (Decision)  │              │ Recognition │    │  Detection  │           │                │
-                              │   └─────────────┘                       └─────────────┘              └─────────────┘    └─────────────┘           │                │
-                              │          ▲                                     │                              │                     │                │                │
-                              │          │                              Anomaly │                              │              Critical │               │                │
-                              │          │                              Detected │                              │               Values │               │                │
-                              │   ┌─────────────┐    Informs     ┌─────────────┐                              │                     │                │                │
-                              │   │   Update    │◄───User About──│   Alert     │                              │                     ▼                │                │
-                              │   │  Health     │    Anomalies   │   System    │                              │              ┌─────────────┐           │                │
-                              │   │ Thresholds  │                └─────────────┘                              │              │ Emergency   │           │                │
-                              │   └─────────────┘                                                             │              │   Alert     │           │                │
-                              │                                                                                │              │  Triggered  │           │                │
-                              │                                                                                │              └─────────────┘           │                │
-                              │                                                                                │                     │                │                │
-                              │                                                                                ▼                     │                │                │
-                              │                                                                         ┌─────────────┐              │                │                │
-                              │                                                                         │  Health     │              │                │                │
-                              │                                                                         │ Insights    │              │                │                │
-                              │                                                                         │ Generation  │              │                │                │
-                              │                                                                         └─────────────┘              │                │                │
-                              │                                                                                │                     │                │                │
-                              │                                                                                │                     │                │                │
-                              │                                                                                ▼                     ▼                │                │
-                              │                                                                         ┌──────────────────────────────────────┐      │                │
-                              │                                                                         │             Database                 │      │                │
-                              │                                                                         │                                      │      │                │
-                              │                                                                         │  • User Health Records              │      │                │
-                              │                                                                         │  • Vital Signs History              │      │                │
-                              │                                                                         │  • AI Analysis Results              │      │                │
-                              │                                                                         │  • Emergency Logs                  │      │                │
-                              │                                                                         │  • Doctor Consultations             │      │                │
-                              │                                                                         │  • Lab Test Results                 │      │                │
-                              │                                                                         └──────────────────────────────────────┘      │                │
-                              │                                                                                │                                       │                │
-                              │                                                                                ▼                                       ▼                │
-                              │                                                                         ┌─────────────┐                        ┌─────────────┐      │
-                              │                                                                         │  Feedback   │                        │  Emergency  │      │
-                              │                                                                         │   System    │                        │  Response   │      │
-                              │                                                                         └─────────────┘                        └─────────────┘      │
-                              └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                │
-                                                                                                                                                                                      │
-                                                                                                                                                                                      ▼
-                                                                                                                                                                              ┌─────────────┐
-                                                                                                                                                                              │   User      │
-                                                                                                                                                                              │ Receives    │
-                                                                                                                                                                              │ Health      │
-                                                                                                                                                                              │ Insights    │
-                                                                                                                                                                              └─────────────┘
+                                     │                                                           │                                 │                              ▲
+                                     │                                                           ▼                                 │                              │
+                              ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+                              │                                          Health Data Processing & Analysis System                                                         │
+                              │                                                                                                                                          │
+                              │   ┌─────────────┐    Sensor    ┌─────────────┐    Real-time   ┌─────────────┐                                                         │
+                              │   │   Extract   │────Data/─────│   Vital     │─────Analysis───│  Health     │                                                         │
+                              │   │ Vital Signs │    OCR       │  Signs      │                │ Validation  │                                                         │
+                              │   └─────────────┘              │  Reading    │                └─────────────┘                                                         │
+                              │                                └─────────────┘                       │                                                                │
+                              │   ┌─────────────┐                                                    ▼                                                                │
+                              │   │ Utilization │◄──────────────────────┌─────────────┐    Matches   ┌─────────────┐    ┌─────────────┐                          │
+                              │   │ of feedback │                       │   AI Model  │◄─────────────│   Pattern   │────│  Emergency  │                          │
+                              │   │for machine  │                       │ (Decision)  │              │ Recognition │    │  Detection  │                          │
+                              │   │  learning   │                       └─────────────┘              │  & Alerts   │    └─────────────┘                          │
+                              │   └─────────────┘                              │                      └─────────────┘           │                                  │
+                              │          ▲                              Anomaly │                              │        Critical │                                  │
+                              │          │                              Detected │                              │         Values │                                  │
+                              │   ┌─────────────┐    Informs     ┌─────────────┐                              │            │                                     │
+                              │   │   Update    │◄───Patient─────│    User     │                              │            ▼                                     │
+                              │   │ Thresholds &│    About       │   Alert     │                              │     ┌─────────────┐                              │
+                              │   │  AI Model   │   Updates      │   System    │                              │     │  Emergency  │                              │
+                              │   └─────────────┘                └─────────────┘                              │     │    SOS      │                              │
+                              │                                                                                │     │  Triggered  │                              │
+                              │                                                                                │     └─────────────┘                              │
+                              │                                                                                │            │                                     │
+                              │                                                                                ▼            │                                     │
+                              │                                                                         ┌─────────────┐     │                                     │
+                              │                                                                         │   Health    │     │                                     │
+                              │                                                                         │  Insights   │     │                                     │
+                              │                                                                         │ Generation  │     │                                     │
+                              │                                                                         └─────────────┘     │                                     │
+                              │                                                                                │            │                                     │
+                              │                                                                                │            │                                     │
+                              │                                                                                ▼            ▼                                     │
+                              │                                                                         ┌──────────────────────────────────────┐                │
+                              │                                                                         │            PostgreSQL Database        │                │
+                              │                                                                         │                                      │                │
+                              │                                                                         │  • User Health Records              │                │
+                              │                                                                         │  • Vital Signs History              │                │
+                              │                                                                         │  • AI Analysis Results              │                │
+                              │                                                                         │  • Emergency Logs                  │                │
+                              │                                                                         │  • Doctor Consultations             │                │
+                              │                                                                         │  • Lab Test Results                 │                │
+                              │                                                                         │  • Medical Reports & Files          │                │
+                              │                                                                         └──────────────────────────────────────┘                │
+                              │                                                                                │                     │                          │
+                              │                                                                                ▼                     ▼                          │
+                              │                                                                         ┌─────────────┐     ┌─────────────┐                    │
+                              │                                                                         │  Feedback   │     │  Emergency  │                    │
+                              │                                                                         │   System    │     │   Response  │──────────────────────┘
+                              │                                                                         └─────────────┘     │   System    │
+                              │                                                                                             └─────────────┘
+                              └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Detailed Component Flows
+This comprehensive flowchart shows the complete health monitoring website system in one unified flow, exactly like the postal delivery example. It includes:
 
-### 1. User Onboarding & Authentication Flow
-```
-User Access → Registration/Login → Profile Setup → Medical History → Device Pairing → Dashboard Access
-    │              │                   │              │                │              │
-    │              │                   │              │                │              ▼
-    │              │                   │              │                │         ┌─────────────┐
-    │              │                   │              │                │         │  Welcome    │
-    │              │                   │              │                │         │  Tutorial   │
-    │              │                   │              │                │         └─────────────┘
-    │              │                   │              │                │
-    │              │                   │              │                ▼
-    │              │                   │              │         ┌─────────────┐
-    │              │                   │              │         │ Bluetooth   │
-    │              │                   │              │         │ Device Scan │
-    │              │                   │              │         └─────────────┘
-    │              │                   │              │
-    │              │                   │              ▼
-    │              │                   │       ┌─────────────┐
-    │              │                   │       │  Medical    │
-    │              │                   │       │  History    │
-    │              │                   │       │  Questionnaire │
-    │              │                   │       └─────────────┘
-    │              │                   │
-    │              │                   ▼
-    │              │            ┌─────────────┐
-    │              │            │   Personal  │
-    │              │            │ Information │
-    │              │            │    Setup    │
-    │              │            └─────────────┘
-    │              │
-    │              ▼
-    │       ┌─────────────┐
-    │       │  Firebase   │
-    │       │Authentication│
-    │       └─────────────┘
-    │
-    ▼
-┌─────────────┐
-│  Landing    │
-│    Page     │
-└─────────────┘
-```
+**Main Flow (Top Level):**
+User (Patient) → Health Platform → Smart Wristband → Health Dashboard → Doctor Consultation → Medical Services → Emergency Response
 
-### 2. Health Data Collection & Processing Flow
-```
-┌─────────────┐    Sensor     ┌─────────────┐    Raw Data    ┌─────────────┐    Validation    ┌─────────────┐
-│  Wristband  │─────Reading───│   Data      │──────Stream────│    Data     │─────& Cleaning───│  Processed  │
-│   Sensors   │               │ Acquisition │                │ Validation  │                  │    Data     │
-└─────────────┘               └─────────────┘                └─────────────┘                  └─────────────┘
-      │                              │                              │                              │
-      │ • Heart Rate                 │ • Real-time                  │ • Range Validation           │
-      │ • Blood Pressure             │ • Buffering                  │ • Outlier Detection          │
-      │ • Oxygen Saturation          │ • Timestamp                  │ • Data Integrity             │
-      │ • Temperature                │ • Device ID                  │ • Error Correction           │
-      │ • Activity Level             │ • Battery Status             │ • Pattern Recognition        │
-      │                              │                              │                              │
-      ▼                              ▼                              ▼                              ▼
-┌─────────────┐              ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
-│ Continuous  │              │   Queue     │              │   Alert     │              │  Database   │
-│ Monitoring  │              │ Management  │              │  System     │              │   Storage   │
-│   Active    │              └─────────────┘              └─────────────┘              └─────────────┘
-└─────────────┘
-```
+**Detailed Processing System (Lower Level):**
+The "Health Data Processing & Analysis System" contains all the core functionality:
+- Extract Vital Signs (like "Extract Address Fields" in postal example)
+- Vital Signs Reading with Sensor Data/OCR (like "OCR → Text")
+- AI Model Decision Point (like "Model" diamond in postal example)
+- Pattern Recognition & Alerts (like "QR Generation")
+- Emergency Detection and SOS (like feedback loops)
+- Health Insights Generation
+- PostgreSQL Database (same as postal example)
+- Feedback System for machine learning (like "Utilization of feedback")
+- Emergency Response System (like final delivery)
 
-### 3. AI Analysis & Health Insights Flow
-```
-┌─────────────┐    Health Data   ┌─────────────┐    Pattern      ┌─────────────┐    Risk        ┌─────────────┐
-│  Processed  │─────Analysis─────│   Google    │────Recognition──│   Health    │────Assessment──│  Predictive │
-│    Data     │                  │  Gemini AI  │                 │  Patterns   │                │   Health    │
-└─────────────┘                  └─────────────┘                 └─────────────┘                └─────────────┘
-      │                                 │                              │                              │
-      │                                 │                              │                              │
-      ▼                                 ▼                              ▼                              ▼
-┌─────────────┐              ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
-│  Historical │              │   Machine   │              │   Trend     │              │  Health     │
-│   Analysis  │              │  Learning   │              │  Analysis   │              │ Recommendations │
-└─────────────┘              │   Models    │              └─────────────┘              └─────────────┘
-      │                      └─────────────┘                      │                              │
-      │                              │                              │                              │
-      │                              │                              │                              │
-      ▼                              ▼                              ▼                              ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                    Health Insights Dashboard                                              │
-│                                                                                                           │
-│  • Vital Signs Charts                    • Risk Alerts                    • Health Score                │
-│  • Trend Analysis                        • Recommendations                • Progress Tracking           │
-│  • Comparative Data                      • Medication Reminders           • Goal Setting               │
-│  • Exercise Suggestions                  • Doctor Consultation Alerts     • Emergency Thresholds       │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 4. Emergency Response System Flow
-```
-┌─────────────┐    Critical     ┌─────────────┐    Immediate     ┌─────────────┐    Location     ┌─────────────┐
-│  Critical   │─────Values──────│  Emergency  │─────Alert────────│  Emergency  │─────Services────│   Medical   │
-│   Health    │    Detected     │  Detection  │     Triggered    │   Contacts  │    Dispatch     │  Emergency  │
-│  Threshold  │                 │   System    │                  │ Notification│                 │   Response  │
-└─────────────┘                 └─────────────┘                  └─────────────┘                 └─────────────┘
-      │                                │                                │                              │
-      │                                │                                │                              │
-      ▼                                ▼                                ▼                              ▼
-┌─────────────┐              ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
-│   Sensor    │              │    SOS      │              │    SMS/     │              │  Real-time  │
-│   Reading   │              │   Button    │              │    Call     │              │   Tracking  │
-│ Anomalies   │              │ Activation  │              │ Notifications│              └─────────────┘
-└─────────────┘              └─────────────┘              └─────────────┘
-      │                                │                                │
-      │                                │                                │
-      ▼                                ▼                                ▼
-┌─────────────┐              ┌─────────────┐              ┌─────────────┐
-│  Fall/Shock │              │    GPS      │              │ Emergency   │
-│  Detection  │              │  Location   │              │   Medical   │
-└─────────────┘              │   Sharing   │              │   History   │
-                              └─────────────┘              │   Sharing   │
-                                                          └─────────────┘
-```
-
-### 5. Medical Services Integration Flow
-```
-┌─────────────┐   Consultation   ┌─────────────┐   Appointment   ┌─────────────┐   Lab Tests    ┌─────────────┐
-│   Health    │─────Request──────│    AI       │────Scheduling───│  Available  │────Booking─────│    Lab      │
-│  Concerns   │                  │   Doctor    │                 │   Doctors   │                │  Services   │
-└─────────────┘                  │    Chat     │                 └─────────────┘                └─────────────┘
-      │                          └─────────────┘                         │                              │
-      │                                 │                                │                              │
-      ▼                                 ▼                                ▼                              ▼
-┌─────────────┐              ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
-│  Symptom    │              │   Medical   │              │   Video     │              │   Report    │
-│   Checker   │              │   Report    │              │    Call     │              │   Upload    │
-└─────────────┘              │  Analysis   │              │ Consultation│              │  & Analysis │
-      │                      └─────────────┘              └─────────────┘              └─────────────┘
-      │                                                           │                              │
-      ▼                                                           ▼                              ▼
-┌─────────────┐                                          ┌─────────────┐              ┌─────────────┐
-│ Medicine    │                                          │ Prescription│              │ Diagnosis   │
-│ Ordering    │                                          │   & Follow  │              │  & Treatment│
-│ & Delivery  │                                          │     up      │              │    Plan     │
-└─────────────┘                                          └─────────────┘              └─────────────┘
-```
-
-### 6. Data Storage & Privacy Flow
-```
-┌─────────────┐   Encryption    ┌─────────────┐   Secure       ┌─────────────┐   HIPAA        ┌─────────────┐
-│   Health    │─────& Privacy───│   Data      │────Storage─────│ PostgreSQL  │───Compliance───│   Backup    │
-│    Data     │                 │ Processing  │                │  Database   │                │  & Recovery │
-└─────────────┘                 └─────────────┘                └─────────────┘                └─────────────┘
-      │                                │                              │                              │
-      │                                │                              │                              │
-      ▼                                ▼                              ▼                              ▼
-┌─────────────┐              ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
-│   User      │              │ Anonymous   │              │  Audit      │              │   Data      │
-│  Consent    │              │    Data     │              │   Logs      │              │ Retention   │
-│ Management  │              │ Analytics   │              └─────────────┘              │   Policy    │
-└─────────────┘              └─────────────┘                                          └─────────────┘
-```
-
-## System Integration Points
-
-### External Services Integration
-```
-Google Gemini AI ──────► Health Analysis Engine
-Firebase Auth ─────────► User Authentication
-Firebase Storage ──────► File & Report Storage
-WebSocket ─────────────► Real-time Communication
-PostgreSQL ────────────► Primary Data Storage
-SMS/Email APIs ────────► Notification Services
-Payment Gateway ───────► Subscription & Payments
-Maps API ──────────────► Location Services
-```
-
-### Key Decision Points in the Flow
-
-1. **User Authentication**: Valid credentials → Dashboard Access | Invalid → Re-authentication
-2. **Device Connection**: Successful pairing → Data streaming | Failed → Troubleshooting guide
-3. **Health Data Validation**: Valid range → Processing | Invalid → Error handling & retry
-4. **AI Analysis**: Normal patterns → Insights generation | Anomalies → Alert system
-5. **Emergency Detection**: Critical values → Emergency response | Normal → Continue monitoring
-6. **Medical Consultation**: Urgent → Immediate doctor connection | Non-urgent → Scheduled appointment
-
-This flowchart represents the complete health monitoring platform architecture, showing how data flows from the wristband sensors through AI analysis to provide health insights, emergency response, and medical services integration.
+**Key Features:**
+- **Decision Points**: AI Model determines if patterns match or anomalies are detected
+- **Feedback Loops**: Patient updates inform system improvements
+- **Database Integration**: All health records, emergency logs, and consultations
+- **Emergency Pipeline**: Critical values trigger immediate SOS response
+- **Complete Integration**: Shows how all website components work together in one flow
