@@ -357,10 +357,10 @@ class DonationsService {
         },
         (error) => {
           console.error('Geolocation error:', error);
-          // Fallback to default location (Hyderabad)
+          // Fallback to default location (Indore)
           resolve({
-            latitude: 17.4065,
-            longitude: 78.4772,
+            latitude: 22.7196,
+            longitude: 75.8577,
           });
         },
         {
