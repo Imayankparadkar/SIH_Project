@@ -10,6 +10,7 @@ import fs from "fs/promises";
 import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
 import { initializeDemoUsers } from "./services/dev-auth";
+import { populateSampleData } from "./utils/populate-sample-data";
 import { hospitalsRouter } from "./routes/hospitals";
 import { appointmentsRouter } from "./routes/appointments";
 import mentorRoutes from "./routes/mentors";
@@ -28,6 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize demo users in development mode
   if (process.env.NODE_ENV === 'development') {
     await initializeDemoUsers();
+    await populateSampleData();
   }
 
   // CORS configuration
@@ -69,6 +71,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Message routes
   app.use("/api/messages", messageRoutes);
+
+  // Donation routes
+  const { donationsRouter } = await import("./routes/donations.js");
+  app.use("/api/donations", donationsRouter);
 
   // Disease surveillance routes
   app.get("/api/disease-surveillance/data", optionalAuth, getDiseaseData);

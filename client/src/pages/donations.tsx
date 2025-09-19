@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { Donation, Hospital } from '@/types/user';
+import { donationsService, Donation, Hospital, DonorProfile } from '@/services/donations';
 
 export function DonationsPage() {
   const { t } = useTranslation();
@@ -17,83 +17,33 @@ export function DonationsPage() {
   const { userProfile } = useAuth();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
+  const [donorProfile, setDonorProfile] = useState<DonorProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [rewardCoins, setRewardCoins] = useState(0);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Mock data - in production, fetch from API
-        const mockDonations: Donation[] = [
-          {
-            id: '1',
-            donorId: userProfile?.id || 'user1',
-            recipientHospitalId: 'h1',
-            donationType: 'blood',
-            bloodGroup: 'O+',
-            quantity: 450,
-            rewardCoins: 100,
-            status: 'completed',
-            scheduledDate: new Date('2024-01-15'),
-            completedDate: new Date('2024-01-15')
-          },
-          {
-            id: '2',
-            donorId: userProfile?.id || 'user1',
-            recipientHospitalId: 'h2',
-            donationType: 'plasma',
-            bloodGroup: 'O+',
-            quantity: 250,
-            rewardCoins: 75,
-            status: 'completed',
-            scheduledDate: new Date('2024-02-20'),
-            completedDate: new Date('2024-02-20')
-          }
-        ];
+        // Get user location
+        const location = await donationsService.getCurrentLocation();
+        setUserLocation(location);
 
-        const mockHospitals: Hospital[] = [
-          {
-            id: 'h1',
-            name: 'Apollo Hospital',
-            address: 'Jubilee Hills, Hyderabad',
-            coordinates: { latitude: 17.4239, longitude: 78.4738 },
-            specialties: ['Cardiology', 'Neurology', 'Oncology'],
-            emergencyServices: true,
-            bloodBank: true,
-            rating: 4.8,
-            phone: '+91-40-23607777',
-            email: 'info@apollohospital.com'
-          },
-          {
-            id: 'h2',
-            name: 'Fortis Hospital',
-            address: 'Bannerghatta Road, Bangalore',
-            coordinates: { latitude: 12.9082, longitude: 77.6082 },
-            specialties: ['Emergency', 'Critical Care', 'Trauma'],
-            emergencyServices: true,
-            bloodBank: true,
-            rating: 4.6,
-            phone: '+91-80-66214444',
-            email: 'info@fortishealthcare.com'
-          },
-          {
-            id: 'h3',
-            name: 'Max Healthcare',
-            address: 'Saket, New Delhi',
-            coordinates: { latitude: 28.5245, longitude: 77.2066 },
-            specialties: ['Hematology', 'Blood Bank', 'Emergency'],
-            emergencyServices: true,
-            bloodBank: true,
-            rating: 4.7,
-            phone: '+91-11-26515050',
-            email: 'info@maxhealthcare.com'
-          }
-        ];
+        // Fetch donor profile
+        const profile = await donationsService.getDonorProfile();
+        setDonorProfile(profile);
 
-        setDonations(mockDonations);
-        setNearbyHospitals(mockHospitals);
-        setRewardCoins(175); // Total from completed donations
+        // Fetch user's donations
+        const userDonations = await donationsService.getMyDonations();
+        setDonations(userDonations);
+
+        // Fetch nearby hospitals
+        const hospitals = await donationsService.getNearbyHospitals(
+          location.latitude,
+          location.longitude,
+          50 // 50km radius
+        );
+        setNearbyHospitals(hospitals);
       } catch (error) {
         console.error('Error fetching donation data:', error);
         toast({
@@ -106,15 +56,50 @@ export function DonationsPage() {
       }
     };
 
-    fetchData();
+    if (userProfile) {
+      fetchData();
+    }
   }, [userProfile, toast]);
 
-  const handleDonateTo = (hospitalId: string, donationType: string) => {
-    // In production, this would open a donation booking modal
-    toast({
-      title: "Donation initiated",
-      description: `${donationType} donation booking started. You will be contacted for scheduling.`,
-    });
+  const handleDonateTo = async (hospitalId: string, donationType: string) => {
+    try {
+      if (!donorProfile) {
+        toast({
+          title: "Profile Required",
+          description: "Please create a donor profile first to schedule donations.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Calculate next available donation date (2 weeks from now for demo)
+      const scheduledDate = new Date();
+      scheduledDate.setDate(scheduledDate.getDate() + 14);
+
+      const donation = await donationsService.scheduleDonation({
+        recipientHospitalId: hospitalId,
+        donationType,
+        bloodGroup: donorProfile.bloodGroup,
+        quantity: donationType === 'blood' ? 450 : 250,
+        scheduledDate
+      });
+
+      // Refresh donations list
+      const updatedDonations = await donationsService.getMyDonations();
+      setDonations(updatedDonations);
+
+      toast({
+        title: "Donation Scheduled",
+        description: `${donationType} donation scheduled for ${scheduledDate.toLocaleDateString()}. You will earn ${donation.rewardCoins} coins!`,
+      });
+    } catch (error: any) {
+      console.error('Error scheduling donation:', error);
+      toast({
+        title: "Scheduling Failed",
+        description: error.message || "Failed to schedule donation. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getDonationTypeColor = (type: string) => {
@@ -180,7 +165,7 @@ export function DonationsPage() {
           <Card data-testid="card-total-donations">
             <CardContent className="p-6 text-center">
               <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{donations.filter(d => d.status === 'completed').length}</div>
+              <div className="text-2xl font-bold">{donorProfile?.totalDonations || donations.filter(d => d.status === 'completed').length}</div>
               <div className="text-sm text-muted-foreground">Total Donations</div>
             </CardContent>
           </Card>
@@ -188,7 +173,7 @@ export function DonationsPage() {
           <Card data-testid="card-lives-saved">
             <CardContent className="p-6 text-center">
               <Award className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{donations.filter(d => d.status === 'completed').length * 3}</div>
+              <div className="text-2xl font-bold">{(donorProfile?.totalDonations || donations.filter(d => d.status === 'completed').length) * 3}</div>
               <div className="text-sm text-muted-foreground">Lives Potentially Saved</div>
             </CardContent>
           </Card>
@@ -196,7 +181,7 @@ export function DonationsPage() {
           <Card data-testid="card-reward-coins">
             <CardContent className="p-6 text-center">
               <Coins className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{rewardCoins}</div>
+              <div className="text-2xl font-bold">{donorProfile?.rewardCoins || 0}</div>
               <div className="text-sm text-muted-foreground">Reward Coins</div>
             </CardContent>
           </Card>
@@ -204,7 +189,12 @@ export function DonationsPage() {
           <Card data-testid="card-next-donation">
             <CardContent className="p-6 text-center">
               <Calendar className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold">56</div>
+              <div className="text-2xl font-bold">
+                {donorProfile?.lastDonationDate ? 
+                  donationsService.calculateDaysUntilNext(donorProfile.lastDonationDate, 'blood') :
+                  0
+                }
+              </div>
               <div className="text-sm text-muted-foreground">Days Until Next</div>
             </CardContent>
           </Card>
@@ -379,13 +369,13 @@ export function DonationsPage() {
                     </div>
                     <div>
                       <div className="text-3xl font-bold text-yellow-600" data-testid="text-coin-balance">
-                        {rewardCoins}
+                        {donorProfile?.rewardCoins || 0}
                       </div>
                       <div className="text-sm text-muted-foreground">Available Coins</div>
                     </div>
                     <div className="space-y-2">
                       <div className="text-sm">Next milestone: 250 coins</div>
-                      <Progress value={(rewardCoins / 250) * 100} className="h-2" />
+                      <Progress value={((donorProfile?.rewardCoins || 0) / 250) * 100} className="h-2" />
                     </div>
                   </div>
                 </CardContent>
@@ -407,7 +397,7 @@ export function DonationsPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium">100 coins</div>
-                        <Button size="sm" variant="outline" disabled={rewardCoins < 100} data-testid="button-redeem-checkup">
+                        <Button size="sm" variant="outline" disabled={(donorProfile?.rewardCoins || 0) < 100} data-testid="button-redeem-checkup">
                           Redeem
                         </Button>
                       </div>
@@ -420,7 +410,7 @@ export function DonationsPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium">75 coins</div>
-                        <Button size="sm" variant="outline" disabled={rewardCoins < 75} data-testid="button-redeem-medicine">
+                        <Button size="sm" variant="outline" disabled={(donorProfile?.rewardCoins || 0) < 75} data-testid="button-redeem-medicine">
                           Redeem
                         </Button>
                       </div>
@@ -433,7 +423,7 @@ export function DonationsPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium">50 coins = ₹10</div>
-                        <Button size="sm" variant="outline" disabled={rewardCoins < 50} data-testid="button-redeem-cash">
+                        <Button size="sm" variant="outline" disabled={(donorProfile?.rewardCoins || 0) < 50} data-testid="button-redeem-cash">
                           Convert
                         </Button>
                       </div>
