@@ -21,8 +21,21 @@ try {
 
     let credentials;
     try {
-      // Clean and parse the service account JSON
-      const cleanedServiceAccount = serviceAccount.trim();
+      // Clean and parse the service account JSON with better error handling
+      let cleanedServiceAccount = serviceAccount.trim();
+      
+      // Remove any BOM (Byte Order Mark) characters that might be present
+      cleanedServiceAccount = cleanedServiceAccount.replace(/^\uFEFF/, '');
+      
+      // Remove any extra whitespace, newlines, or invisible characters at the start/end
+      cleanedServiceAccount = cleanedServiceAccount.replace(/^[\s\x00-\x1f\x7f]+|[\s\x00-\x1f\x7f]+$/g, '');
+      
+      // Check if it starts and ends with proper JSON braces
+      if (!cleanedServiceAccount.startsWith('{') || !cleanedServiceAccount.endsWith('}')) {
+        throw new Error('Service account JSON must start with { and end with }');
+      }
+      
+      console.log('Attempting to parse service account JSON...');
       credentials = JSON.parse(cleanedServiceAccount);
       
       // Validate required fields
@@ -32,9 +45,13 @@ try {
 
       // Normalize newlines in private key for better portability
       credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+      
+      console.log(`Successfully parsed Firebase service account for project: ${credentials.project_id}`);
     } catch (parseError: any) {
       console.error('Error parsing Firebase service account JSON:', parseError);
       console.error('Service account length:', serviceAccount.length, 'characters');
+      console.error('First 100 chars of service account:', serviceAccount.substring(0, 100));
+      console.error('Last 100 chars of service account:', serviceAccount.substring(Math.max(0, serviceAccount.length - 100)));
       throw new Error(`Invalid Firebase service account JSON: ${parseError?.message || 'Unknown parsing error'}`);
     }
 
