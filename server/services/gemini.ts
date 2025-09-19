@@ -259,6 +259,11 @@ User question: ${message}
 Provide a helpful, empathetic response as Dr. AI. Keep your response conversational but informative.`;
 
     try {
+      // ALWAYS detect anatomical model and body part first (regardless of API success)
+      const anatomicalModel = this.detectAnatomicalModel(message);
+      const bodyPart = this.detectBodyPart(message);
+      console.log(`Detected anatomicalModel: ${anatomicalModel}, bodyPart: ${bodyPart} for message: "${message.substring(0, 50)}..."`);
+      
       const response = await this.genAI.models.generateContent({
         model: 'gemini-1.5-flash',
         contents: prompt
@@ -276,10 +281,6 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
       } catch (parseError) {
         console.log('Could not parse structured response from Gemini:', parseError);
       }
-      
-      // Detect anatomical model and body part
-      const anatomicalModel = this.detectAnatomicalModel(message);
-      const bodyPart = this.detectBodyPart(message);
       
       return {
         response: structuredResponse?.response || responseText,

@@ -198,7 +198,10 @@ How are you feeling today? Is there anything specific about your health you'd li
         
         // Update the current anatomical model if detected
         if (data.anatomicalModel) {
+          console.log('3D Model detected:', data.anatomicalModel, 'for body part:', data.bodyPart);
           setCurrentAnatomicalModel(data.anatomicalModel);
+        } else {
+          console.log('No anatomical model detected in response:', data);
         }
         
         // Speak the response if enabled
