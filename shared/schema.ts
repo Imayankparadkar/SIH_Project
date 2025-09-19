@@ -159,7 +159,7 @@ export const donationSchema = z.object({
   bloodGroup: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
   quantity: z.number(),
   rewardCoins: z.number(),
-  status: z.enum(['pending', 'completed', 'cancelled']),
+  status: z.enum(['pending', 'scheduled', 'completed', 'cancelled']),
   scheduledDate: z.coerce.date(),
   completedDate: z.coerce.date().optional()
 });
