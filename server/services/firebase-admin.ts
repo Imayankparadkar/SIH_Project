@@ -19,7 +19,24 @@ try {
       throw new Error('Firebase credentials not found');
     }
 
-    const credentials = JSON.parse(serviceAccount);
+    let credentials;
+    try {
+      // Clean and parse the service account JSON
+      const cleanedServiceAccount = serviceAccount.trim();
+      credentials = JSON.parse(cleanedServiceAccount);
+      
+      // Validate required fields
+      if (!credentials.project_id || !credentials.private_key || !credentials.client_email) {
+        throw new Error('Missing required fields in service account: project_id, private_key, or client_email');
+      }
+
+      // Normalize newlines in private key for better portability
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    } catch (parseError: any) {
+      console.error('Error parsing Firebase service account JSON:', parseError);
+      console.error('Service account length:', serviceAccount.length, 'characters');
+      throw new Error(`Invalid Firebase service account JSON: ${parseError?.message || 'Unknown parsing error'}`);
+    }
 
     adminApp = initializeApp({
       credential: cert({
@@ -43,7 +60,14 @@ try {
   }
 } catch (error) {
   console.warn('Warning: Firebase Admin initialization failed. Using stub implementation.', error);
-  // Fall back to stub implementation if initialization fails
+  
+  // In production, fail fast rather than using stub to avoid runtime issues
+  if (process.env.NODE_ENV === 'production') {
+    console.error('CRITICAL: Firebase Admin failed to initialize in production. Stopping server.');
+    process.exit(1);
+  }
+  
+  // Fall back to stub implementation in development only
   adminAuth = null as any;
   adminDb = null as any;
   adminStorage = null as any;
