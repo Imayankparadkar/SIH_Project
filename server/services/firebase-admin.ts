@@ -30,11 +30,45 @@ try {
       // Remove any extra whitespace, newlines, or invisible characters at the start/end
       cleanedServiceAccount = cleanedServiceAccount.replace(/^[\s\x00-\x1f\x7f]+|[\s\x00-\x1f\x7f]+$/g, '');
       
-      // Decode any URL-encoded characters (e.g., %40 -> @, %22 -> ", etc.)
-      try {
-        cleanedServiceAccount = decodeURIComponent(cleanedServiceAccount);
-      } catch (decodeError) {
-        console.log('Service account does not contain URL encoding, proceeding without decoding');
+      // Decode any URL-encoded characters with multiple attempts
+      let originalServiceAccount = cleanedServiceAccount;
+      let decodeAttempts = 0;
+      const maxDecodeAttempts = 3;
+      
+      // Try decoding multiple times to handle double/triple encoding
+      while (decodeAttempts < maxDecodeAttempts) {
+        try {
+          let decodedAttempt = decodeURIComponent(cleanedServiceAccount);
+          
+          // If no change occurred, we're done decoding
+          if (decodedAttempt === cleanedServiceAccount) {
+            break;
+          }
+          
+          cleanedServiceAccount = decodedAttempt;
+          decodeAttempts++;
+          console.log(`URL decode attempt ${decodeAttempts} successful`);
+        } catch (decodeError) {
+          console.log(`URL decode attempt ${decodeAttempts + 1} failed, proceeding with current value`);
+          break;
+        }
+      }
+      
+      // Manual replacement for common URL-encoded characters if decodeURIComponent fails
+      if (cleanedServiceAccount.includes('%')) {
+        console.log('Manual URL decoding fallback for remaining encoded characters');
+        cleanedServiceAccount = cleanedServiceAccount
+          .replace(/%40/g, '@')        // @ symbol
+          .replace(/%22/g, '"')        // Quote marks
+          .replace(/%2C/g, ',')        // Comma
+          .replace(/%3A/g, ':')        // Colon
+          .replace(/%7B/g, '{')        // Left brace
+          .replace(/%7D/g, '}')        // Right brace
+          .replace(/%5C/g, '\\')       // Backslash
+          .replace(/%2F/g, '/')        // Forward slash
+          .replace(/%20/g, ' ')        // Space
+          .replace(/%0A/g, '\n')       // Newline
+          .replace(/%0D/g, '\r');      // Carriage return
       }
       
       // Check if it starts and ends with proper JSON braces
