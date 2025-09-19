@@ -30,6 +30,13 @@ try {
       // Remove any extra whitespace, newlines, or invisible characters at the start/end
       cleanedServiceAccount = cleanedServiceAccount.replace(/^[\s\x00-\x1f\x7f]+|[\s\x00-\x1f\x7f]+$/g, '');
       
+      // Decode any URL-encoded characters (e.g., %40 -> @, %22 -> ", etc.)
+      try {
+        cleanedServiceAccount = decodeURIComponent(cleanedServiceAccount);
+      } catch (decodeError) {
+        console.log('Service account does not contain URL encoding, proceeding without decoding');
+      }
+      
       // Check if it starts and ends with proper JSON braces
       if (!cleanedServiceAccount.startsWith('{') || !cleanedServiceAccount.endsWith('}')) {
         throw new Error('Service account JSON must start with { and end with }');
