@@ -20,16 +20,17 @@ export function Navigation() {
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Container is now full-width with padding on the sides */}
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo - Sehatify Style */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="flex items-center space-x-3">
-              {/* New Sehatify logo */}
-              <img 
-                src="/sehatify-logo.png" 
-                alt="Sehatify Logo" 
-                className="w-20 h-20 object-contain"
+              {/* Sehatify logo with adjusted size for better fit */}
+              <img
+                src="/sehatify-logo.png"
+                alt="Sehatify Logo"
+                className="h-24 w-auto object-contain" // Adjusted logo size
               />
               <span className="text-xl font-semibold text-gray-800">Sehatify</span>
             </div>
@@ -43,11 +44,8 @@ export function Navigation() {
             <Link href="/medicines" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/medicines' ? 'text-purple-600' : ''}`}>
               Medicines
             </Link>
-            {/* <Link href="/vitals" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/vitals' ? 'text-purple-600' : ''}`}>
-              Book an Appointment
-            </Link> */}
             <Link href="/lab-tests" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/lab-tests' ? 'text-purple-600' : ''}`}>
-              Lab Test & 
+              Lab Test &
               Diagnostic
             </Link>
             <Link href="/ai-doctor" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/ai-doctor' ? 'text-purple-600' : ''}`}>
@@ -66,11 +64,6 @@ export function Navigation() {
 
           {/* Right Side Actions - Clean Sehatify Style */}
           <div className="flex items-center space-x-6">
-            {/* About Us Link */}
-            {/* <Link href="/" className="text-gray-600 hover:text-purple-600 font-medium transition-colors hidden md:block text-sm">
-              About Us
-            </Link> */}
-
             {/* Auth Buttons / User Profile */}
             {user ? (
               <DropdownMenu>
