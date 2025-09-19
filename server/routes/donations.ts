@@ -9,7 +9,7 @@ const router = Router();
 // Helper function to get authenticated user ID
 function getAuthenticatedUserId(req: any): string {
   // In development mode, use demo user if no auth
-  return req.user?.uid || (process.env.NODE_ENV === 'development' ? 'demo-user-1' : null);
+  return req.user?.uid || (process.env.NODE_ENV === 'development' ? 'd79abdfe-eef3-4f15-85ee-772c63b877ce' : null);
 }
 
 // Helper function to calculate reward coins based on donation type

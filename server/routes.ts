@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
           // Use demo user ID for development mode (matching dev-auth.ts)
-          userId = 'demo-user-1';
+          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
           console.log('Using demo user ID for development mode upload');
         } else {
           return res.status(401).json({ error: "User not authenticated" });
@@ -266,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          userId = 'demo-user-id-for-testing';
+          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
         } else {
           return res.status(401).json({ error: "User not authenticated" });
         }
@@ -296,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          userId = 'demo-user-id-for-testing';
+          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
         } else {
           return res.status(401).json({ error: "User not authenticated" });
         }
@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          userId = 'demo-user-id-for-testing';
+          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
         } else {
           return res.status(401).json({ error: "User not authenticated" });
         }
