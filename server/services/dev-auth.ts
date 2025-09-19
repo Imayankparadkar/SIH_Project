@@ -163,6 +163,13 @@ export async function updateUserProfile(userId: string, data: Partial<UserProfil
 
 // Add some demo users for testing
 export async function initializeDemoUsers() {
+  // Check if demo user already exists
+  const existingUser = Array.from(users.values()).find(u => u.email === 'demo@sehatify.com');
+  if (existingUser) {
+    console.log('Demo user already exists in database: demo@sehatify.com');
+    return;
+  }
+
   const demoUser = {
     id: 'demo-user-1',
     email: 'demo@sehatify.com',
@@ -180,5 +187,5 @@ export async function initializeDemoUsers() {
   };
 
   users.set(demoUser.id, demoUser);
-  console.log('Demo user initialized: demo@sehatify.com / [secure password]');
+  console.log('Demo user initialized: demo@sehatify.com / demo123');
 }
