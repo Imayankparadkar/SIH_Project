@@ -73,7 +73,7 @@ export class GeminiHealthAnalyzer {
     }
   }
 
-  async generateChatResponse(message: string, healthContext?: VitalSigns, userProfile?: { age: number; gender: string; medicalHistory?: string }): Promise<string> {
+  async generateChatResponse(message: string, healthContext?: VitalSigns, userProfile?: { age: number; gender: string; medicalHistory?: string }): Promise<{ response: string; anatomicalModel?: string; bodyPart?: string }> {
     try {
       const response = await fetch('/api/chat/doctor', {
         method: 'POST',
@@ -96,10 +96,18 @@ export class GeminiHealthAnalyzer {
       }
 
       const data = await response.json();
-      return data.response || this.getFallbackChatResponse(message);
+      return {
+        response: data.response || this.getFallbackChatResponse(message),
+        anatomicalModel: data.anatomicalModel,
+        bodyPart: data.bodyPart
+      };
     } catch (error) {
       console.error('Error calling chat API:', error);
-      return this.getFallbackChatResponse(message);
+      return {
+        response: this.getFallbackChatResponse(message),
+        anatomicalModel: undefined,
+        bodyPart: undefined
+      };
     }
   }
 

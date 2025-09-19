@@ -136,9 +136,13 @@ Focus on:
     userProfile?: { age: number; gender: string; medicalHistory?: string },
     language?: string,
     medicalReports?: any[]
-  ): Promise<string> {
+  ): Promise<{ response: string; anatomicalModel?: string; bodyPart?: string }> {
     if (!this.genAI) {
-      return this.getFallbackChatResponse(message);
+      return { 
+        response: this.getFallbackChatResponse(message),
+        anatomicalModel: this.detectAnatomicalModel(message),
+        bodyPart: this.detectBodyPart(message)
+      };
     }
     const getLanguageInstruction = (lang: string) => {
       const languageInstructions = {
@@ -152,35 +156,36 @@ Focus on:
 
     const systemPrompt = `You are Dr. AI, a compassionate virtual health assistant developed by Sehatify. You provide helpful, accurate health information while being empathetic and clear. 
 
+IMPORTANT: Always structure your response in this exact JSON format:
+{
+  "summary": "Brief overview of the health concern and your assessment",
+  "dietPlan": {
+    "breakfast": ["specific breakfast recommendations"],
+    "lunch": ["specific lunch recommendations"], 
+    "dinner": ["specific dinner recommendations"],
+    "snacks": ["healthy snack options"],
+    "hydration": ["water intake and hydration tips"],
+    "avoid": ["foods to avoid for this condition"]
+  },
+  "exercisePlan": {
+    "cardio": ["specific cardio exercises with duration"],
+    "strength": ["strength training recommendations"],
+    "flexibility": ["stretching and mobility exercises"],
+    "frequency": "recommended weekly schedule"
+  },
+  "youtubeVideos": [
+    {"title": "Video Title", "channel": "Channel Name", "searchTerm": "exact search term"},
+    {"title": "Another Video", "channel": "Channel Name", "searchTerm": "search term"}
+  ],
+  "lifestyleChanges": ["specific lifestyle modification recommendations"],
+  "response": "Your complete conversational response that includes all the above information in a natural, empathetic way"
+}
+
 Your responses should be comprehensive and include:
-🏃‍♂️ **EXERCISE PLANS**: Provide specific, structured workout routines with:
-- Beginner/intermediate/advanced options
-- Daily/weekly schedules
-- Specific exercises with sets/reps/duration
-- Modifications for different fitness levels
-
-🥗 **DIET RECOMMENDATIONS**: Include detailed nutritional guidance with:
-- Specific meal plans (breakfast, lunch, dinner, snacks)
-- Food portions and timing
-- Nutrient-rich food suggestions
-- Hydration guidelines
-- Foods to avoid/include for specific conditions
-
-📹 **YOUTUBE VIDEO SUGGESTIONS**: Always recommend specific YouTube channels and videos such as:
-- **Fitness**: "Fitness Blender", "Chloe Ting", "HIIT Workouts", "Yoga with Adriene", "FitnessBlender HIIT", "Pamela Reif workouts"
-- **Mental Health**: "Headspace meditation", "The Honest Guys guided meditation", "Michelle Schroeder-Gardner motivation", "TED Talks motivation"
-- **Nutrition**: "Pick Up Limes healthy recipes", "Cheap Lazy Vegan meal prep", "Brothers Green Eats", "Nutrition Made Simple"
-- **Sleep & Relaxation**: "Jason Stephenson sleep meditation", "The Honest Guys sleep stories", "Michael Sealey hypnosis"
-- **Motivation**: "Motivation Madness", "TED Talks", "Tony Robbins", "Mel Robbins 5 Second Rule"
-
-When suggesting videos, use this format: "Search for '[Video Title]' on YouTube" or "Check out [Channel Name] on YouTube for [specific content type]"
-
-💪 **MOTIVATIONAL CONTENT**: Always include:
-- Encouraging words and positive affirmations
-- Realistic goal-setting advice
-- Tips for building healthy habits
-- Stress management techniques
-- Mental wellness support
+🏃‍♂️ **EXERCISE PLANS**: Provide specific, structured workout routines
+🥗 **DIET RECOMMENDATIONS**: Include detailed nutritional guidance  
+📹 **YOUTUBE VIDEO SUGGESTIONS**: Recommend specific channels and videos
+💪 **MOTIVATIONAL CONTENT**: Include encouraging and supportive advice
 
 Important guidelines:
 - Always recommend consulting healthcare professionals for serious concerns
@@ -189,8 +194,6 @@ Important guidelines:
 - Include specific, measurable recommendations
 - Add motivational and encouraging language
 - Explain medical terms in simple language
-- If discussing symptoms, always emphasize the importance of professional medical evaluation
-- Respect patient privacy and maintain confidentiality
 - ${getLanguageInstruction(language || 'en')}`;
 
     const contextInfo = healthContext ? 
@@ -232,10 +235,20 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
         model: 'gemini-1.5-flash',
         contents: prompt
       });
-      return response.text || "I apologize, but I'm having trouble processing your request right now.";
+      const responseText = response.text || "I apologize, but I'm having trouble processing your request right now.";
+      
+      return {
+        response: responseText,
+        anatomicalModel: this.detectAnatomicalModel(message),
+        bodyPart: this.detectBodyPart(message)
+      };
     } catch (error) {
       console.error('Error generating chat response:', error);
-      return "I apologize, but I'm having trouble processing your request right now. For immediate health concerns, please contact your healthcare provider or emergency services.";
+      return {
+        response: "I apologize, but I'm having trouble processing your request right now. For immediate health concerns, please contact your healthcare provider or emergency services.",
+        anatomicalModel: this.detectAnatomicalModel(message),
+        bodyPart: this.detectBodyPart(message)
+      };
     }
   }
 
@@ -644,13 +657,60 @@ Respond as ${mentorName} with warmth, empathy, and practical support. Keep your 
   }
 
   private getFallbackChatResponse(message: string): string {
-    const responses = [
-      "I'm here to help with your health questions. As a development version, I recommend consulting with a healthcare professional for personalized medical advice.",
-      "Thank you for your question about health. While I can provide general information, please consult with your doctor for specific medical guidance.",
-      "I appreciate your health inquiry. For personalized medical advice and accurate diagnosis, I recommend speaking with a qualified healthcare provider.",
-      "I'm glad you're taking an active interest in your health. For the best care, please discuss your concerns with a medical professional."
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('blood pressure') || lowerMessage.includes('bp')) {
+      return 'Blood pressure is an important indicator of cardiovascular health. Normal blood pressure is typically around 120/80 mmHg. If you have concerns about your blood pressure, please consult with your healthcare provider for proper evaluation and guidance.';
+    }
+    
+    if (lowerMessage.includes('heart rate') || lowerMessage.includes('pulse')) {
+      return 'A normal resting heart rate for adults ranges from 60 to 100 beats per minute. Factors like fitness level, medications, and emotions can affect your heart rate. If you notice unusual changes, consider discussing them with your doctor.';
+    }
+    
+    if (lowerMessage.includes('temperature') || lowerMessage.includes('fever')) {
+      return 'Normal body temperature is around 98.6°F (37°C). A fever is generally considered 100.4°F (38°C) or higher. If you have a persistent fever or other concerning symptoms, please consult with a healthcare professional.';
+    }
+    
+    if (lowerMessage.includes('oxygen') || lowerMessage.includes('spo2')) {
+      return 'Normal oxygen saturation levels are typically 95-100%. Lower levels may indicate respiratory or circulatory issues. If you consistently see readings below 95%, please seek medical attention.';
+    }
+    
+    return 'I understand your health concern. For personalized medical advice, please consult with your healthcare provider. I can help provide general health information and guide you to appropriate resources. Is there a specific aspect of your health you\'d like to discuss?';
+  }
+
+  private detectBodyPart(message: string): string | undefined {
+    const text = (message || '').toLowerCase();
+    const matches = [
+      { part: 'heart', kws: ['heart', 'cardio', 'chest pain', 'angina', 'arrhythm', 'hypertension', 'bp', 'blood pressure', 'cardiovascular'] },
+      { part: 'hand', kws: ['hand', 'wrist', 'finger', 'thumb', 'carpal', 'metacarp', 'hand pain', 'wrist pain'] },
+      { part: 'ear', kws: ['ear', 'tinnitus', 'hearing', 'otitis', 'earache', 'ear pain', 'hearing loss'] },
+      { part: 'brain', kws: ['brain', 'headache', 'migraine', 'stroke', 'seizure', 'neuro', 'dizziness', 'head pain', 'cognitive'] },
+      { part: 'lungs', kws: ['lung', 'breath', 'asthma', 'copd', 'pneumon', 'dyspnea', 'shortness of breath', 'wheez', 'respiratory', 'cough'] },
+      { part: 'eyes', kws: ['eye', 'vision', 'sight', 'ocular', 'optic', 'blurry vision', 'eye pain', 'vision problems'] },
+      { part: 'digestive system', kws: ['stomach', 'digestive', 'nausea', 'constipation', 'diarrhea', 'acid reflux', 'gut health', 'abdominal'] },
+      { part: 'kidney', kws: ['kidney', 'urinary', 'kidney stones', 'uti', 'kidney pain', 'nephrology'] },
+      { part: 'pelvis', kws: ['hip pain', 'pelvic pain', 'lower back pain', 'reproductive health', 'pelvic floor'] }
     ];
-    return responses[Math.floor(Math.random() * responses.length)];
+    for (const m of matches) {
+      if (m.kws.some(k => text.includes(k))) return m.part;
+    }
+    return undefined;
+  }
+
+  private detectAnatomicalModel(message: string): string | undefined {
+    const part = this.detectBodyPart(message);
+    const map: Record<string, string> = { 
+      heart: 'heart', 
+      hand: 'hand', 
+      ear: 'ear', 
+      brain: 'brain', 
+      lungs: 'lungs', 
+      eyes: 'eyes',
+      'digestive system': 'digestive',
+      kidney: 'kidney',
+      pelvis: 'pelvis'
+    };
+    return part ? map[part] : undefined;
   }
 
   private getFallbackHealthReport(

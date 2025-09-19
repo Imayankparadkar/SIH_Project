@@ -25,6 +25,8 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { useHealthData } from '@/hooks/use-health-data';
 import { useAuth } from '@/hooks/use-auth';
 import { ThreeScene } from '@/components/ui/three-scene';
+import { AnatomicalModel } from '@/components/ui/anatomical-model';
+import { StructuredHealthResponse } from '@/components/ui/structured-health-response';
 
 interface ChatMessage {
   id: string;
@@ -32,6 +34,9 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
   analyzed?: boolean;
+  anatomicalModel?: string;
+  bodyPart?: string;
+  structured?: any;
 }
 
 interface HealthContext {
@@ -52,6 +57,7 @@ export function AIDoctorPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [healthContext, setHealthContext] = useState<HealthContext>({});
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [currentAnatomicalModel, setCurrentAnatomicalModel] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const speechRecognition = useRef<any>(null);
 
@@ -183,9 +189,17 @@ How are you feeling today? Is there anything specific about your health you'd li
           role: 'doctor',
           content: data.response,
           timestamp: new Date(),
-          analyzed: true
+          analyzed: true,
+          anatomicalModel: data.anatomicalModel,
+          bodyPart: data.bodyPart,
+          structured: data.structured
         };
         setMessages(prev => [...prev, doctorMessage]);
+        
+        // Update the current anatomical model if detected
+        if (data.anatomicalModel) {
+          setCurrentAnatomicalModel(data.anatomicalModel);
+        }
         
         // Speak the response if enabled
         if (isSpeaking) {
@@ -391,64 +405,47 @@ ${data.report.analysis.followUpNeeded ? '⚠️ **Important:** Follow-up with yo
           <h1 className="text-3xl font-bold mb-6">AI Doctor - 3D Virtual Consultation</h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 3D Doctor Avatar */}
+            {/* 3D Models Section */}
             <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Stethoscope className="w-5 h-5" />
-                  Dr. AI - Virtual Doctor
+                  3D Anatomical Models
                 </CardTitle>
                 <CardDescription>
-                  Interactive 3D medical assistant
+                  Interactive medical visualization
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* 3D Avatar Container */}
-                <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-200 overflow-hidden">
-                  <div className="sketchfab-embed-wrapper h-full"> 
-                    <iframe 
-                      title="Doctor - Sketchfab Weekly - 13 Mar'23" 
-                      frameBorder="0" 
-                      allowFullScreen 
-                      allow="autoplay; fullscreen; xr-spatial-tracking" 
-                      src="https://sketchfab.com/models/9c89a438a5e940e59a0f9a07c22d6ade/embed?ui_theme=dark"
-                      className="w-full h-full"
-                    /> 
-                    <p style={{ fontSize: '13px', fontWeight: 'normal', margin: '5px', color: '#4A4A4A' }}> 
-                      <a 
-                        href="https://sketchfab.com/3d-models/doctor-sketchfab-weekly-13-mar23-9c89a438a5e940e59a0f9a07c22d6ade?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
-                        target="_blank" 
-                        rel="nofollow noopener noreferrer" 
-                        style={{ fontWeight: 'bold', color: '#1CAAD9' }}
-                      > 
-                        Doctor - Sketchfab Weekly - 13 Mar'23 
-                      </a> by <a 
-                        href="https://sketchfab.com/BrushDip?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
-                        target="_blank" 
-                        rel="nofollow noopener noreferrer" 
-                        style={{ fontWeight: 'bold', color: '#1CAAD9' }}
-                      > 
-                        BrushDip 
-                      </a> on <a 
-                        href="https://sketchfab.com?utm_medium=embed&utm_campaign=share-popup&utm_content=9c89a438a5e940e59a0f9a07c22d6ade" 
-                        target="_blank" 
-                        rel="nofollow noopener noreferrer" 
-                        style={{ fontWeight: 'bold', color: '#1CAAD9' }}
-                      >
-                        Sketchfab
-                      </a>
-                    </p>
+                {/* 3D Anatomical Model Display */}
+                {currentAnatomicalModel ? (
+                  <AnatomicalModel 
+                    modelId={currentAnatomicalModel}
+                    className="w-full"
+                  />
+                ) : (
+                  <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-200 overflow-hidden flex items-center justify-center">
+                    <div className="text-center p-6">
+                      <Stethoscope className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                      <p className="text-gray-600 font-medium">3D Model Display</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Ask about a specific body part or health condition to see relevant anatomical models
+                      </p>
+                      <div className="mt-4 text-xs text-gray-400">
+                        Try asking about: heart, lungs, brain, eyes, digestive system, etc.
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Doctor Status */}
+                {/* Model Status */}
                 <div className="text-center">
                   <Badge className="bg-green-100 text-green-800">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                    Online & Ready
+                    AI Enhanced Consultation
                   </Badge>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Specialized in preventive care and health analysis
+                    3D models powered by Gemini AI analysis
                   </p>
                 </div>
               </CardContent>
@@ -562,42 +559,57 @@ ${data.report.analysis.followUpNeeded ? '⚠️ **Important:** Follow-up with yo
                 {/* Chat Messages */}
                 <div className="border rounded-lg p-4 h-96 overflow-y-auto space-y-4 bg-white">
                   {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+                    <div key={message.id} className="space-y-3">
+                      {/* Regular Chat Message */}
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.role === 'user'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className="flex items-start gap-2">
-                          {message.role === 'doctor' && (
-                            <Stethoscope className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
-                          )}
-                          {message.role === 'user' && (
-                            <User className="w-4 h-4 text-blue-100 mt-1 flex-shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            <p
-                              className={`text-xs mt-1 ${
-                                message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                              }`}
-                            >
-                              {message.timestamp.toLocaleTimeString()}
-                              {message.analyzed && (
-                                <Badge variant="outline" className="ml-2 text-xs">
-                                  <Brain className="w-2 h-2 mr-1" />
-                                  AI Analyzed
-                                </Badge>
-                              )}
-                            </p>
+                        <div
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            message.role === 'user'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-900'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            {message.role === 'doctor' && (
+                              <Stethoscope className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
+                            )}
+                            {message.role === 'user' && (
+                              <User className="w-4 h-4 text-blue-100 mt-1 flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                              <p
+                                className={`text-xs mt-1 ${
+                                  message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                                }`}
+                              >
+                                {message.timestamp.toLocaleTimeString()}
+                                {message.analyzed && (
+                                  <Badge variant="outline" className="ml-2 text-xs">
+                                    <Brain className="w-2 h-2 mr-1" />
+                                    AI Analyzed
+                                  </Badge>
+                                )}
+                                {message.bodyPart && (
+                                  <Badge variant="outline" className="ml-2 text-xs">
+                                    <Heart className="w-2 h-2 mr-1" />
+                                    {message.bodyPart}
+                                  </Badge>
+                                )}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Structured Response (only for doctor messages with structured data) */}
+                      {message.role === 'doctor' && message.structured && (
+                        <div className="ml-4">
+                          <StructuredHealthResponse data={message.structured} />
+                        </div>
+                      )}
                     </div>
                   ))}
                   {isLoading && (

@@ -38,7 +38,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognition = useRef<SpeechRecognition | null>(null);
+  const recognition = useRef<any>(null);
 
   useEffect(() => {
     scrollToBottom();
@@ -53,7 +53,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       recognition.current.interimResults = false;
       recognition.current.lang = 'en-US';
 
-      recognition.current.onresult = (event) => {
+      recognition.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInputValue(transcript);
         setIsListening(false);
@@ -101,7 +101,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response,
+        content: response.response,
         isUser: false,
         timestamp: new Date()
       };
@@ -109,8 +109,8 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       setMessages(prev => [...prev, aiMessage]);
       
       // Auto-speak AI response
-      if (response) {
-        speakText(response);
+      if (response.response) {
+        speakText(response.response);
       }
     } catch (error) {
       const errorMessage: Message = {

@@ -481,7 +481,7 @@ Please respond in JSON format with:
       
       try {
         // Try to parse JSON from Gemini response
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        const jsonMatch = result.response.match(/\{[\s\S]*\}/);
         let bodyMap;
         
         if (jsonMatch) {
@@ -508,7 +508,7 @@ Please respond in JSON format with:
         res.json({
           success: true,
           bodyMap,
-          analysisText: result
+          analysisText: result.response
         });
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
@@ -917,8 +917,26 @@ Please respond in JSON format with:
         medicalReports
       );
       
-      console.log('Chat response generated:', response.substring(0, 100));
-      res.json({ success: true, response });
+      console.log('Chat response generated:', response.response.substring(0, 100));
+      
+      // Try to parse structured response
+      let structuredResponse = null;
+      try {
+        const jsonMatch = response.response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          structuredResponse = JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseError) {
+        console.log('Could not parse structured response, using plain text');
+      }
+      
+      res.json({ 
+        success: true, 
+        response: structuredResponse?.response || response.response,
+        anatomicalModel: response.anatomicalModel,
+        bodyPart: response.bodyPart,
+        structured: structuredResponse
+      });
     } catch (error) {
       console.error('Chat error:', error);
       res.status(500).json({ error: "Failed to generate chat response" });
