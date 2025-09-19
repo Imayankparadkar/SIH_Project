@@ -919,23 +919,12 @@ Please respond in JSON format with:
       
       console.log('Chat response generated:', response.response.substring(0, 100));
       
-      // Try to parse structured response
-      let structuredResponse = null;
-      try {
-        const jsonMatch = response.response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          structuredResponse = JSON.parse(jsonMatch[0]);
-        }
-      } catch (parseError) {
-        console.log('Could not parse structured response, using plain text');
-      }
-      
       res.json({ 
         success: true, 
-        response: structuredResponse?.response || response.response,
+        response: response.response,
         anatomicalModel: response.anatomicalModel,
         bodyPart: response.bodyPart,
-        structured: structuredResponse
+        structured: response.structured
       });
     } catch (error) {
       console.error('Chat error:', error);

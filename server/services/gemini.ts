@@ -136,12 +136,40 @@ Focus on:
     userProfile?: { age: number; gender: string; medicalHistory?: string },
     language?: string,
     medicalReports?: any[]
-  ): Promise<{ response: string; anatomicalModel?: string; bodyPart?: string }> {
+  ): Promise<{ response: string; anatomicalModel?: string; bodyPart?: string; structured?: any }> {
     if (!this.genAI) {
+      const anatomicalModel = this.detectAnatomicalModel(message);
+      const bodyPart = this.detectBodyPart(message);
+      
+      const fallbackStructured = {
+        summary: "AI service is currently unavailable. For health concerns, please consult with your healthcare provider.",
+        dietPlan: {
+          breakfast: ["Consult with a nutritionist for personalized recommendations"],
+          lunch: ["Contact your healthcare provider for dietary guidance"],
+          dinner: ["Seek professional medical advice for meal planning"],
+          snacks: ["Professional guidance recommended"],
+          hydration: ["Drink adequate water throughout the day"],
+          avoid: ["Please consult medical professionals for dietary restrictions"]
+        },
+        exercisePlan: {
+          cardio: ["Consult with a healthcare provider before starting any exercise program"],
+          strength: ["Professional guidance recommended"],
+          flexibility: ["Seek medical clearance for exercise routines"],
+          frequency: "Please consult your healthcare provider"
+        },
+        youtubeVideos: [
+          {"title": "General Health Tips", "channel": "Health Education", "searchTerm": "general health tips"},
+          {"title": "Healthcare Guidance", "channel": "Medical Advice", "searchTerm": "when to see a doctor"}
+        ],
+        lifestyleChanges: ["Consult with healthcare professionals for personalized advice"],
+        response: this.getFallbackChatResponse(message)
+      };
+      
       return { 
-        response: this.getFallbackChatResponse(message),
-        anatomicalModel: this.detectAnatomicalModel(message),
-        bodyPart: this.detectBodyPart(message)
+        response: fallbackStructured.response,
+        anatomicalModel,
+        bodyPart,
+        structured: fallbackStructured
       };
     }
     const getLanguageInstruction = (lang: string) => {
@@ -237,17 +265,63 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
       });
       const responseText = response.text || "I apologize, but I'm having trouble processing your request right now.";
       
+      // Try to parse structured JSON response from Gemini
+      let structuredResponse = null;
+      try {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          structuredResponse = JSON.parse(jsonMatch[0]);
+          console.log('Successfully parsed structured response from Gemini');
+        }
+      } catch (parseError) {
+        console.log('Could not parse structured response from Gemini:', parseError);
+      }
+      
+      // Detect anatomical model and body part
+      const anatomicalModel = this.detectAnatomicalModel(message);
+      const bodyPart = this.detectBodyPart(message);
+      
       return {
-        response: responseText,
-        anatomicalModel: this.detectAnatomicalModel(message),
-        bodyPart: this.detectBodyPart(message)
+        response: structuredResponse?.response || responseText,
+        anatomicalModel,
+        bodyPart,
+        structured: structuredResponse
       };
     } catch (error) {
       console.error('Error generating chat response:', error);
+      
+      // Provide comprehensive fallback response
+      const anatomicalModel = this.detectAnatomicalModel(message);
+      const bodyPart = this.detectBodyPart(message);
+      
+      const fallbackStructured = {
+        summary: "I apologize, but I'm experiencing technical difficulties. For immediate health concerns, please contact your healthcare provider.",
+        dietPlan: {
+          breakfast: ["Consult with a nutritionist for personalized recommendations"],
+          lunch: ["Contact your healthcare provider for dietary guidance"],
+          dinner: ["Seek professional medical advice for meal planning"],
+          snacks: ["Professional guidance recommended"],
+          hydration: ["Drink adequate water throughout the day"],
+          avoid: ["Please consult medical professionals for dietary restrictions"]
+        },
+        exercisePlan: {
+          cardio: ["Consult with a healthcare provider before starting any exercise program"],
+          strength: ["Professional guidance recommended"],
+          flexibility: ["Seek medical clearance for exercise routines"],
+          frequency: "Please consult your healthcare provider"
+        },
+        youtubeVideos: [
+          {"title": "General Health Tips", "channel": "Health Education", "searchTerm": "general health tips"}
+        ],
+        lifestyleChanges: ["Consult with healthcare professionals for personalized advice"],
+        response: "I apologize, but I'm experiencing technical difficulties. For immediate health concerns, please contact your healthcare provider or emergency services."
+      };
+      
       return {
-        response: "I apologize, but I'm having trouble processing your request right now. For immediate health concerns, please contact your healthcare provider or emergency services.",
-        anatomicalModel: this.detectAnatomicalModel(message),
-        bodyPart: this.detectBodyPart(message)
+        response: fallbackStructured.response,
+        anatomicalModel,
+        bodyPart,
+        structured: fallbackStructured
       };
     }
   }
