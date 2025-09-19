@@ -145,8 +145,8 @@ export async function populateSampleData() {
       {
         donorId: demoUser.id,
         recipientHospitalId: 'h1',
-        donationType: 'blood',
-        bloodGroup: 'O+',
+        donationType: 'blood' as const,
+        bloodGroup: 'O+' as const,
         quantity: 450,
         rewardCoins: 100,
         status: 'completed' as const,
@@ -156,8 +156,8 @@ export async function populateSampleData() {
       {
         donorId: demoUser.id,
         recipientHospitalId: 'h2',
-        donationType: 'plasma',
-        bloodGroup: 'O+',
+        donationType: 'plasma' as const,
+        bloodGroup: 'O+' as const,
         quantity: 250,
         rewardCoins: 75,
         status: 'completed' as const,
@@ -167,8 +167,8 @@ export async function populateSampleData() {
       {
         donorId: demoUser.id,
         recipientHospitalId: 'h3',
-        donationType: 'blood',
-        bloodGroup: 'O+',
+        donationType: 'blood' as const,
+        bloodGroup: 'O+' as const,
         quantity: 450,
         rewardCoins: 100,
         status: 'scheduled' as const,
@@ -190,9 +190,9 @@ export async function populateSampleData() {
     const sampleDonationRequests = [
       {
         hospitalId: 'h1',
-        bloodGroup: 'O+',
-        donationType: 'blood',
-        urgencyLevel: 'high',
+        bloodGroup: 'O+' as const,
+        donationType: 'blood' as const,
+        urgencyLevel: 'high' as const,
         unitsNeeded: 10,
         unitsCollected: 3,
         location: {
@@ -221,9 +221,9 @@ export async function populateSampleData() {
       },
       {
         hospitalId: 'h2',
-        bloodGroup: 'A+',
-        donationType: 'plasma',
-        urgencyLevel: 'medium',
+        bloodGroup: 'A+' as const,
+        donationType: 'plasma' as const,
+        urgencyLevel: 'medium' as const,
         unitsNeeded: 5,
         unitsCollected: 1,
         location: {
