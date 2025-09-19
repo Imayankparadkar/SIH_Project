@@ -27,10 +27,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Health Monitor App"
+args = "Health Monitor"
 
 [[workflows.workflow]]
-name = "Health Monitor App"
+name = "Health Monitor"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -44,10 +44,6 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 24678
-externalPort = 3001
 
 [[ports]]
 localPort = 33097
@@ -68,6 +64,10 @@ externalPort = 3002
 [[ports]]
 localPort = 40731
 externalPort = 3000
+
+[[ports]]
+localPort = 41429
+externalPort = 3001
 
 [[ports]]
 localPort = 43987
