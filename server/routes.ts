@@ -73,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/messages", messageRoutes);
 
   // Donation routes
-  const { donationsRouter } = await import("./routes/donations.js");
+  const { donationsRouter } = await import("./routes/donations");
   app.use("/api/donations", donationsRouter);
 
   // Disease surveillance routes
