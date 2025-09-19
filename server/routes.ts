@@ -725,7 +725,7 @@ Please respond in JSON format with:
   });
 
   // Medicine ordering endpoints
-  app.get("/api/medicines/search", authMiddleware, async (req, res) => {
+  app.get("/api/medicines/search", optionalAuth, async (req, res) => {
     try {
       const { query } = req.query;
       const searchQuery = typeof query === 'string' ? query : '';
