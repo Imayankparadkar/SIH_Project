@@ -27,27 +27,23 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Health Monitor"
+args = "Health App"
 
 [[workflows.workflow]]
-name = "Health Monitor"
+name = "Health App"
 author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 35915
-externalPort = 3003
 
 [[ports]]
 localPort = 36049
