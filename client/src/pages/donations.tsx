@@ -14,7 +14,7 @@ import { donationsService, Donation, Hospital, DonorProfile } from '@/services/d
 export function DonationsPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { userProfile } = useAuth();
+  const { userProfile, getAuthHeaders } = useAuth();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
   const [donorProfile, setDonorProfile] = useState<DonorProfile | null>(null);
@@ -29,19 +29,23 @@ export function DonationsPage() {
         const location = await donationsService.getCurrentLocation();
         setUserLocation(location);
 
+        // Get auth headers
+        const authHeaders = getAuthHeaders();
+        
         // Fetch donor profile
-        const profile = await donationsService.getDonorProfile();
+        const profile = await donationsService.getDonorProfile(authHeaders);
         setDonorProfile(profile);
 
         // Fetch user's donations
-        const userDonations = await donationsService.getMyDonations();
+        const userDonations = await donationsService.getMyDonations(authHeaders);
         setDonations(userDonations);
 
         // Fetch nearby hospitals
         const hospitals = await donationsService.getNearbyHospitals(
           location.latitude,
           location.longitude,
-          50 // 50km radius
+          50, // 50km radius
+          authHeaders
         );
         setNearbyHospitals(hospitals);
       } catch (error) {
@@ -76,16 +80,18 @@ export function DonationsPage() {
       const scheduledDate = new Date();
       scheduledDate.setDate(scheduledDate.getDate() + 14);
 
+      const authHeaders = getAuthHeaders();
+      
       const donation = await donationsService.scheduleDonation({
         recipientHospitalId: hospitalId,
         donationType,
         bloodGroup: donorProfile.bloodGroup,
         quantity: donationType === 'blood' ? 450 : 250,
         scheduledDate
-      });
+      }, authHeaders);
 
       // Refresh donations list
-      const updatedDonations = await donationsService.getMyDonations();
+      const updatedDonations = await donationsService.getMyDonations(authHeaders);
       setDonations(updatedDonations);
 
       toast({

@@ -102,9 +102,12 @@ export interface DonationRequest {
 
 class DonationsService {
   // Get current user's donor profile
-  async getDonorProfile(): Promise<DonorProfile | null> {
+  async getDonorProfile(authHeaders?: Record<string, string>): Promise<DonorProfile | null> {
     try {
       const response = await fetch(`${API_BASE}/profile`, {
+        headers: {
+          ...authHeaders,
+        },
         credentials: 'include',
       });
       
@@ -133,12 +136,13 @@ class DonationsService {
   }
 
   // Create donor profile
-  async createDonorProfile(profileData: Omit<DonorProfile, 'id' | 'userId' | 'totalDonations' | 'rewardCoins' | 'registeredAt'>): Promise<DonorProfile> {
+  async createDonorProfile(profileData: Omit<DonorProfile, 'id' | 'userId' | 'totalDonations' | 'rewardCoins' | 'registeredAt'>, authHeaders?: Record<string, string>): Promise<DonorProfile> {
     try {
       const response = await fetch(`${API_BASE}/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
         },
         credentials: 'include',
         body: JSON.stringify(profileData),
@@ -166,12 +170,13 @@ class DonationsService {
   }
 
   // Update donor profile
-  async updateDonorProfile(updates: Partial<DonorProfile>): Promise<DonorProfile> {
+  async updateDonorProfile(updates: Partial<DonorProfile>, authHeaders?: Record<string, string>): Promise<DonorProfile> {
     try {
       const response = await fetch(`${API_BASE}/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
         },
         credentials: 'include',
         body: JSON.stringify(updates),
@@ -199,9 +204,12 @@ class DonationsService {
   }
 
   // Get user's donation history
-  async getMyDonations(): Promise<Donation[]> {
+  async getMyDonations(authHeaders?: Record<string, string>): Promise<Donation[]> {
     try {
       const response = await fetch(`${API_BASE}/my-donations`, {
+        headers: {
+          ...authHeaders,
+        },
         credentials: 'include',
       });
       
@@ -228,12 +236,13 @@ class DonationsService {
     bloodGroup: string;
     quantity: number;
     scheduledDate: Date;
-  }): Promise<Donation> {
+  }, authHeaders?: Record<string, string>): Promise<Donation> {
     try {
       const response = await fetch(`${API_BASE}/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -260,10 +269,13 @@ class DonationsService {
   }
 
   // Cancel a donation
-  async cancelDonation(donationId: string): Promise<Donation> {
+  async cancelDonation(donationId: string, authHeaders?: Record<string, string>): Promise<Donation> {
     try {
       const response = await fetch(`${API_BASE}/cancel/${donationId}`, {
         method: 'PATCH',
+        headers: {
+          ...authHeaders,
+        },
         credentials: 'include',
       });
       
@@ -285,7 +297,7 @@ class DonationsService {
   }
 
   // Get nearby hospitals with blood banks
-  async getNearbyHospitals(latitude: number, longitude: number, radius = 50): Promise<Hospital[]> {
+  async getNearbyHospitals(latitude: number, longitude: number, radius = 50, authHeaders?: Record<string, string>): Promise<Hospital[]> {
     try {
       const params = new URLSearchParams({
         latitude: latitude.toString(),
@@ -294,6 +306,9 @@ class DonationsService {
       });
       
       const response = await fetch(`${API_BASE}/nearby-hospitals?${params}`, {
+        headers: {
+          ...authHeaders,
+        },
         credentials: 'include',
       });
       
@@ -313,7 +328,7 @@ class DonationsService {
     bloodGroup?: string;
     city?: string;
     urgencyLevel?: string;
-  }): Promise<DonationRequest[]> {
+  }, authHeaders?: Record<string, string>): Promise<DonationRequest[]> {
     try {
       const params = new URLSearchParams();
       if (filters?.bloodGroup) params.append('bloodGroup', filters.bloodGroup);
@@ -321,6 +336,9 @@ class DonationsService {
       if (filters?.urgencyLevel) params.append('urgencyLevel', filters.urgencyLevel);
       
       const response = await fetch(`${API_BASE}/requests?${params}`, {
+        headers: {
+          ...authHeaders,
+        },
         credentials: 'include',
       });
       
