@@ -60,13 +60,13 @@ function HeatmapEffect({ diseaseData, opacity }: { diseaseData: DiseaseData[], o
         <Circle
           key={`heatmap-${disease.id}`}
           center={[disease.latitude, disease.longitude]}
-          radius={Math.sqrt(disease.cases) * 50} // Scale radius based on cases
+          radius={Math.sqrt(disease.cases) * 200} // Increased radius for better visibility
           pathOptions={{
             fillColor: disease.color,
             color: disease.color,
-            weight: 2,
-            opacity: opacity,
-            fillOpacity: opacity * 0.3,
+            weight: 3,
+            opacity: Math.max(opacity, 0.8), // Ensure minimum visibility
+            fillOpacity: Math.max(opacity * 0.5, 0.3), // Increased fill opacity
           }}
         />
       ))}
@@ -341,14 +341,14 @@ export function DiseaseMapPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25">
+    <div className="min-h-screen bg-gradient-to-br from-purple-25 via-white to-indigo-25" style={{background: 'linear-gradient(to bottom right, #faf7ff, #ffffff, #f8faff)'}}>
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-white/95 backdrop-blur-sm border-b border-purple-200 shadow-sm">
         <div className="max-w-full mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             {/* Left Section - Disease Selector */}
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-gray-800">Disease Surveillance Map</h1>
+              <h1 className="text-xl font-bold text-gray-800">Disease Surveillance Map</h1>
               <Separator orientation="vertical" className="h-6" />
               <div className="flex flex-wrap gap-2">
                 {availableDiseases.map((disease) => (
@@ -356,7 +356,7 @@ export function DiseaseMapPage() {
                     key={disease.id}
                     pressed={selectedDiseases.includes(disease.id)}
                     onPressedChange={() => toggleDiseaseSelection(disease.id)}
-                    className="data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700"
+                    className="data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700 hover:bg-purple-50 border-purple-200 rounded-xl transition-all duration-300"
                   >
                     <div
                       className="w-3 h-3 rounded-full mr-2"
@@ -370,20 +370,20 @@ export function DiseaseMapPage() {
 
             {/* Center Section - Last 7 Days Stats */}
             <div className="flex items-center space-x-4">
-              <Card className="p-3">
+              <Card className="p-3 bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 shadow-md rounded-xl">
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="text-center">
-                    <div className="font-semibold text-lg text-purple-600">{summary.totalCases.toLocaleString()}</div>
+                    <div className="font-bold text-lg text-purple-600">{summary.totalCases.toLocaleString()}</div>
                     <div className="text-xs text-gray-600">Total Cases</div>
                   </div>
                   <Separator orientation="vertical" className="h-8" />
                   <div className="text-center">
-                    <div className="font-semibold text-lg text-green-600">+{summary.newToday}</div>
+                    <div className="font-bold text-lg text-green-600">+{summary.newToday}</div>
                     <div className="text-xs text-gray-600">New Today</div>
                   </div>
                   <Separator orientation="vertical" className="h-8" />
                   <div className="text-center">
-                    <div className="font-semibold text-lg text-orange-600">{summary.activeHotspots}</div>
+                    <div className="font-bold text-lg text-orange-600">{summary.activeHotspots}</div>
                     <div className="text-xs text-gray-600">Active Hotspots</div>
                   </div>
                 </div>
@@ -505,7 +505,7 @@ export function DiseaseMapPage() {
 
       <div className="flex h-[calc(100vh-80px)]">
         {/* Left Sidebar */}
-        <div className={`${leftPanelCollapsed ? 'w-16' : 'w-96'} transition-all duration-300 bg-white border-r border-gray-200 shadow-sm`}>
+        <div className={`${leftPanelCollapsed ? 'w-16' : 'w-96'} transition-all duration-300 bg-white/95 backdrop-blur-sm border-r border-purple-200 shadow-md`}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               {!leftPanelCollapsed && <h3 className="font-semibold text-gray-800">Disease Overview</h3>}
@@ -522,23 +522,23 @@ export function DiseaseMapPage() {
             {!leftPanelCollapsed && (
               <div className="space-y-4">
                 {/* Quick Stats */}
-                <Card>
+                <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 shadow-md rounded-xl">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-gray-600">Quick Stats</CardTitle>
+                    <CardTitle className="text-sm text-gray-700 font-semibold">Quick Stats</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Total Cases</span>
-                        <span className="font-semibold text-purple-600">2,526</span>
+                        <span className="font-bold text-purple-600">{summary.totalCases.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">New Today</span>
-                        <span className="font-semibold text-green-600">+23</span>
+                        <span className="font-bold text-green-600">+{summary.newToday}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Active Hotspots</span>
-                        <span className="font-semibold text-orange-600">7</span>
+                        <span className="font-bold text-orange-600">{summary.activeHotspots}</span>
                       </div>
                     </div>
                   </CardContent>

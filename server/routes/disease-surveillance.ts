@@ -103,6 +103,110 @@ const mockDiseaseData = [
       { date: '2025-09-17', cases: 458 },
       { date: '2025-09-18', cases: 456 }
     ]
+  },
+  {
+    id: 'typhoid-chennai',
+    disease: 'typhoid',
+    name: 'Typhoid Fever',
+    latitude: 13.0827,
+    longitude: 80.2707,
+    cases: 234,
+    incidenceRate: 2.8,
+    change7d: 12.3,
+    severity: 'high' as const,
+    color: '#7c3aed',
+    lastUpdated: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    area: 'Chennai',
+    population: 85000,
+    sources: [
+      { type: 'hospital' as const, confidence: 0.88, count: 180 },
+      { type: 'lab' as const, confidence: 0.92, count: 54 }
+    ],
+    symptoms: ['Prolonged fever', 'Headache', 'Nausea', 'Abdominal pain'],
+    timeline: [
+      { date: '2025-09-15', cases: 210 },
+      { date: '2025-09-16', cases: 218 },
+      { date: '2025-09-17', cases: 226 },
+      { date: '2025-09-18', cases: 234 }
+    ]
+  },
+  {
+    id: 'chikungunya-hyderabad',
+    disease: 'chikungunya',
+    name: 'Chikungunya',
+    latitude: 17.3850,
+    longitude: 78.4867,
+    cases: 189,
+    incidenceRate: 1.9,
+    change7d: 8.7,
+    severity: 'medium' as const,
+    color: '#e11d48',
+    lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    area: 'Hyderabad',
+    population: 78000,
+    sources: [
+      { type: 'hospital' as const, confidence: 0.85, count: 145 },
+      { type: 'user_report' as const, confidence: 0.70, count: 44 }
+    ],
+    symptoms: ['Joint pain', 'Muscle pain', 'Fever', 'Swelling'],
+    timeline: [
+      { date: '2025-09-15', cases: 175 },
+      { date: '2025-09-16', cases: 180 },
+      { date: '2025-09-17', cases: 184 },
+      { date: '2025-09-18', cases: 189 }
+    ]
+  },
+  {
+    id: 'covid19-pune',
+    disease: 'covid19',
+    name: 'COVID-19',
+    latitude: 18.5204,
+    longitude: 73.8567,
+    cases: 678,
+    incidenceRate: 7.8,
+    change7d: -5.4,
+    severity: 'medium' as const,
+    color: '#dc2626',
+    lastUpdated: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    area: 'Pune',
+    population: 87000,
+    sources: [
+      { type: 'hospital' as const, confidence: 0.93, count: 520 },
+      { type: 'lab' as const, confidence: 0.97, count: 158 }
+    ],
+    symptoms: ['Fever', 'Cough', 'Fatigue', 'Loss of taste'],
+    timeline: [
+      { date: '2025-09-15', cases: 715 },
+      { date: '2025-09-16', cases: 698 },
+      { date: '2025-09-17', cases: 685 },
+      { date: '2025-09-18', cases: 678 }
+    ]
+  },
+  {
+    id: 'dengue-jaipur',
+    disease: 'dengue',
+    name: 'Dengue Fever',
+    latitude: 26.9124,
+    longitude: 75.7873,
+    cases: 345,
+    incidenceRate: 4.2,
+    change7d: 18.5,
+    severity: 'critical' as const,
+    color: '#f59e0b',
+    lastUpdated: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    area: 'Jaipur',
+    population: 82000,
+    sources: [
+      { type: 'hospital' as const, confidence: 0.91, count: 268 },
+      { type: 'official' as const, confidence: 1.0, count: 77 }
+    ],
+    symptoms: ['High fever', 'Severe headache', 'Eye pain', 'Joint pain'],
+    timeline: [
+      { date: '2025-09-15', cases: 290 },
+      { date: '2025-09-16', cases: 308 },
+      { date: '2025-09-17', cases: 325 },
+      { date: '2025-09-18', cases: 345 }
+    ]
   }
 ];
 
