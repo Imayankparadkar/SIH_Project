@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,7 @@ interface Order {
 
 export function MedicinesPage() {
   const { t } = useTranslation();
+  const { getAuthHeaders } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -74,6 +76,9 @@ export function MedicinesPage() {
     try {
       setIsLoading(true);
       const response = await fetch('/api/medicines/search', {
+        headers: {
+          ...getAuthHeaders()
+        },
         credentials: 'include'
       });
       
@@ -98,7 +103,12 @@ export function MedicinesPage() {
   const loadOrdersFromAPI = async () => {
     try {
       setOrderLoadError(null);
-      const response = await fetch('/api/medicines/orders', { credentials: 'include' });
+      const response = await fetch('/api/medicines/orders', { 
+        headers: {
+          ...getAuthHeaders()
+        },
+        credentials: 'include' 
+      });
       if (response.ok) {
         const data = await response.json();
         const processedOrders = (data.orders || []).map((order: any) => ({
@@ -140,6 +150,9 @@ export function MedicinesPage() {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/medicines/search?query=${encodeURIComponent(searchQuery)}`, {
+        headers: {
+          ...getAuthHeaders()
+        },
         credentials: 'include'
       });
       if (response.ok) {
@@ -191,7 +204,10 @@ export function MedicinesPage() {
     try {
       const response = await fetch('/api/medicines/order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         credentials: 'include',
         body: JSON.stringify({
           medicines: cart.map(item => ({
