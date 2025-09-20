@@ -30,8 +30,19 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     bloodPressureDiastolic: 80,
     oxygenSaturation: 98,
     bodyTemperature: 98.6,
-    timestamp: new Date(),
-    notes: 'Live data from ESP32 wristband'
+    deviceInfo: {
+      deviceId: 'esp32-wristband-001',
+      deviceType: 'wristband',
+      manufacturer: 'ESP32',
+      model: 'Health Wristband',
+      isMedicalGrade: false
+    },
+    dataQuality: {
+      confidence: 0.9,
+      signalQuality: 'good',
+      artifactsDetected: false
+    },
+    timestamp: new Date()
   });
   const [historicalData, setHistoricalData] = useState<VitalSigns[]>([]);
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
@@ -67,6 +78,32 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         bodyTemperature: esp32Health.bodyTemperature,
         isConnected: esp32Health.isConnected
       });
+
+      // IMPORTANT: Update currentVitals with live ESP32 data for immediate display
+      if (esp32Health.isConnected) {
+        setCurrentVitals({
+          id: 'live-esp32-data',
+          userId: user?.id || 'demo-user',
+          heartRate: esp32Health.heartRate,
+          bloodPressureSystolic: 120, // Default for now since ESP32 doesn't provide this
+          bloodPressureDiastolic: 80,  // Default for now since ESP32 doesn't provide this
+          oxygenSaturation: esp32Health.oxygenSaturation,
+          bodyTemperature: esp32Health.bodyTemperature,
+          deviceInfo: {
+            deviceId: 'esp32-wristband-001',
+            deviceType: 'wristband',
+            manufacturer: 'ESP32',
+            model: 'Health Wristband',
+            isMedicalGrade: false
+          },
+          dataQuality: {
+            confidence: 0.95,
+            signalQuality: 'excellent',
+            artifactsDetected: false
+          },
+          timestamp: esp32Health.timestamp
+        });
+      }
     });
 
     return () => {
@@ -77,7 +114,10 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user || !user.id) {
-      setCurrentVitals(null);
+      // Don't clear currentVitals if we have ESP32 data - keep showing real-time data
+      if (!esp32Data?.isConnected) {
+        setCurrentVitals(null);
+      }
       setHistoricalData([]);
       setAnalysis(null);
       return;

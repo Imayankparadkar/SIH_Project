@@ -89,7 +89,7 @@ class ESP32HealthService {
       const healthData: ESP32HealthData = {
         heartRate: typeof rawData.heart_rate === 'number' ? Math.max(0, rawData.heart_rate) : 0,
         oxygenSaturation: typeof rawData.spo2 === 'number' ? Math.max(0, Math.min(100, rawData.spo2)) : 0,
-        bodyTemperature: this.convertToFahrenheit(rawData.temperature || 0),
+        bodyTemperature: typeof rawData.temperature === 'number' ? Math.round(rawData.temperature * 10) / 10 : 0, // Use actual ESP32 temperature
         battery: typeof rawData.battery === 'number' ? Math.max(0, Math.min(100, rawData.battery)) : 0,
         timestamp: new Date(rawData.timestamp || new Date()),
         isConnected: true

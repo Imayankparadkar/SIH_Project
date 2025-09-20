@@ -97,7 +97,12 @@ const authApi = {
         throw new Error(firebaseError.message || 'Firebase login failed');
       }
     } else {
-      throw new Error('Authentication not available. Please check your Firebase configuration.');
+      // Production mode - require Firebase configuration
+      if (import.meta.env.PROD) {
+        throw new Error('Firebase authentication is required in production. Please contact support if this persists.');
+      } else {
+        throw new Error('Authentication not available. Please check your Firebase configuration.');
+      }
     }
   },
 
@@ -193,7 +198,12 @@ const authApi = {
           throw devError;
         }
       } else {
-        throw new Error('Registration not available. Please check your Firebase configuration.');
+        // Production mode - require Firebase configuration
+        if (import.meta.env.PROD) {
+          throw new Error('Firebase registration is required in production. Please ensure Firebase is properly configured or contact support.');
+        } else {
+          throw new Error('Registration not available. Please check your Firebase configuration.');
+        }
       }
     }
   },
