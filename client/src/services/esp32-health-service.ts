@@ -85,12 +85,12 @@ class ESP32HealthService {
       const rawData: ESP32Data = await response.json();
       console.log('ESP32: Raw data received:', rawData);
 
-      // Convert ESP32 data format to our internal format
+      // Convert ESP32 data format to our internal format with proper validation
       const healthData: ESP32HealthData = {
-        heartRate: rawData.heart_rate || 0,
-        oxygenSaturation: rawData.spo2 || 0,
+        heartRate: typeof rawData.heart_rate === 'number' ? Math.max(0, rawData.heart_rate) : 0,
+        oxygenSaturation: typeof rawData.spo2 === 'number' ? Math.max(0, Math.min(100, rawData.spo2)) : 0,
         bodyTemperature: this.convertToFahrenheit(rawData.temperature || 0),
-        battery: rawData.battery || 0,
+        battery: typeof rawData.battery === 'number' ? Math.max(0, Math.min(100, rawData.battery)) : 0,
         timestamp: new Date(rawData.timestamp || new Date()),
         isConnected: true
       };
@@ -132,12 +132,22 @@ class ESP32HealthService {
   }
 
   private convertToFahrenheit(celsius: number): number {
+    // Ensure we have a valid number
+    if (typeof celsius !== 'number' || !isFinite(celsius)) {
+      return 98.6; // Default normal body temperature
+    }
+    
     // If temperature seems to be already in Fahrenheit (common range 95-105°F), return as is
     if (celsius >= 95 && celsius <= 105) {
-      return celsius;
+      return Math.round(celsius * 10) / 10; // Round to 1 decimal place
     }
+    
     // Otherwise convert from Celsius to Fahrenheit
-    return (celsius * 9/5) + 32;
+    const fahrenheit = (celsius * 9/5) + 32;
+    
+    // Clamp to reasonable human body temperature range
+    const clampedTemp = Math.max(90, Math.min(110, fahrenheit));
+    return Math.round(clampedTemp * 10) / 10; // Round to 1 decimal place
   }
 
   getCurrentData(): ESP32HealthData | null {

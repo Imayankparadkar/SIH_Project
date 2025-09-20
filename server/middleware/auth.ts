@@ -16,6 +16,7 @@ export async function authMiddleware(
 ) {
   try {
     // Only use demo user if explicitly enabled in development
+    // NEVER bypass auth in production, even if DEV_AUTH_BYPASS is accidentally set
     if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 'true') {
       console.log('⚠️  DEV_AUTH_BYPASS is active - using demo user for authentication');
       req.user = {
@@ -24,6 +25,11 @@ export async function authMiddleware(
         name: 'Demo User'
       };
       return next();
+    }
+    
+    // Strict production authentication required
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Production mode: Requiring valid Firebase authentication');
     }
 
     const authHeader = req.headers.authorization;

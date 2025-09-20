@@ -20,7 +20,7 @@ interface HealthContextType {
 export const HealthContext = createContext<HealthContextType | undefined>(undefined);
 
 export function HealthProvider({ children }: { children: React.ReactNode }) {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, getAuthHeaders } = useAuth();
   const [currentVitals, setCurrentVitals] = useState<VitalSigns | null>(null);
   const [historicalData, setHistoricalData] = useState<VitalSigns[]>([]);
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
@@ -189,16 +189,22 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
 
   // Separate effect to update current vitals with ESP32 data when it changes
   useEffect(() => {
-    if (esp32Data) {
+    if (esp32Data && esp32Data.isConnected) {
       setCurrentVitals(current => {
         if (!current) return current;
+        
+        // Only use ESP32 data if values are valid numbers
+        const isValidNumber = (val: number) => typeof val === 'number' && isFinite(val) && val >= 0;
+        
         const updated = {
           ...current,
-          heartRate: esp32Data.heartRate > 0 ? esp32Data.heartRate : current.heartRate,
-          oxygenSaturation: esp32Data.oxygenSaturation > 0 ? esp32Data.oxygenSaturation : current.oxygenSaturation,
-          bodyTemperature: esp32Data.bodyTemperature > 0 ? esp32Data.bodyTemperature : current.bodyTemperature,
+          // Only update if ESP32 data is valid, keep existing values otherwise
+          heartRate: isValidNumber(esp32Data.heartRate) ? esp32Data.heartRate : current.heartRate,
+          oxygenSaturation: isValidNumber(esp32Data.oxygenSaturation) ? esp32Data.oxygenSaturation : current.oxygenSaturation,
+          bodyTemperature: isValidNumber(esp32Data.bodyTemperature) ? esp32Data.bodyTemperature : current.bodyTemperature,
           timestamp: new Date() // Update timestamp to show real-time data
         };
+        
         console.log('HealthContext: Updated currentVitals with ESP32 data:', {
           heartRate: updated.heartRate,
           oxygenSaturation: updated.oxygenSaturation, 
@@ -207,6 +213,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         });
         return updated;
       });
+    } else if (esp32Data && !esp32Data.isConnected) {
+      console.log('HealthContext: ESP32 disconnected, keeping existing vitals');
     }
   }, [esp32Data]);
 
@@ -214,12 +222,17 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     if (!userProfile) return;
 
     try {
+      // Get authentication headers (includes Authorization token when available)
+      const authHeaders = getAuthHeaders();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...authHeaders
+      };
+
       // Call server-side analysis API
       const response = await fetch('/api/health/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           vitals: {
@@ -258,9 +271,14 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           timestamp: new Date()
         };
 
-        // Save analysis to Firestore
-        const docRef = await addDoc(collection(db, 'analyses'), analysisData);
-        setAnalysis({ id: docRef.id, ...analysisData });
+        // Save analysis to Firestore if available
+        if (db) {
+          const docRef = await addDoc(collection(db, 'analyses'), analysisData);
+          setAnalysis({ id: docRef.id, ...analysisData });
+        } else {
+          // If Firestore not available, just set the analysis locally
+          setAnalysis({ id: `local-${Date.now()}`, ...analysisData });
+        }
       } else {
         // Fallback analysis if server fails
         const fallbackAnalysis: Omit<InsertHealthAnalysis, 'id'> = {
@@ -274,8 +292,12 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           timestamp: new Date()
         };
 
-        const docRef = await addDoc(collection(db, 'analyses'), fallbackAnalysis);
-        setAnalysis({ id: docRef.id, ...fallbackAnalysis });
+        if (db) {
+          const docRef = await addDoc(collection(db, 'analyses'), fallbackAnalysis);
+          setAnalysis({ id: docRef.id, ...fallbackAnalysis });
+        } else {
+          setAnalysis({ id: `fallback-${Date.now()}`, ...fallbackAnalysis });
+        }
       }
 
     } catch (error) {
