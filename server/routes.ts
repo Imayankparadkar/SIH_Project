@@ -86,6 +86,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Medical File Upload endpoints - Use optional auth in development mode
   const uploadAuthMiddleware = process.env.NODE_ENV === 'development' ? optionalAuth : authMiddleware;
+  
+  // Medicine endpoints - Use optional auth in development mode
+  const medicineAuthMiddleware = process.env.NODE_ENV === 'development' ? optionalAuth : authMiddleware;
   app.post("/api/uploads", uploadAuthMiddleware, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -762,10 +765,20 @@ Please respond in JSON format with:
     }
   });
 
-  app.post("/api/medicines/order", authMiddleware, async (req, res) => {
+  app.post("/api/medicines/order", medicineAuthMiddleware, async (req, res) => {
     try {
       const { medicines, deliveryAddress } = req.body;
-      const userId = (req as any).user?.uid;
+      let userId = (req as any).user?.uid;
+      
+      if (!userId) {
+        if (process.env.NODE_ENV === 'development') {
+          // Use demo user ID for development mode
+          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          console.log('Using demo user ID for medicine order in development mode');
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
+      }
       
       // Always use the demo user for development
       const demoUser = await storage.getUserByEmail('demo@sehatify.com');
@@ -848,12 +861,18 @@ Please respond in JSON format with:
     }
   });
 
-  // Get user's order history
-  app.get("/api/medicines/orders", authMiddleware, async (req, res) => {
+  // Get user's order history  
+  app.get("/api/medicines/orders", medicineAuthMiddleware, async (req, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      let userId = (req as any).user?.uid;
       if (!userId) {
-        return res.status(401).json({ error: "User not authenticated" });
+        if (process.env.NODE_ENV === 'development') {
+          // Use demo user ID for development mode
+          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          console.log('Using demo user ID for medicine orders in development mode');
+        } else {
+          return res.status(401).json({ error: "User not authenticated" });
+        }
       }
 
       const rawOrders = await storage.getOrdersByUserId(userId);
