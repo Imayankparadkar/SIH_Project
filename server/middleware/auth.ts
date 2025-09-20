@@ -15,8 +15,9 @@ export async function authMiddleware(
   next: NextFunction
 ) {
   try {
-    // In development mode, skip auth and use demo user
-    if (process.env.NODE_ENV === 'development') {
+    // Only use demo user if explicitly enabled in development
+    if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 'true') {
+      console.log('⚠️  DEV_AUTH_BYPASS is active - using demo user for authentication');
       req.user = {
         uid: 'd79abdfe-eef3-4f15-85ee-772c63b877ce',
         email: 'demo@sehatify.com',
@@ -48,7 +49,7 @@ export async function authMiddleware(
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
-      ...decodedToken
+      name: decodedToken.name || decodedToken.email
     };
 
     next();
@@ -84,7 +85,7 @@ export function optionalAuth(
         req.user = {
           uid: decodedToken.uid,
           email: decodedToken.email,
-          ...decodedToken
+          name: decodedToken.name || decodedToken.email
         };
       }
       next();

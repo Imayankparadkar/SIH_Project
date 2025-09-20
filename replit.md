@@ -130,9 +130,17 @@ This is a comprehensive health monitoring platform that integrates with a smart 
 - **Sample Data**: Hospitals, donations, and demo user profiles populated automatically
 - **Import Status**: COMPLETE - All systems operational and ready for use
 
+### Authentication Issues Fixed (September 20, 2025)
+- **Problem**: 401 authentication errors across all API endpoints (data loading, appointment booking, document upload)
+- **Root Cause**: NODE_ENV was not set, causing authentication middleware to require Firebase tokens in development
+- **Solution**: Implemented secure DEV_AUTH_BYPASS flag that only works in development mode
+- **Security**: Production environments require valid Firebase authentication tokens
+- **Status**: All API endpoints now working correctly with 200 status codes
+
 ## Development Notes
 - The application uses a unified server approach where Express serves both API routes and the Vite-built frontend
-- Demo authentication is available for development
+- Secure demo authentication available in development via DEV_AUTH_BYPASS=true flag
+- Production requires valid Firebase authentication tokens for security
 - AI services require proper API keys (Gemini, Firebase)
 - Database connection uses Replit PostgreSQL with automatic provisioning
 - File uploads are stored locally with database metadata tracking
