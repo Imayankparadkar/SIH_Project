@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { DbStorage } from '../db-storage';
+import { optionalAuth } from '../middleware/auth';
 import { z } from 'zod';
 
 const router = Router();
@@ -20,7 +21,7 @@ const bookAppointmentSchema = z.object({
 });
 
 // POST /api/appointments - Book a new appointment
-router.post('/', async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   try {
     const validationResult = bookAppointmentSchema.safeParse(req.body);
     
@@ -33,51 +34,31 @@ router.post('/', async (req, res) => {
     
     const appointmentData = validationResult.data;
     
-    // Check if doctor exists (using same mock data as /api/doctors)
-    const mockDoctors = [
-      {
-        id: "doc1",
-        name: "Dr. Sarah Johnson",
-        specialization: "Cardiology",
-        rating: 4.9,
-        experience: "15 years",
-        hospitalAffiliation: "City General Hospital",
-        consultationFee: 800
-      },
-      {
-        id: "doc2",
-        name: "Dr. Rajesh Patel",
-        specialization: "Internal Medicine",
-        rating: 4.7,
-        experience: "12 years",
-        hospitalAffiliation: "Metro Health Center",
-        consultationFee: 600
-      },
-      {
-        id: "doc3",
-        name: "Dr. Priya Sharma",
-        specialization: "Endocrinology",
-        rating: 4.8,
-        experience: "18 years",
-        hospitalAffiliation: "Advanced Medical Institute",
-        consultationFee: 900
-      }
-    ];
-    const doctor = mockDoctors.find(d => d.id === appointmentData.doctorId);
+    // Get doctors from database to ensure consistency with GET endpoint
+    const doctors = await dbStorage.getDoctors();
+    const doctor = doctors.find(d => d.id === appointmentData.doctorId);
     
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
     
-    // Get demo user from database (in production, get from authenticated user)
-    const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
-    if (!demoUser) {
-      return res.status(400).json({ error: 'Demo user not found' });
+    // Get user ID from auth or use demo user in development
+    let userId = (req as any).user?.uid;
+    if (!userId) {
+      if (process.env.NODE_ENV === 'development') {
+        const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
+        if (!demoUser) {
+          return res.status(400).json({ error: 'Demo user not found' });
+        }
+        userId = demoUser.id;
+      } else {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
     }
 
     // Create appointment
     const appointment = {
-      userId: demoUser.id,
+      userId: userId,
       doctorId: appointmentData.doctorId,
       appointmentType: appointmentData.appointmentType,
       scheduledDateTime: new Date(appointmentData.scheduledDateTime),
@@ -112,15 +93,23 @@ router.post('/', async (req, res) => {
 });
 
 // GET /api/appointments - Get user appointments
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
-    // Get demo user from database (in production, get from authenticated session)
-    const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
-    if (!demoUser) {
-      return res.status(400).json({ error: 'Demo user not found' });
+    // Get user ID from auth or use demo user in development
+    let userId = (req as any).user?.uid;
+    if (!userId) {
+      if (process.env.NODE_ENV === 'development') {
+        const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
+        if (!demoUser) {
+          return res.status(400).json({ error: 'Demo user not found' });
+        }
+        userId = demoUser.id;
+      } else {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
     }
     
-    const appointments = await dbStorage.getAppointmentsByUserId(demoUser.id);
+    const appointments = await dbStorage.getAppointmentsByUserId(userId);
     
     // Get doctor details for each appointment
     const doctors = await dbStorage.getDoctors();
@@ -144,15 +133,34 @@ router.get('/', async (req, res) => {
 });
 
 // PUT /api/appointments/:id/cancel - Cancel an appointment
-router.put('/:id/cancel', async (req, res) => {
+router.put('/:id/cancel', optionalAuth, async (req, res) => {
   try {
     const appointmentId = req.params.id;
     const { cancellationReason } = req.body;
+    
+    // Get user ID from auth or use demo user in development
+    let userId = (req as any).user?.uid;
+    if (!userId) {
+      if (process.env.NODE_ENV === 'development') {
+        const demoUser = await dbStorage.getUserByEmail('demo@sehatify.com');
+        if (!demoUser) {
+          return res.status(400).json({ error: 'Demo user not found' });
+        }
+        userId = demoUser.id;
+      } else {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+    }
     
     const appointment = await dbStorage.getAppointment(appointmentId);
     
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
+    }
+    
+    // SECURITY: Verify user owns this appointment
+    if (appointment.userId !== userId) {
+      return res.status(403).json({ error: 'Access denied: You can only cancel your own appointments' });
     }
     
     if (appointment.status === 'cancelled') {
