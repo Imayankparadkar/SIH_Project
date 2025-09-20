@@ -21,20 +21,39 @@ export const HealthContext = createContext<HealthContextType | undefined>(undefi
 
 export function HealthProvider({ children }: { children: React.ReactNode }) {
   const { user, userProfile, getAuthHeaders } = useAuth();
-  const [currentVitals, setCurrentVitals] = useState<VitalSigns | null>(null);
+  // Initialize with default vitals that will be updated by ESP32 data
+  const [currentVitals, setCurrentVitals] = useState<VitalSigns | null>({
+    id: 'live-data',
+    userId: 'demo-user',
+    heartRate: 75,
+    bloodPressureSystolic: 120,
+    bloodPressureDiastolic: 80,
+    oxygenSaturation: 98,
+    bodyTemperature: 98.6,
+    timestamp: new Date(),
+    notes: 'Live data from ESP32 wristband'
+  });
   const [historicalData, setHistoricalData] = useState<VitalSigns[]>([]);
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [esp32Data, setEsp32Data] = useState<{heartRate: number; oxygenSaturation: number; bodyTemperature: number; isConnected: boolean} | null>(null);
 
-  // ESP32 data effect
+  // ESP32 data effect - Start in development mode even without user authentication
   useEffect(() => {
-    if (!user || !user.id) {
+    // In development, always start ESP32 service to show real wristband data
+    // In production, require authentication
+    const shouldStart = import.meta.env.DEV || (user && user.id);
+    
+    if (!shouldStart) {
       return;
     }
 
-    console.log('Health Context: Starting ESP32 service for real-time data');
+    console.log('Health Context: Starting ESP32 service for real-time data', {
+      isDev: import.meta.env.DEV,
+      hasUser: !!user,
+      userId: user?.id
+    });
     
     // Start ESP32 service
     esp32HealthService.start();
@@ -54,7 +73,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       esp32Unsubscribe();
       esp32HealthService.stop();
     };
-  }, [user]);
+  }, [user]); // Will restart ESP32 service if user changes
 
   useEffect(() => {
     if (!user || !user.id) {

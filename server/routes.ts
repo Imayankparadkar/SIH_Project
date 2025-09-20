@@ -1027,6 +1027,29 @@ Please respond in JSON format with:
     }
   });
 
+  // ESP32 Live Data endpoint - Proxy your ESP32 API
+  app.get("/api/esp32/live", async (req, res) => {
+    try {
+      const response = await fetch('https://esp32-watch-api.vercel.app/api/data');
+      const data = await response.json();
+      
+      // Transform ESP32 data to match our health format
+      const healthData = {
+        heartRate: data.heart_rate || 0,
+        oxygenSaturation: data.spo2 || 0,
+        bodyTemperature: data.temperature || 98.6,
+        battery: data.battery || 0,
+        timestamp: data.timestamp,
+        isConnected: true
+      };
+      
+      res.json(healthData);
+    } catch (error) {
+      console.error('ESP32 proxy error:', error);
+      res.status(500).json({ error: "Failed to fetch ESP32 data" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/status", (req, res) => {
     res.json({
