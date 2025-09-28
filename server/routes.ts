@@ -9,6 +9,7 @@ import path from "path";
 import fs from "fs/promises";
 import { authMiddleware, optionalAuth } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
+import adminRoutes from "./routes/admin";
 import { initializeDemoUsers } from "./services/dev-auth";
 import { populateSampleData } from "./utils/populate-sample-data";
 import { hospitalsRouter } from "./routes/hospitals";
@@ -56,6 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication routes
   app.use("/api/auth", authRoutes);
+
+  // Admin routes
+  app.use("/api/admin", adminRoutes);
 
   // Hospital routes
   app.use("/api/hospitals", hospitalsRouter);

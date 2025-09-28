@@ -6,8 +6,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/auth-context";
 import { HealthProvider } from "@/context/health-context";
+import { AdminProvider } from "@/context/admin-context";
 import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
+import { AdminLogin } from "@/components/admin/admin-login";
+import { AdminRouteGuard } from "@/components/admin/admin-route-guard";
+import { AdminDashboard } from "@/pages/admin-dashboard";
+import { AdminPatientDetail } from "@/pages/admin-patient-detail";
 import { LandingPage } from "@/pages/landing";
 import { LoginForm } from "@/components/auth/login-form";
 import { RegisterForm } from "@/components/auth/register-form";
@@ -40,6 +45,20 @@ import i18n from "@/lib/i18n";
 function Router() {
   return (
     <Switch>
+      {/* Admin Routes - No navigation/footer */}
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard">
+        <AdminRouteGuard>
+          <AdminDashboard />
+        </AdminRouteGuard>
+      </Route>
+      <Route path="/admin/patient/:id">
+        <AdminRouteGuard>
+          <AdminPatientDetail />
+        </AdminRouteGuard>
+      </Route>
+      
+      {/* Regular App Routes */}
       <Route path="/" component={LandingPage} />
       <Route path="/login" component={LoginForm} />
       <Route path="/register" component={RegisterForm} />
@@ -75,6 +94,12 @@ function Router() {
 }
 
 function AppContent() {
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  
+  if (isAdminRoute) {
+    return <Router />;
+  }
+  
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation />
@@ -93,8 +118,10 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <HealthProvider>
-              <AppContent />
-              <Toaster />
+              <AdminProvider>
+                <AppContent />
+                <Toaster />
+              </AdminProvider>
             </HealthProvider>
           </AuthProvider>
         </TooltipProvider>
