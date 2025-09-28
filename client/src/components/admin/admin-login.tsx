@@ -117,7 +117,7 @@ export function AdminLogin() {
             </form>
 
             <div className="mt-4 text-center text-sm text-muted-foreground">
-              <p>Development mode: Check console for OTP</p>
+              <p>OTP is 797452</p>
             </div>
           </CardContent>
         </Card>
