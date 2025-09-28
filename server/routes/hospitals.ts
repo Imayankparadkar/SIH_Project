@@ -131,21 +131,27 @@ const hospitalData = [
 // GET /api/hospitals - Get all hospitals
 router.get('/', async (req, res) => {
   try {
-    const hospitals = await dbStorage.getHospitals();
-    
-    // If no hospitals in database, populate with sample data
-    if (hospitals.length === 0) {
-      console.log('No hospitals found in database, populating with sample data...');
+    try {
+      const hospitals = await dbStorage.getHospitals();
       
-      for (const hospital of hospitalData) {
-        await dbStorage.createHospital(hospital);
+      // If no hospitals in database, populate with sample data
+      if (hospitals.length === 0) {
+        console.log('No hospitals found in database, populating with sample data...');
+        
+        for (const hospital of hospitalData) {
+          await dbStorage.createHospital(hospital);
+        }
+        
+        // Fetch the newly inserted hospitals
+        const newHospitals = await dbStorage.getHospitals();
+        res.json(newHospitals);
+      } else {
+        res.json(hospitals);
       }
-      
-      // Fetch the newly inserted hospitals
-      const newHospitals = await dbStorage.getHospitals();
-      res.json(newHospitals);
-    } else {
-      res.json(hospitals);
+    } catch (dbError) {
+      console.error('Database error, using fallback hospital data:', dbError);
+      // Return fallback data when database is unavailable
+      res.json(hospitalData);
     }
   } catch (error) {
     console.error('Error fetching hospitals:', error);

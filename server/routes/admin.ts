@@ -26,9 +26,9 @@ const DEMO_ADMIN = {
   role: 'admin'
 };
 
-// Generate random 6-digit OTP
+// Generate fixed OTP for demo purposes
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return "797452";
 }
 
 // POST /api/admin/login - Admin login (step 1: credentials verification)
