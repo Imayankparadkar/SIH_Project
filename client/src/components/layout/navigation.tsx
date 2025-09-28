@@ -60,6 +60,9 @@ export function Navigation() {
             <Link href="/insurance-hub" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/insurance-hub' ? 'text-purple-600' : ''}`}>
               Insurance Hub
             </Link>
+            <Link href="/admin/login" className={`text-gray-600 hover:text-purple-600 font-medium transition-colors text-sm ${location === '/admin/login' ? 'text-purple-600' : ''}`}>
+              Admin Portal
+            </Link>
           </div>
 
           {/* Right Side Actions - Clean Sehatify Style */}
@@ -150,6 +153,9 @@ export function Navigation() {
               </Link>
               <Link href="/insurance-hub" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/insurance-hub' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 Insurance Hub
+              </Link>
+              <Link href="/admin/login" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/admin/login' ? 'bg-purple-50 text-purple-600' : ''}`}>
+                Admin Portal
               </Link>
               <Link href="/" className={`block px-3 py-2 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-md ${location === '/' ? 'bg-purple-50 text-purple-600' : ''}`}>
                 About Us
