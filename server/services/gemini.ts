@@ -96,7 +96,7 @@ Focus on:
 
     try {
       const response = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-exp',
         contents: prompt
       });
       const text = response.text || '';
@@ -265,7 +265,7 @@ Provide a helpful, empathetic response as Dr. AI. Keep your response conversatio
       console.log(`Detected anatomicalModel: ${anatomicalModel}, bodyPart: ${bodyPart} for message: "${message.substring(0, 50)}..."`);
       
       const response = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-exp',
         contents: prompt
       });
       const responseText = response.text || "I'm having trouble processing your request right now.";
@@ -362,7 +362,7 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
 
     try {
       const response = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-exp',
         contents: prompt
       });
       const text = response.text || '';
@@ -514,7 +514,7 @@ Important: This analysis is for informational purposes only and should not repla
     while (retryCount < maxRetries) {
       try {
         const response = await this.genAI.models.generateContent({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash-exp',
           contents: prompt
         });
         const text = response.text || '';
