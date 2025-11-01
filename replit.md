@@ -107,6 +107,20 @@ This is a comprehensive health monitoring platform that integrates with a smart 
 
 ## Recent Changes
 
+### November 1, 2025 - Deployment Issues Fixed for Render ✅
+- **Issue**: Render deployment was failing with dependency conflicts and build errors
+- **Root Causes**:
+  1. `@react-three/drei@10.7.6` requires React 19, but project uses React 18.3.1
+  2. npm install failing due to peer dependency conflicts
+  3. Vite build failing to resolve `react-leaflet` import
+- **Solutions Implemented**:
+  1. Downgraded `@react-three/drei` from `10.7.6` to `9.114.0` (React 18 compatible)
+  2. Downgraded `@react-three/fiber` from `9.4.0` to `8.17.10` (React 18 compatible)
+  3. Added `.npmrc` file with `legacy-peer-deps=true` for deployment compatibility
+  4. Successfully tested build locally - all tests passing
+- **Status**: Project now builds successfully and is ready for Render deployment
+- **Note**: These version constraints (React 18 + fiber 8.x + drei 9.x) must be maintained to prevent reintroducing deployment issues
+
 ### November 1, 2025 - Gemini AI Integration Fixed ✅
 - **Issue**: AI Doctor chat was failing due to incorrect Gemini API implementation
 - **Root Cause**: Code was using legacy `@google/generative-ai` API patterns with newer `@google/genai` package
