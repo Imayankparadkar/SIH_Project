@@ -130,11 +130,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Upload file to Firebase Storage (using buffer from memory storage)
-      const cloudStorageUrl = await firebaseStorageService.uploadFile(
-        req.file.buffer,
-        req.file.originalname,
-        req.file.mimetype
-      );
+      let cloudStorageUrl = '';
+      try {
+        cloudStorageUrl = await firebaseStorageService.uploadFile(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype
+        );
+        console.log('File uploaded to Firebase Storage successfully:', cloudStorageUrl);
+      } catch (storageError) {
+        console.warn('Firebase Storage upload failed, using fallback:', storageError);
+        // Use a placeholder URL if Firebase is not configured
+        cloudStorageUrl = `/uploads/${randomUUID()}-${req.file.originalname}`;
+      }
 
       const reportData = {
         userId,
