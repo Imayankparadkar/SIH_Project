@@ -30,7 +30,7 @@ export const ChatRequestSchema = z.object({
 });
 
 export const MedicalFileUploadSchema = z.object({
-  reportType: z.enum(['blood_test', 'xray', 'mri', 'ct_scan', 'ecg', 'prescription', 'discharge_summary', 'other']).default('other'),
+  reportType: z.enum(['blood_test', 'lab_report', 'xray', 'mri', 'ct_scan', 'ecg', 'prescription', 'discharge_summary', 'medical_record', 'other']).default('other'),
   sourceType: z.enum(['appointment', 'lab_booking', 'user_upload']).optional(),
   sourceId: z.string().optional(),
   description: z.string().max(500).optional()
