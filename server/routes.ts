@@ -201,34 +201,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         } else if (req.file.mimetype.startsWith('image/')) {
-          // For images, provide general health guidance since we can't do OCR yet
-          analysisResult = {
-            summary: `Medical image uploaded successfully. While AI cannot analyze images directly yet, here are some general health recommendations based on the document type.`,
-            keyFindings: [`${reportType} image uploaded`, "Professional interpretation recommended for images"],
-            recommendations: ["Consult with your healthcare provider for image interpretation", "Share with your medical team during appointments"],
-            dietPlan: { 
-              breakfast: ["Include fruits and vegetables", "Choose whole grains", "Stay hydrated"], 
-              lunch: ["Lean proteins", "Colorful vegetables", "Healthy fats"], 
-              dinner: ["Light, nutritious meals", "Avoid late eating"], 
-              snacks: ["Nuts", "Fruits", "Yogurt"] 
-            },
-            exercisePlan: { 
-              cardio: ["30 minutes walking daily", "Swimming if accessible", "Cycling"], 
-              strength: ["Bodyweight exercises", "Light weights", "Resistance bands"], 
-              flexibility: ["Daily stretching", "Yoga poses", "Deep breathing"] 
-            },
-            youtubeVideos: [
-              { title: "Basic Health Tips", searchTerm: "daily health habits for beginners" },
-              { title: "Simple Exercise Routine", searchTerm: "beginner home workout" }
-            ],
-            lifestyleChanges: ["Regular sleep schedule", "Stress management", "Stay hydrated"],
-            actionPlan: { 
-              immediate: ["Consult healthcare provider for image interpretation"], 
-              shortTerm: ["Follow general wellness practices"], 
-              longTerm: ["Maintain healthy lifestyle"] 
-            },
-            followUpNeeded: true
-          };
+          // For images, use Gemini Vision API for comprehensive analysis
+          try {
+            console.log('Using Gemini Vision API to analyze medical image');
+            analysisResult = await geminiHealthService.analyzeMedicalImage(
+              req.file.buffer,
+              req.file.mimetype,
+              reportType as any,
+              language
+            );
+            console.log('Gemini Vision API analysis completed successfully');
+          } catch (visionError) {
+            console.error('Gemini Vision analysis error, using fallback:', visionError);
+            // Fallback if vision API fails
+            analysisResult = {
+              summary: `Medical image (${reportType}) uploaded successfully. AI analysis is currently unavailable, but the document is securely stored for your healthcare provider to review.`,
+              keyFindings: [`${reportType} image uploaded`, "Professional interpretation recommended"],
+              recommendations: ["Consult with your healthcare provider for detailed image interpretation", "Share with your medical team during appointments", "Keep this report for your medical records"],
+              dietPlan: { 
+                breakfast: ["Include fruits and vegetables", "Choose whole grains", "Stay hydrated"], 
+                lunch: ["Lean proteins", "Colorful vegetables", "Healthy fats"], 
+                dinner: ["Light, nutritious meals", "Avoid late eating"], 
+                snacks: ["Nuts", "Fruits", "Yogurt"] 
+              },
+              exercisePlan: { 
+                cardio: ["30 minutes walking daily", "Swimming if accessible", "Cycling"], 
+                strength: ["Bodyweight exercises", "Light weights", "Resistance bands"], 
+                flexibility: ["Daily stretching", "Yoga poses", "Deep breathing"] 
+              },
+              youtubeVideos: [
+                { title: "Understanding Medical Images", searchTerm: "how to read medical imaging results" },
+                { title: "General Health Tips", searchTerm: "daily health habits for beginners" }
+              ],
+              lifestyleChanges: ["Regular sleep schedule", "Stress management", "Stay hydrated"],
+              actionPlan: { 
+                immediate: ["Consult healthcare provider for professional image interpretation"], 
+                shortTerm: ["Follow general wellness practices", "Schedule follow-up appointment if needed"], 
+                longTerm: ["Maintain preventive health practices and regular checkups"] 
+              },
+              followUpNeeded: true
+            };
+          }
         }
         
         if (analysisResult) {

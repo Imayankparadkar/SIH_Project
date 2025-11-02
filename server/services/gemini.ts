@@ -410,6 +410,194 @@ Respond in JSON format with keys: summary, recommendations (array), riskFactors 
     }
   }
 
+  async analyzeMedicalImage(
+    imageBuffer: Buffer,
+    mimeType: string,
+    reportType: 'xray' | 'mri' | 'ct_scan' | 'ecg' | 'lab_report' | 'prescription' | 'medical_record' | 'other',
+    language?: string
+  ): Promise<{
+    summary: string;
+    keyFindings: string[];
+    recommendations: string[];
+    dietPlan: { breakfast: string[]; lunch: string[]; dinner: string[]; snacks: string[] };
+    exercisePlan: { cardio: string[]; strength: string[]; flexibility: string[] };
+    youtubeVideos: { title: string; searchTerm: string }[];
+    lifestyleChanges: string[];
+    actionPlan: { immediate: string[]; shortTerm: string[]; longTerm: string[] };
+    followUpNeeded: boolean;
+  }> {
+    if (!this.genAI) {
+      return this.getFallbackDocumentAnalysis(reportType as any, language || 'en');
+    }
+
+    const getLanguageInstruction = (lang: string) => {
+      const languageInstructions = {
+        'hi': 'Provide the analysis in Hindi (हिंदी). Use simple, clear Hindi language.',
+        'es': 'Provide the analysis in Spanish (Español). Use clear, accessible Spanish.',
+        'fr': 'Provide the analysis in French (Français). Use clear, accessible French.',
+        'de': 'Provide the analysis in German (Deutsch). Use clear, accessible German.',
+        'pt': 'Provide the analysis in Portuguese (Português). Use clear, accessible Portuguese.',
+        'it': 'Provide the analysis in Italian (Italiano). Use clear, accessible Italian.',
+        'ja': 'Provide the analysis in Japanese (日本語). Use simple, clear Japanese.',
+        'ko': 'Provide the analysis in Korean (한국어). Use simple, clear Korean.',
+        'zh': 'Provide the analysis in Chinese (中文). Use simple, clear Chinese.',
+        'ar': 'Provide the analysis in Arabic (العربية). Use simple, clear Arabic.',
+        'ru': 'Provide the analysis in Russian (Русский). Use clear, accessible Russian.',
+        'tr': 'Provide the analysis in Turkish (Türkçe). Use clear, accessible Turkish.',
+        'en': 'Provide the analysis in English.'
+      };
+      return languageInstructions[lang as keyof typeof languageInstructions] || languageInstructions['en'];
+    };
+
+    const reportTypeDescriptions = {
+      'xray': 'X-ray imaging',
+      'mri': 'MRI scan',
+      'ct_scan': 'CT scan',
+      'ecg': 'ECG/EKG report',
+      'lab_report': 'laboratory test results',
+      'prescription': 'medical prescription',
+      'medical_record': 'medical record',
+      'other': 'medical document'
+    };
+
+    const prompt = `You are Dr. AI, an expert medical imaging and document analysis assistant. Analyze this ${reportTypeDescriptions[reportType]} image and provide a comprehensive, patient-friendly health assessment.
+
+${getLanguageInstruction(language || 'en')}
+
+IMPORTANT INSTRUCTIONS:
+- Carefully examine all text, numbers, values, and visual elements in the image
+- Identify specific test results, measurements, or findings
+- Explain any abnormal values or concerning patterns
+- Provide context for medical terminology
+- Give practical, actionable health recommendations
+
+Please provide a comprehensive analysis that includes:
+
+🏥 **MEDICAL ANALYSIS**:
+1. What type of medical document/image is this? (lab report, X-ray, prescription, etc.)
+2. Extract and list ALL key measurements, test results, and findings from the image
+3. Identify any abnormal values or areas of concern
+4. Explain medical terminology in simple language
+5. Overall health assessment based on the findings
+6. Whether follow-up with a healthcare provider is needed
+
+🥗 **PERSONALIZED DIET PLAN** (based on findings):
+- Specific foods to include that support healing/improvement
+- Foods to avoid that may worsen the condition
+- Meal timing and portion suggestions
+- Hydration recommendations
+- Nutritional supplements if relevant
+
+🏃‍♂️ **EXERCISE RECOMMENDATIONS** (appropriate for the condition):
+- Recommended exercise types
+- Intensity levels (beginner/intermediate/advanced)
+- Duration and frequency
+- Exercises to avoid
+- Activity modifications if needed
+
+📹 **HELPFUL YOUTUBE VIDEO SEARCH TERMS**:
+Provide 3-5 specific search terms for educational videos like:
+- "How to understand [condition] test results"
+- "[Condition] diet and nutrition guide"
+- "Safe exercises for [condition]"
+- "Managing [condition] naturally"
+
+💪 **LIFESTYLE MODIFICATIONS**:
+- Sleep recommendations
+- Stress management techniques
+- Habit changes specific to the findings
+- Environmental factors to consider
+
+🎯 **ACTION PLAN**:
+- Immediate steps (next 24-48 hours)
+- Short-term goals (1-4 weeks)
+- Long-term goals (1-6 months)
+- Warning signs that require emergency care
+
+Respond in JSON format with keys: 
+- summary (detailed explanation of findings)
+- keyFindings (array of specific test results and observations)
+- recommendations (array of medical recommendations)
+- dietPlan (object with breakfast, lunch, dinner, snacks arrays)
+- exercisePlan (object with cardio, strength, flexibility arrays)
+- youtubeVideos (array of objects with title and searchTerm)
+- lifestyleChanges (array)
+- actionPlan (object with immediate, shortTerm, longTerm arrays)
+- followUpNeeded (boolean)
+
+CRITICAL: This analysis is for educational purposes only. Always consult qualified healthcare professionals for medical decisions.`;
+
+    try {
+      // Convert buffer to base64
+      const base64Image = imageBuffer.toString('base64');
+      
+      // Use Gemini's vision model for image analysis
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Image
+                }
+              },
+              {
+                text: prompt
+              }
+            ]
+          }
+        ]
+      });
+
+      const text = response.text || '';
+      console.log('Gemini vision response received');
+
+      // Parse JSON response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const analysis = JSON.parse(jsonMatch[0]);
+        return {
+          summary: analysis.summary || 'Medical image analysis completed',
+          keyFindings: Array.isArray(analysis.keyFindings) ? analysis.keyFindings : ['Image analyzed - consult healthcare provider for interpretation'],
+          recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : ['Share this report with your healthcare provider'],
+          dietPlan: analysis.dietPlan || { 
+            breakfast: ['Balanced breakfast with fruits and whole grains'], 
+            lunch: ['Lean proteins and vegetables'], 
+            dinner: ['Light, nutritious dinner'], 
+            snacks: ['Healthy snacks like nuts and fruits'] 
+          },
+          exercisePlan: analysis.exercisePlan || { 
+            cardio: ['30 minutes moderate exercise daily'], 
+            strength: ['Light resistance training 2-3x per week'], 
+            flexibility: ['Daily stretching and flexibility exercises'] 
+          },
+          youtubeVideos: Array.isArray(analysis.youtubeVideos) ? analysis.youtubeVideos : [
+            { title: 'Understanding Medical Test Results', searchTerm: 'how to read medical test results' },
+            { title: 'General Health Tips', searchTerm: 'basic health and wellness tips' }
+          ],
+          lifestyleChanges: Array.isArray(analysis.lifestyleChanges) ? analysis.lifestyleChanges : ['Maintain regular health checkups', 'Follow a balanced lifestyle'],
+          actionPlan: analysis.actionPlan || { 
+            immediate: ['Consult with your healthcare provider about these results'], 
+            shortTerm: ['Follow medical advice and treatment plans'], 
+            longTerm: ['Maintain preventive health practices'] 
+          },
+          followUpNeeded: typeof analysis.followUpNeeded === 'boolean' ? analysis.followUpNeeded : true
+        };
+      }
+
+      // If JSON parsing fails, return a basic analysis
+      console.warn('Could not parse JSON from Gemini response, using fallback');
+      return this.getFallbackDocumentAnalysis(reportType as any, language || 'en');
+    } catch (error) {
+      console.error('Error analyzing medical image with Gemini Vision:', error);
+      // Return fallback analysis instead of throwing
+      return this.getFallbackDocumentAnalysis(reportType as any, language || 'en');
+    }
+  }
+
   async analyzeMedicalDocument(
     documentText: string,
     documentType: 'lab_report' | 'prescription' | 'medical_record',

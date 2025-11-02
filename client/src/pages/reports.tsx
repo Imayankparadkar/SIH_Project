@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   FileText, 
   Download, 
@@ -24,7 +25,12 @@ import {
   Eye,
   Trash2,
   FileImage,
-  FilePlus
+  FilePlus,
+  Apple,
+  Dumbbell,
+  Video,
+  Heart,
+  Activity
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { useHealthData } from '@/hooks/use-health-data';
@@ -56,6 +62,11 @@ interface MedicalFile {
     summary: string;
     keyFindings: string[];
     recommendations: string[];
+    dietPlan?: { breakfast: string[]; lunch: string[]; dinner: string[]; snacks: string[] };
+    exercisePlan?: { cardio: string[]; strength: string[]; flexibility: string[] };
+    youtubeVideos?: { title: string; searchTerm: string }[];
+    lifestyleChanges?: string[];
+    actionPlan?: { immediate: string[]; shortTerm: string[]; longTerm: string[] };
     followUpNeeded: boolean;
   };
 }
@@ -75,6 +86,7 @@ export function ReportsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFileAnalysis, setSelectedFileAnalysis] = useState<MedicalFile | null>(null);
 
   useEffect(() => {
     fetchDoctors();
@@ -831,9 +843,15 @@ ${report.riskFactors.map(risk => `- ${risk}`).join('\n')}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          {file.analysis && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setSelectedFileAnalysis(file)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -872,6 +890,275 @@ ${report.riskFactors.map(risk => `- ${risk}`).join('\n')}
           </TabsContent>
 
         </Tabs>
+
+        {/* Analysis Details Dialog */}
+        <Dialog open={!!selectedFileAnalysis} onOpenChange={() => setSelectedFileAnalysis(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Comprehensive Medical Analysis</DialogTitle>
+              <DialogDescription>
+                AI-powered analysis of {selectedFileAnalysis?.originalFileName}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedFileAnalysis?.analysis && (
+              <div className="space-y-6">
+                {/* Summary */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Brain className="w-5 h-5" />
+                      Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm leading-relaxed">{selectedFileAnalysis.analysis.summary}</p>
+                  </CardContent>
+                </Card>
+
+                {/* Key Findings */}
+                {selectedFileAnalysis.analysis.keyFindings && selectedFileAnalysis.analysis.keyFindings.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Activity className="w-5 h-5" />
+                        Key Findings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {selectedFileAnalysis.analysis.keyFindings.map((finding, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span>{finding}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Recommendations */}
+                {selectedFileAnalysis.analysis.recommendations && selectedFileAnalysis.analysis.recommendations.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Heart className="w-5 h-5" />
+                        Medical Recommendations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {selectedFileAnalysis.analysis.recommendations.map((rec, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Diet Plan */}
+                {selectedFileAnalysis.analysis.dietPlan && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Apple className="w-5 h-5" />
+                        Personalized Diet Plan
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedFileAnalysis.analysis.dietPlan.breakfast && selectedFileAnalysis.analysis.dietPlan.breakfast.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">🌅 Breakfast</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.dietPlan.breakfast.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.dietPlan.lunch && selectedFileAnalysis.analysis.dietPlan.lunch.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">☀️ Lunch</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.dietPlan.lunch.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.dietPlan.dinner && selectedFileAnalysis.analysis.dietPlan.dinner.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">🌙 Dinner</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.dietPlan.dinner.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.dietPlan.snacks && selectedFileAnalysis.analysis.dietPlan.snacks.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">🍎 Snacks</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.dietPlan.snacks.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Exercise Plan */}
+                {selectedFileAnalysis.analysis.exercisePlan && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Dumbbell className="w-5 h-5" />
+                        Exercise Recommendations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {selectedFileAnalysis.analysis.exercisePlan.cardio && selectedFileAnalysis.analysis.exercisePlan.cardio.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">🏃 Cardio</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.exercisePlan.cardio.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.exercisePlan.strength && selectedFileAnalysis.analysis.exercisePlan.strength.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">💪 Strength</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.exercisePlan.strength.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.exercisePlan.flexibility && selectedFileAnalysis.analysis.exercisePlan.flexibility.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2">🧘 Flexibility</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.exercisePlan.flexibility.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* YouTube Videos */}
+                {selectedFileAnalysis.analysis.youtubeVideos && selectedFileAnalysis.analysis.youtubeVideos.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Video className="w-5 h-5" />
+                        Educational Videos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedFileAnalysis.analysis.youtubeVideos.map((video, idx) => (
+                          <a
+                            key={idx}
+                            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(video.searchTerm)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-2 p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                          >
+                            <Video className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-red-900">{video.title}</p>
+                              <p className="text-xs text-red-700">Click to search on YouTube</p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Action Plan */}
+                {selectedFileAnalysis.analysis.actionPlan && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <TrendingUp className="w-5 h-5" />
+                        Action Plan
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {selectedFileAnalysis.analysis.actionPlan.immediate && selectedFileAnalysis.analysis.actionPlan.immediate.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2 text-red-600">🚨 Immediate (Next 24-48 hours)</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.actionPlan.immediate.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.actionPlan.shortTerm && selectedFileAnalysis.analysis.actionPlan.shortTerm.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2 text-orange-600">📅 Short-term (1-4 weeks)</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.actionPlan.shortTerm.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {selectedFileAnalysis.analysis.actionPlan.longTerm && selectedFileAnalysis.analysis.actionPlan.longTerm.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-2 text-green-600">🎯 Long-term (1-6 months)</h4>
+                            <ul className="space-y-1">
+                              {selectedFileAnalysis.analysis.actionPlan.longTerm.map((item, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Follow-up Notice */}
+                {selectedFileAnalysis.analysis.followUpNeeded && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Follow-up Recommended:</strong> Please consult with your healthcare provider to discuss these results and develop a personalized treatment plan.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <strong>Disclaimer:</strong> This AI analysis is for informational purposes only and should not replace professional medical advice. Always consult qualified healthcare professionals for medical decisions.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
         </div>
       </div>
     </div>
