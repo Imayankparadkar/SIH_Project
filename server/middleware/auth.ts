@@ -20,7 +20,7 @@ export async function authMiddleware(
     if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 'true') {
       console.log('⚠️  DEV_AUTH_BYPASS is active - using demo user for authentication');
       req.user = {
-        uid: 'd79abdfe-eef3-4f15-85ee-772c63b877ce',
+        uid: 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e',
         email: 'demo@sehatify.com',
         name: 'Demo User'
       };

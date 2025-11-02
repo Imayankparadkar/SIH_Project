@@ -4,6 +4,9 @@ export async function populateSampleData() {
   try {
     console.log('Populating sample donation data...');
 
+    // Demo user ID - matches the one in the database
+    const DEMO_USER_ID = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
+
     // Sample hospitals with blood banks
     const sampleHospitals = [
       {
@@ -93,16 +96,11 @@ export async function populateSampleData() {
       }
     }
 
-    // Get the actual demo user ID from the database
-    const demoUser = await storage.getUserByEmail('demo@sehatify.com');
-    if (!demoUser) {
-      console.log('Demo user not found, skipping donor profile creation');
-      return;
-    }
+    // Use the demo user ID for donor profile creation
 
     // Sample donor profile for the demo user
     const demoUserDonorProfile = {
-      userId: demoUser.id,
+      userId: DEMO_USER_ID,
       bloodGroup: 'O+' as const,
       isAvailable: true,
       lastDonationDate: new Date('2024-01-15'),
@@ -143,7 +141,7 @@ export async function populateSampleData() {
     // Sample donation history for demo user
     const sampleDonations = [
       {
-        donorId: demoUser.id,
+        donorId: DEMO_USER_ID,
         recipientHospitalId: 'h1',
         donationType: 'blood' as const,
         bloodGroup: 'O+' as const,
@@ -154,7 +152,7 @@ export async function populateSampleData() {
         completedDate: new Date('2024-01-15')
       },
       {
-        donorId: demoUser.id,
+        donorId: DEMO_USER_ID,
         recipientHospitalId: 'h2',
         donationType: 'plasma' as const,
         bloodGroup: 'O+' as const,
@@ -165,7 +163,7 @@ export async function populateSampleData() {
         completedDate: new Date('2024-02-20')
       },
       {
-        donorId: demoUser.id,
+        donorId: DEMO_USER_ID,
         recipientHospitalId: 'h3',
         donationType: 'blood' as const,
         bloodGroup: 'O+' as const,

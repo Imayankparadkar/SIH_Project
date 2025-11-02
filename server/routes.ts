@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
           // Use demo user ID for development mode (matching dev-auth.ts)
-          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          userId = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
           console.log('Using demo user ID for development mode upload');
         } else {
           return res.status(401).json({ error: "User not authenticated" });
@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          userId = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
         } else {
           return res.status(401).json({ error: "User not authenticated" });
         }
@@ -353,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          userId = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
         } else {
           return res.status(401).json({ error: "User not authenticated" });
         }
@@ -393,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = (req as any).user?.uid;
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
-          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          userId = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
         } else {
           return res.status(401).json({ error: "User not authenticated" });
         }
@@ -936,7 +936,7 @@ Please respond in JSON format with:
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
           // Use demo user ID for development mode
-          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          userId = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
           console.log('Using demo user ID for medicine order in development mode');
         } else {
           return res.status(401).json({ error: "User not authenticated" });
@@ -1031,7 +1031,7 @@ Please respond in JSON format with:
       if (!userId) {
         if (process.env.NODE_ENV === 'development') {
           // Use demo user ID for development mode
-          userId = 'd79abdfe-eef3-4f15-85ee-772c63b877ce';
+          userId = 'a2282785-e9d5-4a1b-9e3e-21d53d3a413e';
           console.log('Using demo user ID for medicine orders in development mode');
         } else {
           return res.status(401).json({ error: "User not authenticated" });
