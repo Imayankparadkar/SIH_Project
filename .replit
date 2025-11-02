@@ -33,13 +33,13 @@ args = "Start Game"
 name = "Start Game"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[ports]]
 localPort = 5000
@@ -56,6 +56,10 @@ externalPort = 4200
 [[ports]]
 localPort = 43987
 externalPort = 5173
+
+[[ports]]
+localPort = 44869
+externalPort = 5000
 
 [[ports]]
 localPort = 45143
