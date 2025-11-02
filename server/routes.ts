@@ -1291,22 +1291,11 @@ Please respond in JSON format with:
           isConnected: true
         };
       } else {
-        // After 10 seconds, check if we need to start a new cycle
-        if (elapsedSeconds >= 20) {
-          // Start new cycle with different normal baseline
-          cycleStartTime = now;
-          normalBaseline = {
-            heartRate: 70 + Math.floor(Math.random() * 8),
-            spo2: 96 + Math.floor(Math.random() * 3),
-            temperature: 98.2 + Math.random() * 0.8
-          };
-        }
-        
-        // Return stable normal readings with slight variation
+        // After 10 seconds, return constant normal readings (no more changes)
         healthData = {
-          heartRate: normalBaseline.heartRate + Math.floor(Math.random() * 3 - 1),
-          oxygenSaturation: normalBaseline.spo2 + Math.floor(Math.random() * 2),
-          bodyTemperature: Math.round((normalBaseline.temperature + Math.random() * 0.2 - 0.1) * 10) / 10,
+          heartRate: normalBaseline.heartRate,
+          oxygenSaturation: normalBaseline.spo2,
+          bodyTemperature: normalBaseline.temperature,
           battery: 85,
           timestamp: new Date().toISOString(),
           isConnected: true
