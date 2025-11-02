@@ -1268,6 +1268,17 @@ Please respond in JSON format with:
   
   app.get("/api/esp32/live", async (req, res) => {
     try {
+      // Reset cycle if requested (happens on page refresh)
+      if (req.query.reset === 'true') {
+        cycleStartTime = Date.now();
+        normalBaseline = {
+          heartRate: 72,
+          spo2: 98,
+          temperature: 98.6
+        };
+        console.log('ESP32: Cycle reset - starting new 10-second dynamic phase');
+      }
+      
       const now = Date.now();
       const elapsedSeconds = (now - cycleStartTime) / 1000;
       

@@ -50,12 +50,12 @@ class ESP32HealthService {
     this.isRunning = true;
     console.log('ESP32 Health Service: Starting real-time data fetching');
     
-    // Fetch immediately
-    this.fetchData();
+    // Fetch immediately with reset flag
+    this.fetchData(true);
     
     // Set up interval
     this.intervalId = setInterval(() => {
-      this.fetchData();
+      this.fetchData(false);
     }, this.FETCH_INTERVAL);
   }
 
@@ -68,10 +68,11 @@ class ESP32HealthService {
     console.log('ESP32 Health Service: Stopped data fetching');
   }
 
-  private async fetchData(): Promise<void> {
+  private async fetchData(reset: boolean = false): Promise<void> {
     try {
       console.log('ESP32: Fetching data from API');
-      const response = await fetch(this.API_URL, {
+      const url = reset ? `${this.API_URL}?reset=true` : this.API_URL;
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
