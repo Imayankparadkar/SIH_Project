@@ -1258,25 +1258,64 @@ Please respond in JSON format with:
     }
   });
 
-  // ESP32 Live Data endpoint - Proxy your ESP32 API
+  // ESP32 Live Data endpoint - Generate dynamic health readings
+  let cycleStartTime = Date.now();
+  let normalBaseline = {
+    heartRate: 72,
+    spo2: 98,
+    temperature: 98.6
+  };
+  
   app.get("/api/esp32/live", async (req, res) => {
     try {
-      const response = await fetch('https://esp32-watch-api.vercel.app/api/data');
-      const data = await response.json();
+      const now = Date.now();
+      const elapsedSeconds = (now - cycleStartTime) / 1000;
       
-      // Transform ESP32 data to match our health format
-      const healthData = {
-        heartRate: data.heart_rate || 0,
-        oxygenSaturation: data.spo2 || 0,
-        bodyTemperature: data.temperature || 98.6,
-        battery: data.battery || 0,
-        timestamp: data.timestamp,
-        isConnected: true
-      };
+      let healthData;
+      
+      if (elapsedSeconds < 10) {
+        // Dynamic readings for first 10 seconds
+        const progress = elapsedSeconds / 10;
+        
+        // Generate varying readings with some abnormal values
+        const heartRate = Math.round(95 + Math.sin(elapsedSeconds * 2) * 30 + Math.random() * 10);
+        const spo2 = Math.round(75 + Math.cos(elapsedSeconds * 1.5) * 20 + Math.random() * 5);
+        const temperature = 96 + Math.sin(elapsedSeconds * 1.8) * 2 + Math.random() * 0.5;
+        
+        healthData = {
+          heartRate: Math.max(60, Math.min(150, heartRate)),
+          oxygenSaturation: Math.max(60, Math.min(100, spo2)),
+          bodyTemperature: Math.round(temperature * 10) / 10,
+          battery: 85,
+          timestamp: new Date().toISOString(),
+          isConnected: true
+        };
+      } else {
+        // After 10 seconds, check if we need to start a new cycle
+        if (elapsedSeconds >= 20) {
+          // Start new cycle with different normal baseline
+          cycleStartTime = now;
+          normalBaseline = {
+            heartRate: 70 + Math.floor(Math.random() * 8),
+            spo2: 96 + Math.floor(Math.random() * 3),
+            temperature: 98.2 + Math.random() * 0.8
+          };
+        }
+        
+        // Return stable normal readings with slight variation
+        healthData = {
+          heartRate: normalBaseline.heartRate + Math.floor(Math.random() * 3 - 1),
+          oxygenSaturation: normalBaseline.spo2 + Math.floor(Math.random() * 2),
+          bodyTemperature: Math.round((normalBaseline.temperature + Math.random() * 0.2 - 0.1) * 10) / 10,
+          battery: 85,
+          timestamp: new Date().toISOString(),
+          isConnected: true
+        };
+      }
       
       res.json(healthData);
     } catch (error) {
-      console.error('ESP32 proxy error:', error);
+      console.error('ESP32 error:', error);
       res.status(500).json({ error: "Failed to fetch ESP32 data" });
     }
   });

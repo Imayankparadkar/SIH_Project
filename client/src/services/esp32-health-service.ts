@@ -22,7 +22,7 @@ class ESP32HealthService {
   private intervalId: NodeJS.Timeout | null = null;
   private lastData: ESP32HealthData | null = null;
   private isRunning = false;
-  private readonly API_URL = 'https://esp32-watch-api.vercel.app/api/data';
+  private readonly API_URL = '/api/esp32/live';
   private readonly FETCH_INTERVAL = 1000; // 1 second
 
   subscribe(listener: ESP32DataListener): () => void {
@@ -82,17 +82,18 @@ class ESP32HealthService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const rawData: ESP32Data = await response.json();
+      const rawData: any = await response.json();
       console.log('ESP32: Raw data received:', rawData);
 
       // Convert ESP32 data format to our internal format with proper validation
+      // Support both old format (heart_rate, spo2) and new format (heartRate, oxygenSaturation)
       const healthData: ESP32HealthData = {
-        heartRate: typeof rawData.heart_rate === 'number' ? Math.max(0, rawData.heart_rate) : 0,
-        oxygenSaturation: typeof rawData.spo2 === 'number' ? Math.max(0, Math.min(100, rawData.spo2)) : 0,
-        bodyTemperature: typeof rawData.temperature === 'number' ? Math.round(rawData.temperature * 10) / 10 : 0, // Use actual ESP32 temperature
+        heartRate: typeof (rawData.heartRate || rawData.heart_rate) === 'number' ? Math.max(0, rawData.heartRate || rawData.heart_rate) : 0,
+        oxygenSaturation: typeof (rawData.oxygenSaturation || rawData.spo2) === 'number' ? Math.max(0, Math.min(100, rawData.oxygenSaturation || rawData.spo2)) : 0,
+        bodyTemperature: typeof (rawData.bodyTemperature || rawData.temperature) === 'number' ? Math.round((rawData.bodyTemperature || rawData.temperature) * 10) / 10 : 0,
         battery: typeof rawData.battery === 'number' ? Math.max(0, Math.min(100, rawData.battery)) : 0,
         timestamp: new Date(rawData.timestamp || new Date()),
-        isConnected: true
+        isConnected: rawData.isConnected !== undefined ? rawData.isConnected : true
       };
 
       console.log('ESP32: Processed health data:', healthData);
