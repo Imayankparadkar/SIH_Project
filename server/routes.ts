@@ -253,15 +253,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (analysisResult) {
-          analysisData = {
+          // Schema-compliant data for database (only allowed fields)
+          const dbAnalysisData = {
             summary: analysisResult.summary,
             keyFindings: analysisResult.keyFindings,
             recommendations: analysisResult.recommendations,
-            dietPlan: analysisResult.dietPlan || { breakfast: [], lunch: [], dinner: [], snacks: [] },
-            exercisePlan: analysisResult.exercisePlan || { cardio: [], strength: [], flexibility: [] },
-            youtubeVideos: analysisResult.youtubeVideos || [],
-            lifestyleChanges: analysisResult.lifestyleChanges || [],
-            actionPlan: analysisResult.actionPlan || { immediate: [], shortTerm: [], longTerm: [] },
             followUpNeeded: analysisResult.followUpNeeded,
             analyzedAt: new Date(),
             confidence: 0.9,
@@ -269,9 +265,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             language: language
           };
           
+          // Full analysis data for response (includes extra fields)
+          analysisData = {
+            ...dbAnalysisData,
+            dietPlan: analysisResult.dietPlan || { breakfast: [], lunch: [], dinner: [], snacks: [] },
+            exercisePlan: analysisResult.exercisePlan || { cardio: [], strength: [], flexibility: [] },
+            youtubeVideos: analysisResult.youtubeVideos || [],
+            lifestyleChanges: analysisResult.lifestyleChanges || [],
+            actionPlan: analysisResult.actionPlan || { immediate: [], shortTerm: [], longTerm: [] }
+          };
+          
           await storage.updateMedicalReport(report.id, {
             isAnalyzed: true,
-            analysis: analysisData
+            analysis: dbAnalysisData
           });
         }
       } catch (analysisError) {
