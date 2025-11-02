@@ -96,7 +96,7 @@ export function ReportsPage() {
 
   const fetchMedicalFiles = async () => {
     try {
-      const response = await fetch('/api/uploads?userId=user1', {
+      const response = await fetch('/api/uploads', {
         credentials: 'include'
       });
       if (response.ok) {
@@ -115,7 +115,6 @@ export function ReportsPage() {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('reportType', reportType);
-    formData.append('userId', 'user1'); // TODO: Get from auth
 
     try {
       const response = await fetch('/api/uploads', {
@@ -133,11 +132,12 @@ export function ReportsPage() {
           fileInputRef.current.value = '';
         }
       } else {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errorData.error || 'Upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload file. Please try again.');
+      alert(`❌ Sorry, I encountered an error while uploading and analyzing your document. Please try again or contact support if the issue persists.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsUploading(false);
       setTimeout(() => setUploadProgress(0), 2000);
