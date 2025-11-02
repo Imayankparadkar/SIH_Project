@@ -261,6 +261,211 @@ export async function populateSampleData() {
       }
     }
 
+    // Sample doctors
+    const sampleDoctors = [
+      {
+        id: 'd1',
+        name: 'Dr. Priya Sharma',
+        specialization: 'Cardiologist',
+        qualification: 'MBBS, MD (Cardiology)',
+        experience: 15,
+        consultationFee: 800,
+        rating: 4.8,
+        availability: [
+          { day: 'Monday', startTime: '09:00', endTime: '17:00' },
+          { day: 'Tuesday', startTime: '09:00', endTime: '17:00' },
+          { day: 'Wednesday', startTime: '09:00', endTime: '17:00' },
+          { day: 'Thursday', startTime: '09:00', endTime: '17:00' },
+          { day: 'Friday', startTime: '09:00', endTime: '17:00' }
+        ],
+        hospitalAffiliation: 'Apollo Hospital',
+        languages: ['English', 'Hindi', 'Telugu'],
+        isOnline: true
+      },
+      {
+        id: 'd2',
+        name: 'Dr. Rajesh Kumar',
+        specialization: 'General Physician',
+        qualification: 'MBBS, MD (Medicine)',
+        experience: 10,
+        consultationFee: 500,
+        rating: 4.6,
+        availability: [
+          { day: 'Monday', startTime: '09:00', endTime: '18:00' },
+          { day: 'Wednesday', startTime: '09:00', endTime: '18:00' },
+          { day: 'Friday', startTime: '09:00', endTime: '18:00' }
+        ],
+        hospitalAffiliation: 'Fortis Hospital',
+        languages: ['English', 'Hindi', 'Kannada'],
+        isOnline: true
+      },
+      {
+        id: 'd3',
+        name: 'Dr. Anita Reddy',
+        specialization: 'Pediatrician',
+        qualification: 'MBBS, MD (Pediatrics)',
+        experience: 12,
+        consultationFee: 600,
+        rating: 4.9,
+        availability: [
+          { day: 'Monday', startTime: '10:00', endTime: '17:00' },
+          { day: 'Tuesday', startTime: '10:00', endTime: '17:00' },
+          { day: 'Thursday', startTime: '10:00', endTime: '17:00' },
+          { day: 'Friday', startTime: '10:00', endTime: '17:00' },
+          { day: 'Saturday', startTime: '10:00', endTime: '14:00' }
+        ],
+        hospitalAffiliation: 'Max Healthcare',
+        languages: ['English', 'Hindi'],
+        isOnline: true
+      },
+      {
+        id: 'd4',
+        name: 'Dr. Suresh Patel',
+        specialization: 'Dermatologist',
+        qualification: 'MBBS, MD (Dermatology)',
+        experience: 8,
+        consultationFee: 700,
+        rating: 4.5,
+        availability: [
+          { day: 'Tuesday', startTime: '09:00', endTime: '18:00' },
+          { day: 'Thursday', startTime: '09:00', endTime: '18:00' },
+          { day: 'Saturday', startTime: '09:00', endTime: '13:00' }
+        ],
+        hospitalAffiliation: 'Apollo Hospital',
+        languages: ['English', 'Hindi', 'Gujarati'],
+        isOnline: true
+      },
+      {
+        id: 'd5',
+        name: 'Dr. Meera Singh',
+        specialization: 'Gynecologist',
+        qualification: 'MBBS, MS (Obstetrics & Gynecology)',
+        experience: 14,
+        consultationFee: 900,
+        rating: 4.7,
+        availability: [
+          { day: 'Monday', startTime: '10:00', endTime: '16:00' },
+          { day: 'Wednesday', startTime: '10:00', endTime: '16:00' },
+          { day: 'Friday', startTime: '10:00', endTime: '16:00' }
+        ],
+        hospitalAffiliation: 'Fortis Hospital',
+        languages: ['English', 'Hindi', 'Punjabi'],
+        isOnline: true
+      }
+    ];
+
+    // Create doctors
+    for (const doctor of sampleDoctors) {
+      try {
+        await storage.createDoctor(doctor);
+        console.log(`Created doctor: ${doctor.name}`);
+      } catch (error) {
+        console.log(`Doctor ${doctor.name} already exists or error:`, error);
+      }
+    }
+
+    // Sample medicines
+    const sampleMedicines = [
+      {
+        id: 'm1',
+        name: 'Paracetamol 500mg',
+        genericName: 'Acetaminophen',
+        manufacturer: 'Cipla Ltd',
+        composition: 'Paracetamol 500mg',
+        dosageForm: 'Tablet',
+        strength: '500mg',
+        price: 25,
+        prescriptionRequired: false
+      },
+      {
+        id: 'm2',
+        name: 'Amoxicillin 250mg',
+        genericName: 'Amoxicillin',
+        manufacturer: 'Sun Pharma',
+        composition: 'Amoxicillin 250mg',
+        dosageForm: 'Capsule',
+        strength: '250mg',
+        price: 120,
+        prescriptionRequired: true
+      },
+      {
+        id: 'm3',
+        name: 'Cetirizine 10mg',
+        genericName: 'Cetirizine HCl',
+        manufacturer: 'Dr. Reddy\'s',
+        composition: 'Cetirizine Hydrochloride 10mg',
+        dosageForm: 'Tablet',
+        strength: '10mg',
+        price: 40,
+        prescriptionRequired: false
+      },
+      {
+        id: 'm4',
+        name: 'Omeprazole 20mg',
+        genericName: 'Omeprazole',
+        manufacturer: 'Lupin',
+        composition: 'Omeprazole 20mg',
+        dosageForm: 'Capsule',
+        strength: '20mg',
+        price: 85,
+        prescriptionRequired: true
+      },
+      {
+        id: 'm5',
+        name: 'Vitamin D3 1000 IU',
+        genericName: 'Cholecalciferol',
+        manufacturer: 'Mankind Pharma',
+        composition: 'Cholecalciferol 1000 IU',
+        dosageForm: 'Tablet',
+        strength: '1000 IU',
+        price: 150,
+        prescriptionRequired: false
+      },
+      {
+        id: 'm6',
+        name: 'Metformin 500mg',
+        genericName: 'Metformin HCl',
+        manufacturer: 'Torrent Pharma',
+        composition: 'Metformin Hydrochloride 500mg',
+        dosageForm: 'Tablet',
+        strength: '500mg',
+        price: 60,
+        prescriptionRequired: true
+      },
+      {
+        id: 'm7',
+        name: 'Ibuprofen 400mg',
+        genericName: 'Ibuprofen',
+        manufacturer: 'Cipla Ltd',
+        composition: 'Ibuprofen 400mg',
+        dosageForm: 'Tablet',
+        strength: '400mg',
+        price: 45,
+        prescriptionRequired: false
+      },
+      {
+        id: 'm8',
+        name: 'Azithromycin 500mg',
+        genericName: 'Azithromycin',
+        manufacturer: 'Zydus Cadila',
+        composition: 'Azithromycin 500mg',
+        dosageForm: 'Tablet',
+        strength: '500mg',
+        price: 180,
+        prescriptionRequired: true
+      }
+    ];
+
+    // Create medicines
+    for (const medicine of sampleMedicines) {
+      try {
+        await storage.createMedicine(medicine);
+        console.log(`Created medicine: ${medicine.name}`);
+      } catch (error) {
+        console.log(`Medicine ${medicine.name} already exists or error:`, error);
+      }
+    }
+
     console.log('Sample donation data population completed!');
   } catch (error) {
     console.error('Error populating sample data:', error);
