@@ -95,13 +95,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const medicineAuthMiddleware = process.env.NODE_ENV === 'development' ? optionalAuth : authMiddleware;
   app.post("/api/uploads", uploadAuthMiddleware, upload.single('file'), async (req, res) => {
     try {
+      console.log('=== Upload Request Started ===');
+      console.log('File received:', req.file?.originalname, req.file?.mimetype, req.file?.size);
+      console.log('Request body:', req.body);
+      
       if (!req.file) {
+        console.error('No file in request');
         return res.status(400).json({ error: "No file uploaded" });
       }
 
       // Validate request body parameters
       const bodyValidation = MedicalFileUploadSchema.safeParse(req.body);
       if (!bodyValidation.success) {
+        console.error('Validation failed:', bodyValidation.error.issues);
         return res.status(400).json({ 
           error: "Invalid upload parameters", 
           details: bodyValidation.error.issues 
@@ -109,6 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { reportType, sourceType, sourceId, description } = bodyValidation.data;
+      console.log('Validated parameters:', { reportType, sourceType, sourceId });
       
       // Get authenticated user ID from session, or use demo user in development
       let userId = (req as any).user?.uid;

@@ -273,6 +273,8 @@ How are you feeling today? Is there anything specific about your health you'd li
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('File selected:', file.name, file.type, file.size);
+
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
       alert('File size must be less than 10MB');
       return;
@@ -302,20 +304,25 @@ How are you feeling today? Is there anything specific about your health you'd li
       documentType = 'discharge_summary';
     }
 
+    console.log('Determined document type:', documentType);
     formData.append('reportType', documentType);
     formData.append('sourceType', 'user_upload');
     formData.append('sourceId', user?.id || 'anonymous');
     formData.append('description', `User uploaded ${documentType} for analysis`);
 
     try {
+      console.log('Starting upload to /api/uploads');
       const response = await fetch('/api/uploads', {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
 
+      console.log('Upload response status:', response.status, response.statusText);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Upload response data:', data);
         
         // Add file upload message to chat
         const fileMessage: ChatMessage = {
@@ -327,6 +334,7 @@ How are you feeling today? Is there anything specific about your health you'd li
         setMessages(prev => [...prev, fileMessage]);
 
         // Add analysis result to chat if available
+        console.log('Checking for analysis data:', data.report?.analysis);
         if (data.report?.analysis) {
           const analysisMessage: ChatMessage = {
             id: (Date.now() + 1).toString(),
@@ -346,22 +354,35 @@ ${data.report.analysis.followUpNeeded ? '⚠️ **Important:** Follow-up with yo
             analyzed: true
           };
           setMessages(prev => [...prev, analysisMessage]);
+          console.log('Analysis message added to chat');
           
           // Speak the analysis if voice is enabled
           if (isSpeaking) {
             const speakText = `Document analysis complete. ${data.report.analysis.summary}. ${data.report.analysis.followUpNeeded ? 'Follow-up with your healthcare provider is recommended.' : ''}`;
             speakResponse(speakText);
           }
+        } else {
+          console.error('No analysis data found in response!', data);
+          // Still show a success message even without analysis
+          const successMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'doctor',
+            content: `✅ Document uploaded successfully! The file "${file.name}" has been saved to your medical records.`,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, successMessage]);
         }
       } else {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => null);
+        console.error('Upload failed with status:', response.status, errorData);
+        throw new Error(errorData?.error || `Upload failed with status ${response.status}`);
       }
     } catch (error) {
       console.error('File upload error:', error);
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'doctor',
-        content: '❌ Sorry, I encountered an error while uploading and analyzing your document. Please try again or contact support if the issue persists.',
+        content: `❌ Sorry, I encountered an error while uploading and analyzing your document. ${error instanceof Error ? `Error: ${error.message}` : ''} Please try again or contact support if the issue persists.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
