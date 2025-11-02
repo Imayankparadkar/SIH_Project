@@ -153,6 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const report = await storage.createMedicalReport(reportData);
       
       // Provide AI-powered analysis for uploaded medical files
+      let analysisData = null;
       try {
         const language = req.body.language || 'en';
         let analysisResult;
@@ -245,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (analysisResult) {
-          const analysisData = {
+          analysisData = {
             summary: analysisResult.summary,
             keyFindings: analysisResult.keyFindings,
             recommendations: analysisResult.recommendations,
@@ -270,14 +271,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Document analysis error:', analysisError);
       }
 
+      // Return the report with analysis data included
       res.json({
         success: true,
-        report,
+        report: {
+          ...report,
+          isAnalyzed: analysisData !== null,
+          analysis: analysisData
+        },
         message: "File uploaded and analyzed successfully"
       });
     } catch (error) {
       console.error('Upload error:', error);
-      res.status(500).json({ error: "Failed to upload file" });
+      // Provide detailed error information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Detailed upload error:', {
+        message: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        file: req.file?.originalname
+      });
+      res.status(500).json({ 
+        error: "Failed to upload file",
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      });
     }
   });
 
